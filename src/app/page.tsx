@@ -6,8 +6,8 @@ export default function Home() {
     <>
       <Hero
         eyebrow="EC and I safety engineering"
-        title="Competence that holds up when it matters"
-        sub="Accredited training and specialist consultancy for COMAH, chemical, oil and gas, and water sites."
+        title="Stories that stay with you, skills that protect"
+        sub="Accredited training and specialist high hazard Process Industries | COMAH, Chemical, Oil and Gas, and Water and Waste Treatment. Delivered by engineers who have worked on them."
       />
       <div className="grid gap-px bg-hairline md:grid-cols-2">
         <div className="bg-white p-8">

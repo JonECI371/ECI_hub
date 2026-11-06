@@ -55,3 +55,8 @@ export function Hero({ eyebrow, title, sub }: { eyebrow: string; title: string; 
     </div>
   );
 }
+
+/** Small uppercase label above a section heading. */
+export function Eyebrow({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  return <p className={`mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-ink ${className}`}>{children}</p>;
+}

@@ -24,7 +24,31 @@ async function main() {
 
   const courses = [
     { slug: 'thames-water-safety-passport', title: 'Thames Water Safety Passport', subject: 'thames-water', deliveryType: DeliveryType.VIRTUAL_CLASSROOM, durationText: 'Half day', pricePence: 18500, placesPerSession: 12, validityYears: 3, meetingPlatform: 'TEAMS' as const,
-      shortDescription: 'Mandatory health, safety and environment training for anyone working on Thames Water sites.' },
+      accreditation: 'Thames Water',
+      shortDescription: 'Mandatory health, safety and environment training for anyone working on Thames Water sites.',
+      // Course page copy from docs/design/Course.dc.html
+      content: {
+        eyebrow: 'Site safety passport',
+        assessment: 'In-course',
+        beforeYouBook: 'Your employer must register you on SkillGuard for Utilities and pay the subscription first. Bring your SkillGuard number and photo ID on the day. Without both, the passport cannot be issued.',
+        audienceHeading: 'Anyone with site access',
+        audience: 'Every direct employee, contractor and supply chain partner must hold a valid passport before starting work on the Thames Water network. If your work involves site access, you need it.',
+        cover: [
+          { title: 'Site hazards', text: 'Hazards specific to the Thames Water network and the controls that manage them.' },
+          { title: 'Safety expectations', text: 'Zero incidents, zero harm, zero compromise, and what that means in practice.' },
+          { title: 'Environment', text: 'Environmental responsibilities and protecting the public water supply.' },
+          { title: 'Behaviours', text: 'Behavioural and customer facing standards expected of everyone on site.' },
+        ],
+        completionHeading: 'Thames Water Passport, virtual card',
+        completion: 'Issued through SkillGuard for Utilities and valid for three years. We will remind you when renewal is due.',
+        related: ['eusr-national-water-hygiene'],
+      },
+      faqs: [
+        { q: 'What is SkillGuard and who pays for it?', a: 'SkillGuard for Utilities holds your digital passport record. Your employer registers you and pays the subscription directly. We cannot do this on your behalf.' },
+        { q: 'How soon will I get my passport?', a: '[YOUR ANSWER. Typical issue time through SkillGuard.]' },
+        { q: 'Does this cover other water companies?', a: 'No. This passport is specific to Thames Water. For wider access, EUSR SHEA Water is the recognised scheme.' },
+      ],
+    },
     { slug: 'compex-exa-awareness', title: 'CompEx ExA Awareness', subject: 'compex', deliveryType: DeliveryType.IN_PERSON, durationText: '1 day', pricePence: 0 /* TODO price */, placesPerSession: 8, validityYears: 5,
       shortDescription: 'Hazardous area awareness for anyone who enters, supervises or plans work in Ex areas.' },
     { slug: 'compex-exf-foundation', title: 'CompEx ExF Foundation', subject: 'compex', deliveryType: DeliveryType.IN_PERSON, durationText: '2 days', pricePence: 45000, placesPerSession: 8, validityYears: 5,
@@ -58,6 +82,8 @@ async function main() {
   const sessions: [string, string, number, number, number, number][] = [
     ['thames-water-safety-passport', '2026-11-24', 9, 0, 12, 30],
     ['thames-water-safety-passport', '2026-12-08', 9, 0, 12, 30],
+    ['thames-water-safety-passport', '2026-11-12', 13, 0, 16, 30],
+    ['thames-water-safety-passport', '2026-12-15', 9, 0, 12, 30],
     ['compex-exa-awareness', '2026-11-30', 8, 30, 16, 30],
     ['compex-exf-foundation', '2026-12-07', 8, 30, 16, 30],
     ['process-safety-awareness', '2026-11-26', 9, 0, 16, 30],
@@ -73,6 +99,10 @@ async function main() {
       });
     }
   }
+
+  // One full session so the waitlist path can be tried.
+  const tw = await db.course.findUniqueOrThrow({ where: { slug: 'thames-water-safety-passport' } });
+  await db.session.updateMany({ where: { courseId: tw.id, startsAt: at('2026-11-12', 13, 0) }, data: { status: SessionStatus.FULL } });
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   if (adminEmail) {

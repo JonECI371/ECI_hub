@@ -52,3 +52,22 @@ export function courseJsonLd(c: CourseWithSessions) {
   }));
   return [course, ...events];
 }
+
+/** FAQPage JSON-LD; only when the course has FAQs. */
+export function faqJsonLd(faqs: { q: string; a: string }[]) {
+  if (faqs.length === 0) return null;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqs.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a } })),
+  };
+}
+
+/** BreadcrumbList JSON-LD from [name, path] pairs. */
+export function breadcrumbJsonLd(items: [string, string][]) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: items.map(([name, path], i) => ({ '@type': 'ListItem', position: i + 1, name, item: `${SITE_URL}${path}` })),
+  };
+}

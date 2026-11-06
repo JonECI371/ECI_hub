@@ -162,6 +162,8 @@ model Course {
   photoUrl         String?
   photoAlt         String?
   faqs             Json                @default("[]")
+  // Course page copy: { eyebrow, assessment, beforeYouBook, audienceHeading, audience, cover: [{ title, text }], completionHeading, completion, related: [slug] }
+  content          Json                @default("{}")
   // Virtual classroom
   meetingPlatform  MeetingPlatform?
   meetingHost      String?

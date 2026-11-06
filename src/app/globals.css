@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body { @apply bg-page font-sans text-slate antialiased; }
+a { @apply text-ink underline decoration-cyan decoration-2 underline-offset-[3px] hover:text-slate; }
+:focus-visible { outline: 3px solid #2EC39B; outline-offset: 2px; }
+
+/* Brand motif: faint zone hatch on dark bands. Heroes only, never behind body text. */
+.hero-motif {
+  background-color: #242424;
+  background-image: repeating-linear-gradient(135deg, rgba(46,195,155,0.07) 0 2px, transparent 2px 16px);
+  background-size: 50% 100%;
+  background-position: right top;
+  background-repeat: no-repeat;
+}
+
+.card-link { @apply block rounded-card bg-white no-underline shadow-card transition hover:-translate-y-px hover:shadow-lift; }

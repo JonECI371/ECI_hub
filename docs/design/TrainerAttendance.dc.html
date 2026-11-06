@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Mark attendance – ECI-Hub</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&amp;display=swap">
+<style>
+body{margin:0;font-family:'Mulish','Avenir',system-ui,sans-serif;background:#F3F4F6}
+a{color:#242424;text-decoration:underline;text-decoration-color:#2EC39B;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#424652}
+:focus-visible{outline:3px solid #2EC39B;outline-offset:2px}
+a[style*="box-shadow"],button{transition:box-shadow .15s ease,transform .15s ease,background-color .15s ease}
+a[style*="box-shadow"]:hover{box-shadow:0 2px 4px rgba(36,36,36,0.08),0 14px 32px rgba(36,36,36,0.12)!important;transform:translateY(-1px)}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1060px; box-sizing: border-box; background: #F3F4F6; display: flex; flex-direction: column; font-family: 'Mulish', 'Avenir', system-ui, sans-serif; color: #424652;">
+<div style="background: {{ink}}; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between;">
+  <a href="TrainerSessions.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #ffffff; font-size: 22px; text-decoration: none">&#8592;</a>
+  <span style="width: 34px; height: 34px; border-radius: 50%; background: {{accent}}; color: #242424; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700;">DH</span>
+</div>
+<div style="background: {{ink}}; padding: 4px 20px 22px;">
+  <p style="margin: 0 0 6px; color: {{accent}}; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Trainer</p>
+  <h1 style="margin: 0; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.02em;">Mark attendance</h1>
+</div>
+<div style="flex-grow: 1; padding: 20px 16px 24px; display: flex; flex-direction: column; gap: 16px;">
+  <p style="margin: 0; font-size: 14px; line-height: 1.6;"><strong style="color: {{ink}};">CompEx ExF Foundation</strong><br>Monday 5 October 2026 · dietary and accessibility needs shown</p>
+  <sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+    <fieldset style="margin: 0; background: #ffffff; border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); padding: 14px;">
+      <legend style="float: left; width: 100%; padding: 0; margin: 0 0 10px; color: {{ink}}; font-size: 15px; font-weight: 600;">{{r.name}}</legend>
+      <sc-if value="{{r.hasNeeds}}" hint-placeholder-val="{{ false }}"><p style="clear: both; margin: 0 0 10px; padding: 8px 10px; background: #FFF6E6; border-radius: 4px; color: #5C3B00; font-size: 12px; line-height: 1.5;">{{r.needs}}</p></sc-if>
+      <div style="clear: both; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+        <sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3">
+          <button type="button" aria-pressed="{{o.pressed}}" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button>
+        </sc-for>
+      </div>
+    </fieldset>
+  </sc-for>
+  <p style="margin: 0; font-size: 13px;">{{summary}}</p>
+  <sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><p role="status" style="margin: 0; background: #E8F8F3; border-left: 4px solid #2EC39B; padding: 12px 14px; color: #242424; font-size: 14px; font-weight: 600;">Attendance saved. ECI has been notified.</p></sc-if>
+  <button type="button" onClick="{{save}}" style="min-height: 50px; border: 0; border-radius: 4px; background: {{accent}}; color: #242424; font: inherit; font-size: 15px; font-weight: 600; cursor: pointer;">Save attendance</button>
+</div>
+<nav aria-label="Trainer menu" style="background: #ffffff; border-top: 1px solid #E3E5E8; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));">
+  <a href="TrainerSessions.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 12px; font-size: 12px; font-weight: 600; color: #242424; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2EC39B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z"></path><path d="M4 9h16M9 13h6"></path></svg>Sessions</a>
+  <a href="TrainerAvailability.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 12px; font-size: 12px; color: #424652; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#424652" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M3 10h18M8 3v4M16 3v4"></path></svg>Availability</a>
+  <a href="TrainerProfile.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 0 12px; font-size: 12px; color: #424652; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#424652" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path></svg>Profile</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2EC39B","options":["#2EC39B","#2EC39B","#2EC39B","#242424"]},"ink":{"editor":"color","default":"#242424","options":["#242424","#242424","#424652","#424652"]},"ink2":{"editor":"color","default":"#424652","options":["#424652","#424652","#424652"]},"$preview":{"width":390,"height":1060}}'>
+function base(c) {
+  return { accent: c.props.accent ?? '#2EC39B', ink: c.props.ink ?? '#242424', ink2: c.props.ink2 ?? '#424652' };
+}
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { marks: { 1: 'Attended', 2: 'Attended' }, saved: false }; }
+  renderVals() {
+    var self = this, v = base(this), marks = this.state.marks;
+    var names = ['Sam Taylor', 'Priya Shah', 'Lewis Grant', 'Hannah Moore', 'Tom Reid'];
+    var needs = { 1: 'Dietary: vegetarian', 3: 'Accessibility: step-free access, hearing loop' };
+    var base_ = 'min-height: 44px; border-radius: 4px; font: inherit; font-size: 13px; cursor: pointer; ';
+    var col = { 'Attended': 'background: #2EC39B; color: #242424; border: 1px solid #2EC39B; font-weight: 600;', 'No-show': 'background: #B42318; color: #ffffff; border: 1px solid #B42318; font-weight: 600;', 'Partial': 'background: #F0AD4E; color: #2B1E05; border: 1px solid #F0AD4E; font-weight: 600;' };
+    v.rows = names.map(function (n, i) {
+      var id = i + 1;
+      return { name: n, hasNeeds: !!needs[id], needs: needs[id] || '', opts: ['Attended', 'No-show', 'Partial'].map(function (o) {
+        var on = marks[id] === o;
+        return { label: o, pressed: on ? 'true' : 'false', style: base_ + (on ? col[o] : 'background: #ffffff; color: #242424; border: 1px solid #E3E5E8;'), pick: function () { var m = Object.assign({}, self.state.marks); m[id] = o; self.setState({ marks: m, saved: false }); } };
+      }) };
+    });
+    var marked = Object.keys(marks).length;
+    v.summary = marked + ' of 5 marked.' + (marked < 5 ? ' Mark everyone before saving.' : '');
+    v.saved = this.state.saved;
+    v.save = function () { self.setState({ saved: true }); };
+    return v;
+  }
+}
+</script>
+</body>
+</html>

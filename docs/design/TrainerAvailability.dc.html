@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<title>Trainer availability – ECI-Hub</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&amp;display=swap">
+<style>
+body{margin:0;font-family:'Mulish','Avenir',system-ui,sans-serif;background:#F3F4F6}
+a{color:#242424;text-decoration:underline;text-decoration-color:#2EC39B;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#424652}
+:focus-visible{outline:3px solid #2EC39B;outline-offset:2px}
+a[style*="box-shadow"],button{transition:box-shadow .15s ease,transform .15s ease,background-color .15s ease}
+a[style*="box-shadow"]:hover{box-shadow:0 2px 4px rgba(36,36,36,0.08),0 14px 32px rgba(36,36,36,0.12)!important;transform:translateY(-1px)}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 900px; box-sizing: border-box; background: #F3F4F6; display: flex; flex-direction: column; font-family: 'Mulish', 'Avenir', system-ui, sans-serif; color: #424652;">
+
+<div style="background: #242424; padding: 16px 20px; display: flex; align-items: center; gap: 12px;"><a href="TrainerSessions.dc.html" aria-label="Back" style="color: #ffffff; text-decoration: none; font-size: 20px;">←</a><span style="color: #ffffff; font-size: 17px; font-weight: 800;">My availability</span></div><div style="padding: 20px; display: flex; flex-direction: column; gap: 18px; flex-grow: 1;"><div><p style="margin: 0 0 4px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #242424;">Step 1</p><h1 style="margin: 0; color: #242424; font-size: 22px; font-weight: 800;">Tap the days you can work</h1></div><div style="display: flex; justify-content: space-between; align-items: center;"><button type="button" aria-label="Previous month" style="width: 44px; height: 44px; border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); background: #ffffff; font: inherit;">←</button><strong style="color: #242424; font-size: 16px;">November 2026</strong><button type="button" aria-label="Next month" style="width: 44px; height: 44px; border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); background: #ffffff; font: inherit;">→</button></div><div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px;"><sc-for list="{{wd}}" as="w" hint-placeholder-count="7"><span style="text-align: center; font-size: 12px; font-weight: 800;">{{w}}</span></sc-for><sc-for list="{{cells}}" as="c" hint-placeholder-count="35"><button type="button" aria-label="{{c.label}}" aria-pressed="{{c.pressed}}" onClick="{{c.go}}" style="{{c.style}}">{{c.n}}</button></sc-for></div><div style="display: flex; gap: 14px; font-size: 12px;"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 14px; border-radius: 4px; background: #2EC39B;"></span>Available</span><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 14px; height: 14px; border-radius: 4px; background: #242424;"></span>Assigned</span></div><p aria-live="polite" style="margin: 0; color: #242424; font-size: 14px; font-weight: 700;">{{selText}}</p><div style="border-top: 1px solid #E3E5E8; padding-top: 18px;"><p style="margin: 0 0 4px; font-size: 12px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #242424;">Step 2</p><h2 style="margin: 0 0 14px; color: #242424; font-size: 20px; font-weight: 800;">Set your times</h2><div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;"><label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: #242424; grid-column: span 1;">From<input type="time" value="08:00" style="box-sizing: border-box; width: 100%; height: 46px; padding: 0 14px; font: inherit; font-size: 15px; color: #242424; background: #ffffff; border: 1px solid #8A8D96; border-radius: 6px;"></label><label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 700; color: #242424; grid-column: span 1;">To<input type="time" value="17:00" style="box-sizing: border-box; width: 100%; height: 46px; padding: 0 14px; font: inherit; font-size: 15px; color: #242424; background: #ffffff; border: 1px solid #8A8D96; border-radius: 6px;"></label></div><p style="margin: 10px 0 0; font-size: 13px;">Applies to every selected day. <a href="#">Different times for some days</a></p></div><button type="button" onClick="{{save}}" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 22px; font-size: 16px; font-weight: 700; border-radius: 4px; font-family: inherit; cursor: pointer; text-decoration: none; box-sizing: border-box; white-space: nowrap; background: {{accent}}; color: #242424; border: 0;width: 100%;">Save availability</button><sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 12px; align-items: flex-start; background: #E8F8F3; border-radius: 6px; padding: 14px 16px; color: #242424; font-size: 14px; line-height: 1.6;"><span style="flex-shrink: 0; margin-top: 1px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v6M12 7.5v.5"></path></svg></span><span>Saved. ECI can now schedule you on these days.</span></div></sc-if></div><nav aria-label="Trainer" style="display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid #E3E5E8; background: #ffffff;"><a href="TrainerSessions.dc.html" style="padding: 14px 0; text-align: center; font-size: 13px; text-decoration: none; color: #424652;">Sessions</a><a href="TrainerAvailability.dc.html" aria-current="page" style="padding: 14px 0; text-align: center; font-size: 13px; font-weight: 800; text-decoration: none; color: #242424; box-shadow: inset 0 3px 0 #2EC39B;">Availability</a><a href="TrainerProfile.dc.html" style="padding: 14px 0; text-align: center; font-size: 13px; text-decoration: none; color: #424652;">Profile</a></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent": {"editor": "color", "default": "#2EC39B", "options": ["#2EC39B", "#242424"]}, "ink": {"editor": "color", "default": "#242424", "options": ["#242424", "#424652"]}, "$preview": {"width": 390, "height": 900}}'>
+function base(c) {
+  return { accent: c.props.accent ?? '#2EC39B', ink: c.props.ink ?? '#242424' };
+}
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = {"sel": {"18": true, "19": true, "20": true}, "saved": false}; }
+  renderVals() {
+    var self = this, v = base(this), s = this.state;
+    v.set = function (k, val) { return function () { var o = {}; o[k] = val; self.setState(o); }; };
+
+    var sel = s.sel || { 18: true, 19: true, 20: true };
+    var assigned = { 16: 1, 23: 1, 24: 1 };
+    var cells = [];
+    for (var i = 0; i < 35; i++) {
+      var n = i - 5; var ok = n >= 1 && n <= 30; var we = (i % 7) >= 5;
+      var on = ok && !!sel[n]; var as = ok && !!assigned[n];
+      var st = 'height: 44px; border-radius: 6px; font: inherit; font-size: 15px; font-weight: 700; ';
+      st += !ok ? 'background: transparent; border: 0; color: transparent;' : as ? 'background: #242424; color: #ffffff; border: 0;' : on ? 'background: #2EC39B; color: #242424; border: 0;' : 'background: #ffffff; color: ' + (we ? '#8A8D96' : '#242424') + '; border: 1px solid #E3E5E8;';
+      (function (n, ok, as) { cells.push({ n: ok ? String(n) : '', style: st, pressed: on ? 'true' : 'false', label: ok ? (as ? n + ' November, assigned' : n + ' November') : 'blank', go: function () { if (!ok || as) return; var c = Object.assign({}, self.state.sel || sel); c[n] = !c[n]; self.setState({ sel: c }); } }); })(n, ok, as);
+    }
+    v.cells = cells; var k = Object.keys(sel).filter(function (x) { return sel[x]; });
+    v.selText = k.length === 0 ? 'No days selected' : k.length + (k.length === 1 ? ' day selected: ' : ' days selected: ') + k.sort(function (a, b) { return a - b; }).join(', ') + ' Nov';
+    v.wd = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
+    v.saved = !!s.saved; v.save = function () { self.setState({ saved: true }); };
+
+    return v;
+  }
+}
+</script>
+</body>
+</html>

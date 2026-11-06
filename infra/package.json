@@ -1,0 +1,20 @@
+{
+  "name": "eci-hub-infra",
+  "private": true,
+  "scripts": {
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy:staging": "cdk deploy EciHub-staging",
+    "deploy:production": "cdk deploy EciHub-production"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "2.175.0",
+    "constructs": "10.4.2"
+  },
+  "devDependencies": {
+    "aws-cdk": "2.1000.2",
+    "ts-node": "10.9.2",
+    "typescript": "5.7.2",
+    "@types/node": "22.10.2"
+  }
+}

@@ -1,0 +1,482 @@
+// ECI-Hub platform data model. Source: docs/spec.md "Data model".
+// Change with `npm run db:migrate -- --name <change>`; never edit applied migrations.
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum DeliveryType {
+  ELEARNING
+  VIRTUAL_CLASSROOM
+  IN_PERSON
+}
+
+enum CourseStatus {
+  DRAFT
+  PUBLISHED
+  WITHDRAWN
+}
+
+enum SessionStatus {
+  DRAFT
+  PUBLISHED
+  FULL
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+enum MeetingPlatform {
+  TEAMS
+  ZOOM
+}
+
+enum ElearningFulfilment {
+  ADMIN_TASK
+  EMAIL_PROVIDER
+  API
+  SCORM
+}
+
+enum VenueRelease {
+  ON_CONFIRMATION
+  AFTER_APPROVAL
+}
+
+enum Role {
+  DELEGATE
+  BOOKER
+  TRAINER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum AccountStatus {
+  APPLIED
+  ACTIVE
+  ON_HOLD
+  CLOSED
+  DECLINED
+}
+
+enum MemberRole {
+  MAIN_BOOKER
+  BOOKER
+}
+
+enum MemberStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  REMOVED
+}
+
+enum PaymentMethod {
+  CARD
+  ACCOUNT
+}
+
+enum BookingStatus {
+  PAYMENT_PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum AttendeeStatus {
+  DETAILS_MISSING
+  INVITED
+  REGISTERED
+  APPROVED
+  ATTENDED
+  NO_SHOW
+  CERTIFIED
+  CANCELLED
+}
+
+enum ApprovalStatus {
+  NOT_REQUIRED
+  PENDING
+  APPROVED
+  RETURNED
+}
+
+enum StatementStatus {
+  OPEN
+  ISSUED
+  PAID
+  OVERDUE
+}
+
+enum TaskType {
+  ELEARNING_ENROLMENT
+  REGISTRATION_APPROVAL
+  CERTIFICATE_UPLOAD
+  DATE_CHANGE
+  ACCOUNT_APPLICATION
+  BOOKER_APPROVAL
+  MONTH_END_BILLING
+  EMAIL_BOUNCE
+  INTEGRATION_FAILURE
+}
+
+enum TaskStatus {
+  OPEN
+  DONE
+  DISMISSED
+}
+
+model Subject {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  slug                 String   @unique
+  live                 Boolean  @default(true)
+  placesLeftDisplay    String   @default("WHEN_LOW") // ALWAYS | WHEN_LOW | NEVER
+  changeCutoffHours    Int      @default(24)
+  registrationSet      String   @default("default") // which question set registration uses
+  approvalRequired     Boolean  @default(false)
+  courses              Course[]
+}
+
+model Course {
+  id               String              @id @default(cuid())
+  slug             String              @unique
+  title            String
+  subjectId        String
+  subject          Subject             @relation(fields: [subjectId], references: [id])
+  deliveryType     DeliveryType
+  status           CourseStatus        @default(DRAFT)
+  shortDescription String
+  description      String
+  durationText     String
+  pricePence       Int
+  vatRatePercent   Int                 @default(20)
+  placesPerSession Int?
+  validityYears    Int?
+  accreditation    String?
+  photoUrl         String?
+  photoAlt         String?
+  faqs             Json                @default("[]")
+  // Virtual classroom
+  meetingPlatform  MeetingPlatform?
+  meetingHost      String?
+  // In person
+  defaultVenueId   String?
+  defaultVenue     Venue?              @relation(fields: [defaultVenueId], references: [id])
+  venueRelease     VenueRelease        @default(ON_CONFIRMATION)
+  // eLearning
+  provider         String?
+  fulfilment       ElearningFulfilment?
+  providerEmail    String?
+  daysToComplete   Int?
+  // SEO
+  seoTitle         String?
+  seoDescription   String?
+  socialImageUrl   String?
+  sessions         Session[]
+  bookings         Booking[]
+  certificates     Certificate[]
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+}
+
+model Venue {
+  id         String    @id @default(cuid())
+  name       String
+  address    String
+  postcode   String
+  directions String?
+  isClientSite Boolean @default(false)
+  courses    Course[]
+  sessions   Session[]
+}
+
+model Session {
+  id           String        @id @default(cuid())
+  courseId     String
+  course       Course        @relation(fields: [courseId], references: [id])
+  startsAt     DateTime
+  endsAt       DateTime
+  capacity     Int
+  status       SessionStatus @default(DRAFT)
+  venueId      String?
+  venue        Venue?        @relation(fields: [venueId], references: [id])
+  trainerId    String?
+  trainer      Person?       @relation("TrainerSessions", fields: [trainerId], references: [id])
+  meetingId    String?
+  joinUrl      String?
+  bookings     Booking[]
+  waitlist     WaitlistEntry[]
+  createdAt    DateTime      @default(now())
+  @@index([startsAt])
+}
+
+model Person {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  firstName       String
+  lastName        String
+  mobile          String?
+  dateOfBirth     DateTime?
+  employer        String?
+  schemeIds       Json      @default("{}") // { skillguard, compex, eusr }
+  roles           Role[]    @default([DELEGATE])
+  marketingOptIn  Boolean   @default(false)
+  totpSecret      String?   // staff and trainers only
+  memberships     AccountMember[]
+  bookingsMade    Booking[]  @relation("Booker")
+  attendances     Attendee[]
+  certificates    Certificate[]
+  trainerSessions Session[]  @relation("TrainerSessions")
+  trainerProfile  TrainerProfile?
+  availability    Availability[]
+  waitlist        WaitlistEntry[]
+  loginCodes      LoginCode[]
+  createdAt       DateTime  @default(now())
+}
+
+model LoginCode {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id])
+  codeHash  String
+  expiresAt DateTime
+  attempts  Int      @default(0)
+  usedAt    DateTime?
+}
+
+model Account {
+  id              String          @id @default(cuid())
+  company         String
+  companyNumber   String
+  vatNumber       String?
+  registeredAddress String
+  invoiceAddress  String?
+  accountsName    String
+  accountsEmail   String
+  creditLimitPence Int            @default(0)
+  paymentTermsDays Int            @default(30)
+  poRule          String          @default("NONE") // NONE | PER_BOOKING | PER_ACCOUNT
+  status          AccountStatus   @default(APPLIED)
+  members         AccountMember[]
+  bookings        Booking[]
+  statements      Statement[]
+  createdAt       DateTime        @default(now())
+}
+
+model AccountMember {
+  id        String       @id @default(cuid())
+  accountId String
+  account   Account      @relation(fields: [accountId], references: [id])
+  personId  String
+  person    Person       @relation(fields: [personId], references: [id])
+  role      MemberRole   @default(BOOKER)
+  status    MemberStatus @default(PENDING_APPROVAL)
+  @@unique([accountId, personId])
+}
+
+model Booking {
+  id            String        @id @default(cuid())
+  reference     String        @unique
+  bookerId      String
+  booker        Person        @relation("Booker", fields: [bookerId], references: [id])
+  courseId      String
+  course        Course        @relation(fields: [courseId], references: [id])
+  sessionId     String?
+  session       Session?      @relation(fields: [sessionId], references: [id])
+  accountId     String?
+  account       Account?      @relation(fields: [accountId], references: [id])
+  places        Int
+  method        PaymentMethod
+  poNumber      String?
+  subtotalPence Int
+  vatPence      Int
+  totalPence    Int
+  status        BookingStatus @default(PAYMENT_PENDING)
+  holdExpiresAt DateTime?
+  attendees     Attendee[]
+  payments      Payment[]
+  statementLines StatementLine[]
+  createdAt     DateTime      @default(now())
+}
+
+model Attendee {
+  id           String         @id @default(cuid())
+  bookingId    String
+  booking      Booking        @relation(fields: [bookingId], references: [id])
+  personId     String?
+  person       Person?        @relation(fields: [personId], references: [id])
+  status       AttendeeStatus @default(DETAILS_MISSING)
+  registration Registration?
+  enrolment    Enrolment?
+}
+
+model Registration {
+  id          String         @id @default(cuid())
+  attendeeId  String         @unique
+  attendee    Attendee       @relation(fields: [attendeeId], references: [id])
+  answers     Json
+  fileKeys    String[]       // S3 keys in the ID bucket (auto-deleted after 30 days)
+  approval    ApprovalStatus @default(NOT_REQUIRED)
+  submittedAt DateTime       @default(now())
+}
+
+model Enrolment {
+  id          String    @id @default(cuid())
+  attendeeId  String    @unique
+  attendee    Attendee  @relation(fields: [attendeeId], references: [id])
+  provider    String
+  packSentAt  DateTime?
+  enrolledAt  DateTime?
+  deadline    DateTime?
+  completedAt DateTime?
+}
+
+model WaitlistEntry {
+  id          String    @id @default(cuid())
+  sessionId   String
+  session     Session   @relation(fields: [sessionId], references: [id])
+  personId    String
+  person      Person    @relation(fields: [personId], references: [id])
+  places      Int       @default(1)
+  position    Int
+  offerToken  String?   @unique
+  offerExpiresAt DateTime?
+  createdAt   DateTime  @default(now())
+}
+
+model Payment {
+  id               String   @id @default(cuid())
+  bookingId        String
+  booking          Booking  @relation(fields: [bookingId], references: [id])
+  stripeIntentId   String   @unique
+  amountPence      Int
+  refundedPence    Int      @default(0)
+  status           String
+  createdAt        DateTime @default(now())
+}
+
+model Statement {
+  id            String          @id @default(cuid())
+  accountId     String
+  account       Account         @relation(fields: [accountId], references: [id])
+  month         String          // YYYY-MM
+  status        StatementStatus @default(OPEN)
+  xeroInvoiceNo String?
+  issuedAt      DateTime?
+  dueAt         DateTime?
+  paidAt        DateTime?
+  lines         StatementLine[]
+  @@unique([accountId, month])
+}
+
+model StatementLine {
+  id          String    @id @default(cuid())
+  statementId String
+  statement   Statement @relation(fields: [statementId], references: [id])
+  bookingId   String
+  booking     Booking   @relation(fields: [bookingId], references: [id])
+  description String
+  netPence    Int
+  vatPence    Int
+}
+
+model Certificate {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  issuedAt  DateTime
+  expiresAt DateTime?
+  fileKey   String?
+}
+
+model TrainerProfile {
+  id             String   @id @default(cuid())
+  personId       String   @unique
+  person         Person   @relation(fields: [personId], references: [id])
+  subjects       String[]
+  homeBase       String?
+  qualifications Json     @default("[]") // [{ name, issuer, expiresAt, fileKey }]
+}
+
+model Availability {
+  id        String   @id @default(cuid())
+  personId  String
+  person    Person   @relation(fields: [personId], references: [id])
+  date      DateTime @db.Date
+  fromTime  String   // HH:mm
+  toTime    String
+  @@unique([personId, date])
+}
+
+model Task {
+  id         String     @id @default(cuid())
+  type       TaskType
+  status     TaskStatus @default(OPEN)
+  title      String
+  detail     String?
+  recordType String     // e.g. "Attendee", "Account", "Statement"
+  recordId   String
+  payload    Json       @default("{}")
+  assigneeId String?
+  dueAt      DateTime?
+  createdAt  DateTime   @default(now())
+  doneAt     DateTime?
+  @@index([status, type])
+}
+
+model Deal {
+  id        String   @id @default(cuid())
+  pipeline  String   // CONSULTANCY | COMPEX | ELEARNING | THAMES_WATER | GENERAL
+  stage     String
+  company   String
+  contact   String
+  email     String
+  phone     String?
+  valuePence Int?
+  ownerId   String?
+  notes     String?
+  source    String?  // ENQUIRY | HOOK | MANUAL
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model EmailTemplate {
+  id       String @id @default(cuid())
+  trigger  String @unique
+  subject  String
+  blocks   Json   // [{ type: heading|text|summary|code|button|footer, ... }]
+}
+
+model EmailLog {
+  id        String   @id @default(cuid())
+  to        String
+  trigger   String
+  status    String   // QUEUED | SENT | DELIVERED | OPENED | BOUNCED
+  personId  String?
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  recordType String
+  recordId   String
+  before     Json?
+  after      Json?
+  createdAt  DateTime @default(now())
+  @@index([recordType, recordId])
+}
+
+model Setting {
+  key   String @id
+  value Json
+}

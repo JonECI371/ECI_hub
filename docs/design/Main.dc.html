@@ -1,0 +1,426 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ECI-Hub homepage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@300;400;500;600;700;800;900&amp;display=swap">
+<style>
+body{margin:0;font-family:'Mulish','Avenir',system-ui,sans-serif;background:#F3F4F6}
+a{color:#242424;text-decoration:underline;text-decoration-color:#2EC39B;text-decoration-thickness:2px;text-underline-offset:3px}a:hover{color:#424652}
+:focus-visible{outline:3px solid #2EC39B;outline-offset:2px}
+a[style*="box-shadow"],button{transition:box-shadow .15s ease,transform .15s ease,background-color .15s ease}
+a[style*="box-shadow"]:hover{box-shadow:0 2px 4px rgba(36,36,36,0.08),0 14px 32px rgba(36,36,36,0.12)!important;transform:translateY(-1px)}
+</style>
+</helmet>
+
+<div style="width: 1280px; min-height: 4560px; box-sizing: border-box; background: #F3F4F6; display: flex; flex-direction: column;">
+
+  <div style="background: #242424; padding: 0 80px; height: 40px; display: flex; align-items: center; justify-content: space-between;">
+    <div style="display: flex; gap: 24px;">
+      <span style="color: rgba(255,255,255,0.6); font-size: 12px;">support@eci-hub.co.uk</span>
+      <span style="color: rgba(255,255,255,0.6); font-size: 12px;">+44 (0) 1932 963463</span>
+    </div>
+    <span style="color: rgba(255,255,255,0.6); font-size: 12px;">Sunbury-on-Thames and nationwide on-site delivery</span>
+  </div>
+
+  <div style="background: {{ink}}; padding: 0 80px; height: 76px; display: flex; align-items: center; justify-content: space-between;">
+    <a href="Main.dc.html" style="display: flex; align-items: center; text-decoration: none"><img src="/_blob/43914910048c4ee9ed61d430b3639b00" alt="ECI-Hub – Engineering Safer Futures" style="height: 52px; width: auto; display: block;"></a>
+    <nav aria-label="Main" style="display: flex; align-items: center; gap: 30px;"><a href="Courses.dc.html" style="color: rgba(255,255,255,0.82); font-size: 14px; text-decoration: none;">Courses</a><a href="Enquiry.dc.html" style="color: rgba(255,255,255,0.82); font-size: 14px; text-decoration: none;">Consultancy</a><a href="Hook.dc.html" style="color: rgba(255,255,255,0.82); font-size: 14px; text-decoration: none;">Free tools</a><a href="Main.dc.html" style="color: rgba(255,255,255,0.82); font-size: 14px; text-decoration: none;">About</a><a href="Login.dc.html" style="color: rgba(255,255,255,0.82); font-size: 14px; text-decoration: none;">Log in</a><a href="Courses.dc.html" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 14px; font-size: 13px; font-weight: 700; border-radius: 4px; font-family: inherit; cursor: pointer; text-decoration: none; box-sizing: border-box; white-space: nowrap; background: {{accent}}; color: #242424; border: 0;">Book a course</a></nav>
+  </div>
+
+  <div style="background-color: #242424; background-image: repeating-linear-gradient(135deg, rgba(46,195,155,0.07) 0 2px, transparent 2px 16px); background-size: 50% 100%; background-position: right top; background-repeat: no-repeat; padding: 88px 80px 72px; display: flex; gap: 64px; align-items: flex-start;">
+    <div style="flex-grow: 1; max-width: 620px;">
+      <p style="margin: 0 0 20px; color: {{accent}}; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">EC and I safety engineering</p>
+      <h1 style="margin: 0 0 24px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 58px; font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;">Competence that holds up when it matters</h1>
+      <p style="margin: 0 0 36px; color: rgba(255,255,255,0.72); font-size: 17px; line-height: 1.7;">Accredited training and specialist consultancy for COMAH, chemical, oil and gas, and water sites. Delivered by engineers who have worked on them.</p>
+      <div style="display: flex; gap: 14px;">
+        <a href="Courses.dc.html" style="background: {{accent}}; color: #242424; font-size: 15px; font-weight: 600; padding: 16px 30px; border-radius: 4px; text-decoration: none">View all courses</a>
+        <a href="#contact" style="border: 1px solid rgba(255,255,255,0.32); color: #ffffff; font-size: 15px; font-weight: 500; padding: 16px 30px; border-radius: 4px; text-decoration: none">Speak to a consultant</a>
+      </div>
+      <div style="margin-top: 36px; position: relative; max-width: 560px;">
+        <label for="q" style="display: block; margin: 0 0 8px; color: rgba(255,255,255,0.72); font-size: 13px;">Find a course</label>
+        <input id="q" type="search" value="{{query}}" onInput="{{onQuery}}" placeholder="Try CompEx, water hygiene, DSEAR" autocomplete="off" style="box-sizing: border-box; width: 100%; height: 52px; padding: 0 16px; font: inherit; font-size: 15px; color: #242424; background: #ffffff; border: 0; border-radius: 4px;">
+        <sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
+          <div role="listbox" aria-label="Matching courses" style="position: absolute; left: 0; right: 0; top: 86px; z-index: 5; background: #ffffff; border: 1px solid #8A8D96; border-radius: 6px; box-shadow: 0 12px 32px rgba(0,0,0,0.25); overflow: hidden;">
+            <sc-for list="{{results}}" as="r" hint-placeholder-count="3">
+              <a href="Course.dc.html" role="option" style="display: flex; justify-content: space-between; gap: 12px; padding: 14px 16px; border-bottom: 1px solid #E6E6E6; color: #242424; font-size: 14px; text-decoration: none"><span style="font-weight: 600;">{{r.title}}</span><span style="color: #424652; font-size: 13px;">{{r.meta}}</span></a>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </div>
+    <div style="width: 380px; background: #424652; border-radius: 6px; padding: 32px;">
+      <p style="margin: 0 0 20px; color: {{accent}}; font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Next available dates</p>
+      <div style="display: flex; flex-direction: column; gap: 1px; background: rgba(255,255,255,0.12);">
+        <div style="background: #424652; padding: 14px 0; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">CompEx ExF Foundation</p>
+            <p style="margin: 4px 0 0; color: rgba(255,255,255,0.58); font-size: 12px;">Mon 23 to Tue 24 November 2026</p>
+          </div>
+          <span style="color: {{accent}}; font-size: 13px; font-weight: 600;">3 places left</span>
+        </div>
+        <div style="background: #424652; padding: 14px 0; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">EUSR National Water Hygiene</p>
+            <p style="margin: 4px 0 0; color: rgba(255,255,255,0.58); font-size: 12px;">eLearning · start any time</p>
+          </div>
+          <span style="color: rgba(255,255,255,0.58); font-size: 13px;">12 of 12 places left</span>
+        </div>
+        <div style="background: #424652; padding: 14px 0; display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <p style="margin: 0; color: #ffffff; font-size: 14px; font-weight: 600;">DSEAR and ATEX Awareness</p>
+            <p style="margin: 4px 0 0; color: rgba(255,255,255,0.58); font-size: 12px;">Wed 25 November 2026</p>
+          </div>
+          <span style="color: rgba(255,255,255,0.58); font-size: 13px;">12 of 12 places left</span>
+        </div>
+      </div>
+      <a href="Courses.dc.html" style="display: block; margin-top: 20px; color: {{accent}}; font-size: 13px; font-weight: 600; text-decoration: none">See the full calendar →</a>
+    </div>
+  </div>
+
+    <div style="background: #ffffff; padding: 40px 80px; border-bottom: 1px solid #E3E5E8;">
+    <p style="margin: 0 0 18px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Ready to book?</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #E3E5E8; border: 1px solid #E3E5E8;"><a href="Courses.dc.html" style="display: block; background: #ffffff; padding: 26px 24px; text-decoration: none"><h3 style="margin: 0 0 8px; color: {{ink}}; font-size: 19px; font-weight: 700;">Book a course</h3><p style="margin: 0 0 14px; color: #424652; font-size: 14px; line-height: 1.6;">For yourself or your team. Pay by card, Apple Pay or Google Pay. Your account is set up as you book.</p><span style="color: #242424; font-size: 13px; font-weight: 700;">Choose a course →</span></a><a href="CorporateRequest.dc.html" style="display: block; background: {{ink}}; padding: 26px 24px; text-decoration: none"><h3 style="margin: 0 0 8px; color: #ffffff; font-size: 19px; font-weight: 700;">Open a credit account</h3><p style="margin: 0 0 14px; color: rgba(255,255,255,0.78); font-size: 14px; line-height: 1.6;">Book any course for your team and pay one invoice at the end of each month.</p><span style="color: {{accent}}; font-size: 13px; font-weight: 700;">Apply for an account →</span></a></div>
+  </div>
+
+  <div style="background: #E6E6E6; padding: 26px 80px; display: flex; align-items: center; justify-content: space-between;">
+    <span style="color: #424652; font-size: 13px;">Accredited and delivered in partnership with</span>
+    <div style="display: flex; gap: 10px;">
+      <span style="background: #ffffff; border: 1px solid #E3E5E8; color: #424652; font-size: 12px; font-weight: 600; padding: 9px 18px; border-radius: 4px;">CompEx</span>
+      <span style="background: #ffffff; border: 1px solid #E3E5E8; color: #424652; font-size: 12px; font-weight: 600; padding: 9px 18px; border-radius: 4px;">EUSR</span>
+      <span style="background: #ffffff; border: 1px solid #E3E5E8; color: #424652; font-size: 12px; font-weight: 600; padding: 9px 18px; border-radius: 4px;">Cogent Skills</span>
+      <span style="background: #ffffff; border: 1px solid #E3E5E8; color: #424652; font-size: 12px; font-weight: 600; padding: 9px 18px; border-radius: 4px;">Trainor</span>
+      <span style="background: #ffffff; border: 1px solid #E3E5E8; color: #424652; font-size: 12px; font-weight: 600; padding: 9px 18px; border-radius: 4px;">Achilles UVDB</span>
+    </div>
+  </div>
+
+  <div id="training" style="background: #F3F4F6; padding: 80px;">
+    <p style="margin: 0 0 12px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">What we do</p>
+    <h2 style="margin: 0 0 12px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.02em;">Five disciplines, one competence framework</h2>
+    <p style="margin: 0 0 40px; color: #424652; font-size: 16px; line-height: 1.7; max-width: 620px;">From awareness through to assessed competence and duty holder level, mapped so your team can see where they are and what comes next.</p>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: #E3E5E8; border: 1px solid #E3E5E8;">
+      <div style="background: #ffffff; padding: 32px 30px;">
+        <p style="margin: 0 0 18px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 28px; font-weight: 700;">01</p>
+        <h3 style="margin: 0 0 10px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">Hazardous area</h3>
+        <p style="margin: 0 0 20px; color: #424652; font-size: 14px; line-height: 1.7;">CompEx ExA, ExF, Ex12 and Ex14. Awareness through to design and duty holder responsibilities.</p>
+        <a href="#training" style="font-size: 13px; font-weight: 600;">Explore training →</a>
+      </div>
+      <div style="background: #ffffff; padding: 32px 30px;">
+        <p style="margin: 0 0 18px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 28px; font-weight: 700;">02</p>
+        <h3 style="margin: 0 0 10px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">DSEAR compliance</h3>
+        <p style="margin: 0 0 20px; color: #424652; font-size: 14px; line-height: 1.7;">Awareness training, risk assessment and verification against DSEAR and the ATEX directives.</p>
+        <a href="#training" style="font-size: 13px; font-weight: 600;">Explore training →</a>
+      </div>
+      <div style="background: #ffffff; padding: 32px 30px;">
+        <p style="margin: 0 0 18px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 28px; font-weight: 700;">03</p>
+        <h3 style="margin: 0 0 10px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">Process safety</h3>
+        <p style="margin: 0 0 20px; color: #424652; font-size: 14px; line-height: 1.7;">Cogent accredited awareness, foundation, operations and leadership programmes.</p>
+        <a href="#training" style="font-size: 13px; font-weight: 600;">Explore training →</a>
+      </div>
+      <div style="background: #ffffff; padding: 32px 30px;">
+        <p style="margin: 0 0 18px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 28px; font-weight: 700;">04</p>
+        <h3 style="margin: 0 0 10px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">Functional safety</h3>
+        <p style="margin: 0 0 20px; color: #424652; font-size: 14px; line-height: 1.7;">Foundation through to SIL determination and verification under IEC 61511.</p>
+        <a href="#training" style="font-size: 13px; font-weight: 600;">Explore training →</a>
+      </div>
+      <div style="background: #ffffff; padding: 32px 30px;">
+        <p style="margin: 0 0 18px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 28px; font-weight: 700;">05</p>
+        <h3 style="margin: 0 0 10px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">Water and utilities</h3>
+        <p style="margin: 0 0 20px; color: #424652; font-size: 14px; line-height: 1.7;">EUSR National Water Hygiene, CAT and Genny, safety passports and SHEA Water.</p>
+        <a href="#training" style="font-size: 13px; font-weight: 600;">Explore training →</a>
+      </div>
+      <div style="background: {{ink}}; padding: 32px 30px; display: flex; flex-direction: column; justify-content: center;">
+        <h3 style="margin: 0 0 10px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 20px; font-weight: 700;">Not sure what your team needs?</h3>
+        <p style="margin: 0 0 20px; color: rgba(255,255,255,0.7); font-size: 14px; line-height: 1.7;">We will map your roles against the competence framework and tell you where the gaps are.</p>
+        <a href="#contact" style="color: {{accent}}; font-size: 13px; font-weight: 600;">Request a gap analysis →</a>
+      </div>
+    </div>
+  </div>
+
+  
+
+  <div style="background: {{ink2}}; padding: 56px 80px;">
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 32px;">
+      <div>
+        <p style="margin: 0 0 6px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">[NUMBER]+</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.72); font-size: 14px;">Delegates trained</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 6px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">[NUMBER]%</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.72); font-size: 14px;">Positive delegate feedback</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 6px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">20 yrs</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.72); font-size: 14px;">EC and I safety experience</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 6px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 40px; font-weight: 700; letter-spacing: -0.02em;">[NUMBER]</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.72); font-size: 14px;">COMAH sites supported</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="consultancy" style="background: #F3F4F6; padding: 80px;">
+    <p style="margin: 0 0 12px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Consultancy</p>
+    <h2 style="margin: 0 0 40px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.02em;">Specialist support beyond the classroom</h2>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: #E3E5E8; border: 1px solid #E3E5E8;">
+      <div style="background: #ffffff; padding: 30px;">
+        <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">Hazardous area classification</h3>
+        <p style="margin: 0 0 16px; color: #424652; font-size: 14px; line-height: 1.7;">Zone drawings, area classification reports and equipment schedules to BS EN 60079-10.</p>
+        <a href="#contact" style="font-size: 13px; font-weight: 600;">Discuss a project →</a>
+      </div>
+      <div style="background: #ffffff; padding: 30px;">
+        <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">DSEAR risk assessment</h3>
+        <p style="margin: 0 0 16px; color: #424652; font-size: 14px; line-height: 1.7;">Assessment, action planning and the documented evidence your regulator expects to see.</p>
+        <a href="#contact" style="font-size: 13px; font-weight: 600;">Discuss a project →</a>
+      </div>
+      <div style="background: #ffffff; padding: 30px;">
+        <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">Functional safety and SIL</h3>
+        <p style="margin: 0 0 16px; color: #424652; font-size: 14px; line-height: 1.7;">SIL determination, verification and safety requirement specifications under IEC 61511.</p>
+        <a href="#contact" style="font-size: 13px; font-weight: 600;">Discuss a project →</a>
+      </div>
+      <div style="background: #ffffff; padding: 30px;">
+        <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">EC and I design assurance</h3>
+        <p style="margin: 0 0 16px; color: #424652; font-size: 14px; line-height: 1.7;">Independent review of electrical, control and instrumentation design on capital projects.</p>
+        <a href="#contact" style="font-size: 13px; font-weight: 600;">Discuss a project →</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="sectors" style="background: #ffffff; padding: 80px;">
+    <p style="margin: 0 0 12px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Sectors we serve</p>
+    <h2 style="margin: 0 0 40px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.02em;">The same hazard, four different languages</h2>
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 20px;">
+      <a href="#sectors" style="display: block; background: {{ink}}; border-radius: 6px; padding: 30px 26px; min-height: 180px; text-decoration: none">
+        <p style="margin: 0 0 14px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 22px; font-weight: 700;">01</p>
+        <h3 style="margin: 0 0 8px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 18px; font-weight: 700;">Chemical and COMAH</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.68); font-size: 13px; line-height: 1.6;">Upper and lower tier sites, safety reports and competence evidence.</p>
+      </a>
+      <a href="#sectors" style="display: block; background: {{ink}}; border-radius: 6px; padding: 30px 26px; min-height: 180px; text-decoration: none">
+        <p style="margin: 0 0 14px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 22px; font-weight: 700;">02</p>
+        <h3 style="margin: 0 0 8px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 18px; font-weight: 700;">Oil and gas</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.68); font-size: 13px; line-height: 1.6;">Terminals, refineries and downstream distribution.</p>
+      </a>
+      <a href="#sectors" style="display: block; background: {{ink}}; border-radius: 6px; padding: 30px 26px; min-height: 180px; text-decoration: none">
+        <p style="margin: 0 0 14px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 22px; font-weight: 700;">03</p>
+        <h3 style="margin: 0 0 8px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 18px; font-weight: 700;">Water and utilities</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.68); font-size: 13px; line-height: 1.6;">Treatment works, sludge digestion and network operations.</p>
+      </a>
+      <a href="#sectors" style="display: block; background: {{ink}}; border-radius: 6px; padding: 30px 26px; min-height: 180px; text-decoration: none">
+        <p style="margin: 0 0 14px; color: {{accent}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 22px; font-weight: 700;">04</p>
+        <h3 style="margin: 0 0 8px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 18px; font-weight: 700;">Pharma and food</h3>
+        <p style="margin: 0; color: rgba(255,255,255,0.68); font-size: 13px; line-height: 1.6;">Solvent handling, dust hazards and combustible powders.</p>
+      </a>
+    </div>
+  </div>
+
+  <div style="background: #E6E6E6; padding: 80px;">
+    <p style="margin: 0 0 12px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">What delegates say</p>
+    <h2 style="margin: 0 0 40px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.02em;">Feedback from the last 12 months</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      <div style="background: #ffffff; border-radius: 6px; padding: 28px;">
+        <p style="margin: 0 0 18px; color: {{ink}}; font-size: 15px; line-height: 1.75;">[DELEGATE QUOTE. Pull real feedback from your course evaluations, tagged to the course it relates to.]</p>
+        <p style="margin: 0; color: {{ink}}; font-size: 13px; font-weight: 600;">[NAME]</p>
+        <p style="margin: 3px 0 0; color: #424652; font-size: 12px;">[ROLE], [COMPANY] · CompEx ExF</p>
+      </div>
+      <div style="background: #ffffff; border-radius: 6px; padding: 28px;">
+        <p style="margin: 0 0 18px; color: {{ink}}; font-size: 15px; line-height: 1.75;">[DELEGATE QUOTE]</p>
+        <p style="margin: 0; color: {{ink}}; font-size: 13px; font-weight: 600;">[NAME]</p>
+        <p style="margin: 3px 0 0; color: #424652; font-size: 12px;">[ROLE], [COMPANY] · EUSR NWH</p>
+      </div>
+      <div style="background: #ffffff; border-radius: 6px; padding: 28px;">
+        <p style="margin: 0 0 18px; color: {{ink}}; font-size: 15px; line-height: 1.75;">[DELEGATE QUOTE]</p>
+        <p style="margin: 0; color: {{ink}}; font-size: 13px; font-weight: 600;">[NAME]</p>
+        <p style="margin: 3px 0 0; color: #424652; font-size: 12px;">[ROLE], [COMPANY] · DSEAR Awareness</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="contact" style="background: {{ink}}; padding: 72px 80px; display: flex; align-items: center; justify-content: space-between; gap: 60px;">
+    <div style="max-width: 620px;">
+      <h2 style="margin: 0 0 14px; color: #ffffff; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 34px; font-weight: 700; letter-spacing: -0.02em;">Training twelve people or more?</h2>
+      <p style="margin: 0; color: rgba(255,255,255,0.72); font-size: 16px; line-height: 1.7;">On-site delivery at your own plant, tailored to your processes and hazards. Usually cheaper than sending everyone away, and the examples are yours.</p>
+    </div>
+    <a href="#contact" style="background: {{accent}}; color: #242424; font-size: 15px; font-weight: 600; padding: 17px 34px; border-radius: 4px; white-space: nowrap; text-decoration: none">Request a quote</a>
+  </div><div style="background: #ffffff; padding: 80px;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 40px;">
+      <div>
+        <p style="margin: 0 0 12px; color: #242424; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;">Scheduled courses</p>
+        <h2 style="margin: 0; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 38px; font-weight: 700; letter-spacing: -0.02em;">Book an open course</h2>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <span style="background: {{ink}}; color: #ffffff; font-size: 13px; font-weight: 500; padding: 10px 18px; border-radius: 4px;">All</span>
+        <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 13px; padding: 10px 18px; border-radius: 4px;">CompEx</span>
+        <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 13px; padding: 10px 18px; border-radius: 4px;">EUSR</span>
+        <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 13px; padding: 10px 18px; border-radius: 4px;">Process safety</span>
+        <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 13px; padding: 10px 18px; border-radius: 4px;">e-Learning</span>
+      </div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; text-decoration: none">
+        <div style="background: {{ink}}; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E8F8F3; color: #242424; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">CompEx</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">Foundation</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">CompEx ExF Foundation</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">Theory-only foundation in hazardous area principles for technical and non-technical staff.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">2 days</span>
+            <span style="color: {{ink}}; font-size: 16px; font-weight: 700; font-family: 'Mulish', 'Avenir', sans-serif;">£450 <span style="font-size: 12px; font-weight: 400; color: #424652;">+ VAT</span></span>
+          </div>
+        </div>
+      </a>
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; text-decoration: none">
+        <div style="background: {{ink}}; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E8F8F3; color: #242424; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">EUSR</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">e-Learning</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">EUSR National Water Hygiene</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">The blue card. Required for anyone working on or near the public water supply.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">Half day</span>
+            <span style="color: {{ink}}; font-size: 16px; font-weight: 700; font-family: 'Mulish', 'Avenir', sans-serif;">£75 <span style="font-size: 12px; font-weight: 400; color: #424652;">+ VAT</span></span>
+          </div>
+        </div>
+      </a>
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; text-decoration: none">
+        <div style="background: {{ink}}; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E8F8F3; color: #242424; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">Thames Water</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">Passport</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">Thames Water Safety Passport</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">Mandatory for anyone working on Thames Water sites or assets. Issued via SkillGuard.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">Half day</span>
+            <span style="color: {{ink}}; font-size: 16px; font-weight: 700; font-family: 'Mulish', 'Avenir', sans-serif;">£[PRICE] <span style="font-size: 12px; font-weight: 400; color: #424652;">+ VAT</span></span>
+          </div>
+        </div>
+      </a>
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; text-decoration: none">
+        <div style="background: {{ink}}; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E8F8F3; color: #242424; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">CompEx</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">Duty holder</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">CompEx Ex12 Responsible Person</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">For those managing hazardous area installations and the people working in them.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">[DURATION]</span>
+            <span style="color: {{ink}}; font-size: 16px; font-weight: 700; font-family: 'Mulish', 'Avenir', sans-serif;">£[PRICE] <span style="font-size: 12px; font-weight: 400; color: #424652;">+ VAT</span></span>
+          </div>
+        </div>
+      </a>
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; text-decoration: none">
+        <div style="background: {{ink}}; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E8F8F3; color: #242424; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">DSEAR</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">Awareness</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">DSEAR and ATEX Awareness</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">What DSEAR requires of duty holders and how it is applied on a live site.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">1 day</span>
+            <span style="color: {{ink}}; font-size: 16px; font-weight: 700; font-family: 'Mulish', 'Avenir', sans-serif;">£[PRICE] <span style="font-size: 12px; font-weight: 400; color: #424652;">+ VAT</span></span>
+          </div>
+        </div>
+      </a>
+      <a href="Course.dc.html" style="border: 0; border-radius: 8px; box-shadow: 0 1px 2px rgba(36,36,36,0.06), 0 6px 20px rgba(36,36,36,0.06); overflow: hidden; display: block; opacity: 0.85; text-decoration: none">
+        <div style="background: #E3E5E8; height: 6px;"></div>
+        <div style="padding: 26px 24px;">
+          <div style="display: flex; gap: 6px; margin-bottom: 14px;">
+            <span style="background: #E6E6E6; color: #424652; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 4px;">EUSR</span>
+            <span style="border: 1px solid #E3E5E8; color: #424652; font-size: 11px; padding: 4px 10px; border-radius: 4px;">Coming soon</span>
+          </div>
+          <h3 style="margin: 0 0 8px; color: {{ink}}; font-family: 'Mulish', 'Avenir', sans-serif; font-size: 19px; font-weight: 700;">EUSR SHEA Water</h3>
+          <p style="margin: 0 0 18px; color: #424652; font-size: 14px; line-height: 1.6;">Safety, health and environmental awareness for the water industry. Launching shortly.</p>
+          <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #E6E6E6; padding-top: 16px;">
+            <span style="color: #424652; font-size: 13px;">[DURATION]</span>
+            <span style="color: #242424; font-size: 13px; font-weight: 600;">Register interest →</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  </div>
+
+  <div id="about" style="background: #242424; padding: 56px 80px 40px;">
+    <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; padding-bottom: 36px; border-bottom: 1px solid rgba(255,255,255,0.12);">
+      <div>
+        <img src="/_blob/43914910048c4ee9ed61d430b3639b00" alt="ECI-Hub" style="height: 44px; width: auto; display: block; margin: 0 0 14px;">
+        <p style="margin: 0 0 8px; color: rgba(255,255,255,0.6); font-size: 13px; line-height: 1.7;">ECFIO Engineering Ltd, trading as ECI-Hub.<br>Company number 09147227.</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 13px; line-height: 1.7;">Summit House, 33 Hanworth Road,<br>Sunbury-on-Thames TW16 5DA</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 14px; color: #ffffff; font-size: 13px; font-weight: 600;">Training</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">CompEx</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">DSEAR</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">Process safety</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 13px;">EUSR</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 14px; color: #ffffff; font-size: 13px; font-weight: 600;">Consultancy</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">Area classification</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">DSEAR assessment</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">Functional safety</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 13px;">Design assurance</p>
+      </div>
+      <div>
+        <p style="margin: 0 0 14px; color: #ffffff; font-size: 13px; font-weight: 600;">Company</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">About us</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">Case studies</p>
+        <p style="margin: 0 0 9px; color: rgba(255,255,255,0.6); font-size: 13px;">Insights</p>
+        <p style="margin: 0; color: rgba(255,255,255,0.6); font-size: 13px;">Contact</p>
+      </div>
+    </div>
+    <div style="padding-top: 24px; display: flex; justify-content: space-between;">
+      <span style="color: rgba(255,255,255,0.45); font-size: 12px;">© 2026 ECFIO Engineering Ltd. All rights reserved.</span>
+      <span style="color: rgba(255,255,255,0.45); font-size: 12px;">Enabling people, protecting places</span>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2EC39B","options":["#2EC39B","#2EC39B","#2EC39B","#242424"]},"ink":{"editor":"color","default":"#242424","options":["#242424","#242424","#424652","#424652"]},"ink2":{"editor":"color","default":"#424652","options":["#424652","#424652","#424652"]},"$preview":{"width":1280,"height":4980}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { query: '' };
+  }
+  renderVals() {
+    var self = this;
+    var all = [
+      { title: 'CompEx ExF Foundation', meta: 'CompEx · In Person' },
+      { title: 'CompEx Ex12 Responsible Person', meta: 'CompEx · In Person' },
+      { title: 'EUSR National Water Hygiene', meta: 'EUSR · eLearning' },
+      { title: 'EUSR SHEA Water', meta: 'EUSR · eLearning' },
+      { title: 'Thames Water Safety Passport', meta: 'Thames Water · Online' },
+      { title: 'DSEAR and ATEX Awareness', meta: 'DSEAR · In Person' }
+    ];
+    var q = (this.state.query || '').trim().toLowerCase();
+    var results = q.length < 2 ? [] : all.filter(function (c) { return (c.title + ' ' + c.meta).toLowerCase().indexOf(q) !== -1; }).slice(0, 5);
+    return {
+      query: this.state.query,
+      onQuery: function (e) { self.setState({ query: e.target.value }); },
+      results: results,
+      hasResults: results.length > 0,
+      accent: this.props.accent ?? '#2EC39B',
+      ink: this.props.ink ?? '#242424',
+      ink2: this.props.ink2 ?? '#424652'
+    };
+  }
+}
+</script>
+</body>
+</html>

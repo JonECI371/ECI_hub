@@ -1,0 +1,12 @@
+# Local Postgres for development: `docker compose up -d`
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: eci
+      POSTGRES_PASSWORD: eci
+      POSTGRES_DB: eci
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+volumes:
+  pgdata:

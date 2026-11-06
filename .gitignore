@@ -1,0 +1,11 @@
+node_modules
+.next
+out
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
+next-env.d.ts
+infra/cdk.out
+infra/node_modules
+.DS_Store

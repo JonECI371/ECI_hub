@@ -10,6 +10,7 @@ import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { sendEmail } from '@/lib/integrations/email';
 import { offerFreedPlaces } from '@/lib/waitlist';
 import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/teams';
+import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -122,11 +123,12 @@ export async function cancelSession(form: FormData) {
     for (const b of s.bookings) {
       await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED' } });
       await tx.attendee.updateMany({ where: { bookingId: b.id }, data: { status: 'CANCELLED' } });
-      for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: process.env.PAYMENTS_MODE === 'stripe' ? 'refund_pending' : 'refunded_test' } });
+      if (!stripeEnabled()) for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: 'refunded_test' } });
     }
     await tx.waitlistEntry.deleteMany({ where: { sessionId: s.id } });
     await tx.auditLog.create({ data: { actorId: me.id, action: 'SESSION_CANCELLED', recordType: 'Session', recordId: s.id, before: { status: s.status }, after: { status: 'CANCELLED', bookings: s.bookings.length } } });
   });
+  if (stripeEnabled()) for (const b of s.bookings) await refundBooking(b.id);
   await cancelSessionMeeting(s.id);
   const when = `${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)}`;
   const people = new Map<string, { email: string; firstName: string; id: string }>();

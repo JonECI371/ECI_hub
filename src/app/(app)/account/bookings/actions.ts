@@ -12,6 +12,7 @@ import { withinCutoff } from '@/lib/portal';
 import { registrationLink } from '@/lib/registration-link';
 import { sendEmail } from '@/lib/integrations/email';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
 
 /** Loads a booking the signed-in person made. Every action checks this on the server. */
@@ -127,11 +128,12 @@ export async function cancelBooking(form: FormData) {
   await db.$transaction(async (tx) => {
     await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED' } });
     await tx.attendee.updateMany({ where: { bookingId: b.id }, data: { status: 'CANCELLED' } });
-    for (const p of b.payments) {
-      if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: process.env.PAYMENTS_MODE === 'stripe' ? 'refund_pending' : 'refunded_test' } });
+    if (!stripeEnabled()) {
+      for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: 'refunded_test' } });
     }
     await tx.auditLog.create({ data: { actorId: me.id, action: 'BOOKING_CANCELLED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CANCELLED', reason } } });
   });
+  if (stripeEnabled()) await refundBooking(b.id);
   if (b.sessionId) await offerFreedPlaces(b.sessionId);
   if (b.sessionId) await syncSessionMeeting(b.sessionId);
   for (const p of [b.booker, ...b.attendees.map((a) => a.person).filter((x) => x && x.id !== b.bookerId)]) {

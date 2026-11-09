@@ -6,9 +6,9 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/format';
 import { sign, verify } from '@/lib/auth';
-import { CheckoutError, MAX_PLACES, confirmCardBooking, createPendingBooking, holdLive } from '@/lib/booking';
-import { sendBookingConfirmation } from '@/lib/notifications';
-import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { CheckoutError, MAX_PLACES, createPendingBooking, holdLive } from '@/lib/booking';
+import { completePaidBooking } from '@/lib/booking-complete';
+import { stripeEnabled } from '@/lib/integrations/payments';
 
 export type CheckoutState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 type CheckoutCookie = { bid: string; exp: number };
@@ -82,18 +82,14 @@ export async function checkoutBookingId(): Promise<string | null> {
  * Disabled when PAYMENTS_MODE=stripe.
  */
 export async function testPayment(form: FormData) {
-  if (process.env.PAYMENTS_MODE === 'stripe') throw new Error('Test payments are switched off.');
+  if (stripeEnabled()) throw new Error('Test payments are switched off.');
   const bid = await checkoutBookingId();
   if (!bid) redirect('/book/outcome?state=expired');
   const b = await db.booking.findUniqueOrThrow({ where: { id: bid } });
   if (b.status === 'CONFIRMED') redirect(`/book/outcome?ref=${b.reference}`);
   if (!holdLive(b)) redirect('/book/outcome?state=expired');
   if (form.get('result') === 'fail') redirect('/book/outcome?state=failed');
-  const { already } = await confirmCardBooking(b.id, `test_${b.reference}_${Date.now()}`);
-  if (!already) {
-    await sendBookingConfirmation(b.id);
-    if (b.sessionId) await syncSessionMeeting(b.sessionId);
-  }
+  await completePaidBooking(b.id, `test_${b.reference}_${Date.now()}`);
   redirect(`/book/outcome?ref=${b.reference}`);
 }
 

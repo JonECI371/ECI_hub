@@ -7,6 +7,9 @@ import { holdLive } from '@/lib/booking';
 import { DeliveryChip, Chip } from '@/components/ui';
 import { HoldTimer } from '@/components/hold-timer';
 import { checkoutBookingId, testPayment } from '../actions';
+import { SITE_URL } from '@/lib/format';
+import { paymentIntentFor, publishableKey, stripeEnabled } from '@/lib/integrations/payments';
+import { StripePay } from '@/components/stripe-pay';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Payment', robots: { index: false } };
@@ -14,12 +17,13 @@ export const metadata: Metadata = { title: 'Payment', robots: { index: false } }
 export default async function PayPage() {
   const bid = await checkoutBookingId();
   if (!bid) redirect('/courses');
-  const b = await db.booking.findUnique({ where: { id: bid }, include: { course: { include: { subject: true } }, session: true, attendees: true } });
+  const b = await db.booking.findUnique({ where: { id: bid }, include: { booker: true, course: { include: { subject: true } }, session: true, attendees: true } });
   if (!b) redirect('/courses');
   if (b.status === 'CONFIRMED') redirect(`/book/outcome?ref=${b.reference}`);
   if (!holdLive(b)) redirect('/book/outcome?state=expired');
 
-  const testMode = process.env.PAYMENTS_MODE !== 'stripe';
+  const testMode = !stripeEnabled();
+  const clientSecret = testMode ? null : await paymentIntentFor(b);
   return (
     <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-20 lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -47,7 +51,10 @@ export default async function PayPage() {
               </div>
             </>
           ) : (
-            <p>Card payments are being connected.</p>
+            <>
+              {publishableKey().startsWith('pk_test_') && <p className="mb-4 rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg"><strong>Stripe sandbox:</strong> no real money moves. Use card 4242 4242 4242 4242, any future date and any 3-digit code.</p>}
+              <StripePay publishableKey={publishableKey()} clientSecret={clientSecret!} label={`Pay ${gbp(b.totalPence)}`} returnUrl={`${SITE_URL}/book/return`} />
+            </>
           )}
           <p className="mt-4 text-[13px]">Secure payment by Stripe. We never see your card details.</p>
         </section>

@@ -104,7 +104,11 @@ export async function confirmCardBooking(bookingId: string, paymentRef: string) 
     const b = await tx.booking.findUniqueOrThrow({ where: { id: bookingId } });
     if (b.status === 'CONFIRMED') return { booking: b, already: true };
     if (b.status !== 'PAYMENT_PENDING') throw new CheckoutError('This booking can no longer be paid.');
-    await tx.payment.create({ data: { bookingId: b.id, stripeIntentId: paymentRef, amountPence: b.totalPence, status: 'succeeded' } });
+    await tx.payment.upsert({
+      where: { stripeIntentId: paymentRef },
+      update: { status: 'succeeded' },
+      create: { bookingId: b.id, stripeIntentId: paymentRef, amountPence: b.totalPence, status: 'succeeded' },
+    });
     const booking = await tx.booking.update({ where: { id: b.id }, data: { status: 'CONFIRMED', holdExpiresAt: null } });
     // A claimed waitlist offer is used up once paid.
     if (b.sessionId) await tx.waitlistEntry.deleteMany({ where: { sessionId: b.sessionId, personId: b.bookerId } });

@@ -9,6 +9,7 @@ import { audit, requireAdmin } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { sendEmail } from '@/lib/integrations/email';
 import { offerFreedPlaces } from '@/lib/waitlist';
+import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/teams';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -88,6 +89,7 @@ export async function addSession(form: FormData) {
     },
   });
   await audit(me.id, 'SESSION_CREATED', 'Session', s.id, undefined, { courseId, startsAt, endsAt, status: s.status });
+  await syncSessionMeeting(s.id);
   revalidatePath('/', 'layout');
   redirect(`/admin/courses/${courseId}?session=${s.id}&msg=sessionadded`);
 }
@@ -105,6 +107,7 @@ export async function updateSession(form: FormData) {
   await db.session.update({ where: { id: s.id }, data });
   await audit(me.id, `SESSION_${op.toUpperCase()}`, 'Session', s.id, { status: s.status, capacity: s.capacity, trainerId: s.trainerId }, data);
   if (op === 'capacity' && Number(data.capacity) > s.capacity) await offerFreedPlaces(s.id);
+  if (op === 'publish' || op === 'trainer' || op === 'teams') await syncSessionMeeting(s.id);
   revalidatePath('/', 'layout');
   redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=updated`);
 }
@@ -124,6 +127,7 @@ export async function cancelSession(form: FormData) {
     await tx.waitlistEntry.deleteMany({ where: { sessionId: s.id } });
     await tx.auditLog.create({ data: { actorId: me.id, action: 'SESSION_CANCELLED', recordType: 'Session', recordId: s.id, before: { status: s.status }, after: { status: 'CANCELLED', bookings: s.bookings.length } } });
   });
+  await cancelSessionMeeting(s.id);
   const when = `${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)}`;
   const people = new Map<string, { email: string; firstName: string; id: string }>();
   for (const b of s.bookings) {

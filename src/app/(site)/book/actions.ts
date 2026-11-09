@@ -8,6 +8,7 @@ import { SITE_URL } from '@/lib/format';
 import { sign, verify } from '@/lib/auth';
 import { CheckoutError, MAX_PLACES, confirmCardBooking, createPendingBooking, holdLive } from '@/lib/booking';
 import { sendBookingConfirmation } from '@/lib/notifications';
+import { syncSessionMeeting } from '@/lib/integrations/teams';
 
 export type CheckoutState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 type CheckoutCookie = { bid: string; exp: number };
@@ -89,7 +90,10 @@ export async function testPayment(form: FormData) {
   if (!holdLive(b)) redirect('/book/outcome?state=expired');
   if (form.get('result') === 'fail') redirect('/book/outcome?state=failed');
   const { already } = await confirmCardBooking(b.id, `test_${b.reference}_${Date.now()}`);
-  if (!already) await sendBookingConfirmation(b.id);
+  if (!already) {
+    await sendBookingConfirmation(b.id);
+    if (b.sessionId) await syncSessionMeeting(b.sessionId);
+  }
   redirect(`/book/outcome?ref=${b.reference}`);
 }
 

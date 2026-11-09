@@ -161,6 +161,16 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                     <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={selected.capacity} className={input} /></label>
                     <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
                   </form>
+                  {c.deliveryType === 'VIRTUAL_CLASSROOM' && (
+                    <div className="rounded-control bg-page p-3 text-sm">
+                      <p className="mb-2 font-bold text-ink">Teams meeting</p>
+                      {selected.joinUrl ? <p className="mb-2">Invites sent. <a href={selected.joinUrl} target="_blank" rel="noopener noreferrer">Open the Teams link</a></p> : <p className="mb-2">No meeting yet. It is created when the session is published and someone books.</p>}
+                      <form action={updateSession}>
+                        <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="teams" />
+                        <button type="submit" className={`${btn} w-full border border-field bg-white text-ink`}>{selected.joinUrl ? 'Resend and update invites' : 'Create Teams meeting now'}</button>
+                      </form>
+                    </div>
+                  )}
                   <form action={updateSession}>
                     <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value={selected.status === 'PUBLISHED' ? 'unpublish' : 'publish'} />
                     <button type="submit" className={`${btn} w-full ${selected.status === 'PUBLISHED' ? 'border border-field bg-white text-ink' : 'bg-cyan text-ink'}`}>{selected.status === 'PUBLISHED' ? 'Hide from website' : 'Publish session'}</button>

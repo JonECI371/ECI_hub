@@ -8,6 +8,7 @@ import { SITE_URL, fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesTakenWhere } from '@/lib/sessions';
 import { registrationLink } from '@/lib/registration-link';
 import { sendEmail } from '@/lib/integrations/email';
+import { syncSessionMeeting } from '@/lib/integrations/teams';
 import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
 
 async function openTask(form: FormData) {
@@ -89,7 +90,8 @@ export async function decideDateChange(form: FormData) {
       return s;
     });
     if (!ok) back(form, 'nodate');
-    if (b.sessionId) await offerFreedPlaces(b.sessionId);
+    if (b.sessionId) { await offerFreedPlaces(b.sessionId); await syncSessionMeeting(b.sessionId); }
+    await syncSessionMeeting(ok!.id);
     await audit(me.id, 'DATE_CHANGED', 'Booking', b.id, { sessionId: b.sessionId }, { sessionId: ok!.id });
     await sendEmail({ to: b.booker.email, personId: b.bookerId, trigger: 'DATE_CHANGED', subject: `Date change confirmed: ${b.course.title}`, text: `Hello ${b.booker.firstName},\n\nYour booking ${b.reference} has moved to ${fmtSessionDates(ok!.startsAt, ok!.endsAt)}, ${fmtTime(ok!.startsAt)} UK time.` });
   } else {

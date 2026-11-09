@@ -14,12 +14,21 @@ if ! docker ps -a --format '{{.Names}}' | grep -qx db; then
   sleep 8
 fi
 DBURL="postgresql://eci:${PGPW}@db:5432/eci"
+# Microsoft 365 (Teams invites): IDs in /opt/eci/ms.env, secret read from Secrets Manager at start.
+MS_TENANT_ID=""; MS_CLIENT_ID=""; MS_MEETING_HOST=""; MS_INVITE_ALLOWLIST="@ecfio.co.uk,@eci-hub.co.uk"; MS_SECRET_ID=""
+[ -f /opt/eci/ms.env ] && source /opt/eci/ms.env
+MS_CLIENT_SECRET=""
+if [ -n "$MS_SECRET_ID" ]; then
+  MS_CLIENT_SECRET=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$MS_SECRET_ID" --query SecretString --output text 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("MS_CLIENT_SECRET",""))' 2>/dev/null || true)
+fi
 docker pull "$REG/eci-hub:app"
 docker rm -f app >/dev/null 2>&1 || true
 docker run -d --name app --network eci --restart always -p 80:3000 \
   -e DATABASE_URL="$DBURL" -e SITE_URL="$SITE" -e AUTH_SECRET="$AUTH_SECRET" -e NODE_ENV=production \
   -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
   -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads \
+  -e MS_TENANT_ID="$MS_TENANT_ID" -e MS_CLIENT_ID="$MS_CLIENT_ID" -e MS_CLIENT_SECRET="$MS_CLIENT_SECRET" \
+  -e MS_MEETING_HOST="$MS_MEETING_HOST" -e MS_INVITE_ALLOWLIST="$MS_INVITE_ALLOWLIST" \
   "$REG/eci-hub:app"
 if [ "$SEED" = "seed" ]; then
   sleep 10   # let the app apply migrations first

@@ -11,6 +11,7 @@ import { placesTakenWhere } from '@/lib/sessions';
 import { withinCutoff } from '@/lib/portal';
 import { registrationLink } from '@/lib/registration-link';
 import { sendEmail } from '@/lib/integrations/email';
+import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
 
 /** Loads a booking the signed-in person made. Every action checks this on the server. */
 async function myBooking(reference: string) {
@@ -98,13 +99,14 @@ export async function changeDate(form: FormData) {
     const s = await tx.session.findUnique({ where: { id: target } });
     if (!s || s.courseId !== b.courseId || s.status !== 'PUBLISHED' || s.startsAt <= new Date() || s.id === b.sessionId) return false;
     const taken = await tx.booking.aggregate({ where: { sessionId: s.id, ...placesTakenWhere() }, _sum: { places: true } });
-    if (s.capacity - (taken._sum.places ?? 0) < b.places) return false;
+    if (s.capacity - (taken._sum.places ?? 0) - (await placesOnOffer(tx, s.id)) < b.places) return false;
     await tx.booking.update({ where: { id: b.id }, data: { sessionId: s.id } });
     await tx.auditLog.create({ data: { actorId: me.id, action: 'DATE_CHANGED', recordType: 'Booking', recordId: b.id, before: { sessionId: b.sessionId }, after: { sessionId: s.id, reason } } });
     return s;
   });
   if (!ok) back(ref, 'nodate');
   const s = ok as Exclude<typeof ok, false>;
+  if (b.sessionId) await offerFreedPlaces(b.sessionId);
   for (const p of [b.booker, ...b.attendees.map((a) => a.person).filter((x) => x && x.id !== b.bookerId)]) {
     await sendEmail({ to: p!.email, personId: p!.id, trigger: 'DATE_CHANGED', subject: `New date: ${b.course.title}`, text: `Hello ${p!.firstName},\n\n${b.course.title} (${b.reference}) has moved to ${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)} to ${fmtTime(s.endsAt)} UK time. An updated calendar invite follows.` });
   }
@@ -126,6 +128,7 @@ export async function cancelBooking(form: FormData) {
     }
     await tx.auditLog.create({ data: { actorId: me.id, action: 'BOOKING_CANCELLED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CANCELLED', reason } } });
   });
+  if (b.sessionId) await offerFreedPlaces(b.sessionId);
   for (const p of [b.booker, ...b.attendees.map((a) => a.person).filter((x) => x && x.id !== b.bookerId)]) {
     await sendEmail({ to: p!.email, personId: p!.id, trigger: 'BOOKING_CANCELLED', subject: `Cancelled: ${b.course.title} (${b.reference})`, text: `Hello ${p!.firstName},\n\nBooking ${b.reference} for ${b.course.title} has been cancelled.${p!.id === b.bookerId && b.method === 'CARD' ? ' Your refund goes back to the card you paid with within 5 to 10 working days.' : ''}` });
   }

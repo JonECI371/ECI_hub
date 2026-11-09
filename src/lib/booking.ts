@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { placesTakenWhere } from '@/lib/sessions';
+import { placesOnOffer } from '@/lib/waitlist';
 
 export const HOLD_MINUTES = 15;
 export const MAX_PLACES = 20;
@@ -41,6 +42,7 @@ export type CheckoutInput = {
   booker: { firstName: string; lastName: string; email: string; mobile?: string; marketingOptIn: boolean };
   bookerAttends: boolean;
   others: { name: string; email: string }[] | null; // null = add later
+  waitlistEntryId?: string; // claiming a waitlist offer: that entry's held places count as free
 };
 
 export class CheckoutError extends Error {}
@@ -60,7 +62,7 @@ export async function createPendingBooking(input: CheckoutInput) {
       const session = await tx.session.findUniqueOrThrow({ where: { id: input.sessionId } });
       if (session.courseId !== course.id || session.status !== 'PUBLISHED' || session.startsAt <= new Date()) throw new CheckoutError('This date is no longer available.');
       const taken = await tx.booking.aggregate({ where: { sessionId: session.id, ...placesTakenWhere() }, _sum: { places: true } });
-      const left = session.capacity - (taken._sum.places ?? 0);
+      const left = session.capacity - (taken._sum.places ?? 0) - (await placesOnOffer(tx, session.id, input.waitlistEntryId));
       if (input.places > left) throw new CheckoutError(left > 0 ? `Only ${left} ${left === 1 ? 'place is' : 'places are'} left on this date.` : 'This date is now full.');
     }
 
@@ -104,6 +106,8 @@ export async function confirmCardBooking(bookingId: string, paymentRef: string) 
     if (b.status !== 'PAYMENT_PENDING') throw new CheckoutError('This booking can no longer be paid.');
     await tx.payment.create({ data: { bookingId: b.id, stripeIntentId: paymentRef, amountPence: b.totalPence, status: 'succeeded' } });
     const booking = await tx.booking.update({ where: { id: b.id }, data: { status: 'CONFIRMED', holdExpiresAt: null } });
+    // A claimed waitlist offer is used up once paid.
+    if (b.sessionId) await tx.waitlistEntry.deleteMany({ where: { sessionId: b.sessionId, personId: b.bookerId } });
     await tx.auditLog.create({ data: { actorId: b.bookerId, action: 'BOOKING_CONFIRMED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CONFIRMED', paymentRef } } });
     return { booking, already: false };
   });

@@ -216,7 +216,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
                     <span className={`col-start-2 text-sm font-bold md:col-start-auto ${full ? 'text-bad-fg' : 'text-ink'}`}>{label?.text ?? 'Places available'}</span>
                     <strong className="col-start-2 text-base text-ink md:col-start-auto">{price.amount}</strong>
                     <Link
-                      href={full ? `/courses/${s.course.slug}?waitlist=${s.id}#dates` : `/book/${s.id}`}
+                      href={full ? `/waitlist/${s.id}` : `/book/${s.id}`}
                       className="col-start-2 inline-flex min-h-11 items-center justify-center rounded-chip bg-cyan px-5 text-sm font-extrabold text-ink no-underline md:col-start-auto"
                     >
                       {full ? 'Join waitlist' : 'Book'}
@@ -249,7 +249,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
                             const full = (left.get(s.id) ?? 0) === 0 || s.status === 'FULL';
                             const tone = s.course.deliveryType === 'IN_PERSON' ? 'bg-ink text-white hover:text-white' : 'bg-cyan-tint text-ink';
                             return (
-                              <Link key={s.id} href={full ? `/courses/${s.course.slug}?waitlist=${s.id}#dates` : `/book/${s.id}`} className={`block rounded-chip px-1.5 py-1 text-[11px] font-bold leading-tight no-underline ${full ? 'bg-bad-bg text-bad-fg' : tone}`}>
+                              <Link key={s.id} href={full ? `/waitlist/${s.id}` : `/book/${s.id}`} className={`block rounded-chip px-1.5 py-1 text-[11px] font-bold leading-tight no-underline ${full ? 'bg-bad-bg text-bad-fg' : tone}`}>
                                 {s.course.title}
                                 <br />
                                 <span className="font-semibold">{full ? 'Full' : fmtTime(s.startsAt)}</span>

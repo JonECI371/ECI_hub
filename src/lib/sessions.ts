@@ -20,8 +20,15 @@ export async function placesLeft(sessions: { id: string; capacity: number }[]): 
     where: { sessionId: { in: sessions.map((s) => s.id) }, ...placesTakenWhere() },
     _sum: { places: true },
   });
+  const offered = await db.waitlistEntry.groupBy({
+    by: ['sessionId'],
+    where: { sessionId: { in: sessions.map((s) => s.id) }, offerExpiresAt: { gt: new Date() } },
+    _sum: { places: true },
+  });
   const byId = new Map(taken.map((t) => [t.sessionId, t._sum.places ?? 0]));
-  for (const s of sessions) out.set(s.id, Math.max(0, s.capacity - (byId.get(s.id) ?? 0)));
+  const offerById = new Map(offered.map((t) => [t.sessionId, t._sum.places ?? 0]));
+  // Places on a live waitlist offer are held for that person.
+  for (const s of sessions) out.set(s.id, Math.max(0, s.capacity - (byId.get(s.id) ?? 0) - (offerById.get(s.id) ?? 0)));
   return out;
 }
 

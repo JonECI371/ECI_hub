@@ -9,3 +9,4 @@ next-env.d.ts
 infra/cdk.out
 infra/node_modules
 .DS_Store
+.uploads

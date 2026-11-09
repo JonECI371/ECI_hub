@@ -104,6 +104,13 @@ async function main() {
   const tw = await db.course.findUniqueOrThrow({ where: { slug: 'thames-water-safety-passport' } });
   await db.session.updateMany({ where: { courseId: tw.id, startsAt: at('2026-11-12', 13, 0) }, data: { status: SessionStatus.FULL } });
 
+  // A sample delegate for trying the customer side.
+  await db.person.upsert({
+    where: { email: 'sam.taylor@example.co.uk' },
+    update: {},
+    create: { email: 'sam.taylor@example.co.uk', firstName: 'Sam', lastName: 'Taylor', employer: 'Kemp Civils Ltd', mobile: '07700 900123' },
+  });
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   if (adminEmail) {
     await db.person.upsert({

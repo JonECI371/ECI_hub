@@ -1,15 +1,18 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { currentPerson } from '@/lib/auth';
 
-const NAV = [
+const BASE_NAV = [
   ['Courses', '/courses'],
   ['Consultancy', '/contact'],
   ['Free tools', '/tools'],
   ['About', '/about'],
-  ['Log in', '/login'],
 ] as const;
 
-export function SiteHeader() {
+export async function SiteHeader() {
+  const me = await currentPerson();
+  const admin = me?.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN');
+  const NAV: (readonly [string, string])[] = [...BASE_NAV, me ? ['My account', admin ? '/admin' : '/account'] : ['Log in', '/login']];
   return (
     <>
       <div className="flex h-10 items-center justify-between bg-ink px-4 text-xs text-white/60 md:px-20">

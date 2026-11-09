@@ -12,7 +12,7 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 
 ## Phase 1: Replace SimplyBook (gate: a Thames Water cohort runs with no manual invites)
 
-- [ ] **1.1 Sign-in.** "Build passwordless sign-in to docs/spec.md: email code or magic link, 15-minute expiry, 5 attempts, 30-day trusted device, TOTP for TRAINER and ADMIN roles. Match docs/design/Login.dc.html. Send email through SES in src/lib/integrations/email.ts (log to console in dev)."
+- [x] **1.1 Sign-in.** "Build passwordless sign-in to docs/spec.md: email code or magic link, 15-minute expiry, 5 attempts, 30-day trusted device, TOTP for TRAINER and ADMIN roles. Match docs/design/Login.dc.html. Send email through SES in src/lib/integrations/email.ts (log to console in dev)."
 - [x] **1.2 Layout and home.** "Rebuild the header, footer and home page to match docs/design/Main.dc.html using the components in src/components/ui.tsx. Next dates must come from the database."
 - [x] **1.3 Courses views.** "Extend /courses to match docs/design/Courses.dc.html: add the Dates and Calendar views, keep filters in the URL, eLearning only in the Courses view."
 - [x] **1.4 Course page.** "Finish /courses/[slug] to match docs/design/Course.dc.html: places left from attendee counts, FAQs with FAQPage JSON-LD, breadcrumbs, waitlist for full sessions."

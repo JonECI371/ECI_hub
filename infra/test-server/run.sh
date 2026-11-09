@@ -19,11 +19,12 @@ docker rm -f app >/dev/null 2>&1 || true
 docker run -d --name app --network eci --restart always -p 80:3000 \
   -e DATABASE_URL="$DBURL" -e SITE_URL="$SITE" -e AUTH_SECRET="$AUTH_SECRET" -e NODE_ENV=production \
   -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
+  -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads \
   "$REG/eci-hub:app"
 if [ "$SEED" = "seed" ]; then
   sleep 10   # let the app apply migrations first
   docker pull "$REG/eci-hub:tools"
-  docker run --rm --network eci -e DATABASE_URL="$DBURL" "$REG/eci-hub:tools" npx tsx prisma/seed.ts
+  docker run --rm --network eci -e DATABASE_URL="$DBURL" -e SEED_ADMIN_EMAIL="${SEED_ADMIN_EMAIL:-}" "$REG/eci-hub:tools" npx tsx prisma/seed.ts
 fi
 docker image prune -f >/dev/null
 echo "running"

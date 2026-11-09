@@ -31,7 +31,7 @@ COPY --from=build /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=build /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=prismacli /cli/node_modules /opt/prisma-cli/node_modules
 COPY scripts/docker-entrypoint.sh ./entrypoint.sh
-RUN chmod +x ./entrypoint.sh && useradd -m app && chown -R app /app
+RUN chmod +x ./entrypoint.sh && useradd -m app && chown -R app /app && mkdir -p /data/uploads && chown app /data/uploads
 USER app
 EXPOSE 3000
 CMD ["./entrypoint.sh"]

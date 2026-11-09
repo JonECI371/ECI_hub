@@ -70,7 +70,8 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
 export async function addSession(form: FormData) {
   const me = await requireAdmin('/admin/courses');
   const courseId = String(form.get('courseId'));
-  const course = await db.course.findUniqueOrThrow({ where: { id: courseId } });
+  const course = await db.course.findUnique({ where: { id: courseId } });
+  if (!course) redirect('/admin/schedule');
   const date = String(form.get('date') ?? '');
   const start = String(form.get('start') ?? '');
   const end = String(form.get('end') ?? '');

@@ -78,7 +78,7 @@ export default async function AdminHome() {
                     return (
                       <tr key={s.id} className="border-t border-hairline">
                         <td className="whitespace-nowrap px-6 py-3">{day.format(s.startsAt)}</td>
-                        <td className="px-6 py-3"><Link href={`/admin/courses/${s.courseId}?session=${s.id}`} className="font-bold">{s.course.title}</Link></td>
+                        <td className="min-w-[220px] px-6 py-3"><Link href={`/admin/courses/${s.courseId}?session=${s.id}`} className="font-bold">{s.course.title}</Link></td>
                         <td className="px-6 py-3"><DeliveryChip type={s.course.deliveryType} /></td>
                         <td className="px-6 py-3">{s.trainer ? `${s.trainer.firstName} ${s.trainer.lastName}` : '-'}</td>
                         <td className="whitespace-nowrap px-6 py-3 tabular-nums">{booked} of {s.capacity} booked</td>

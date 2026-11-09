@@ -123,6 +123,11 @@ async function main() {
     });
   }
 
+  // Sample trainers so sessions can be assigned.
+  for (const t of [{ email: 'dan.hughes@example.co.uk', firstName: 'Dan', lastName: 'Hughes' }, { email: 'aisha.khan@example.co.uk', firstName: 'Aisha', lastName: 'Khan' }]) {
+    await db.person.upsert({ where: { email: t.email }, update: {}, create: { ...t, roles: ['TRAINER'] } });
+  }
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   if (adminEmail) {
     await db.person.upsert({

@@ -22,9 +22,9 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 - [ ] **1.8 Teams meetings.** "Build src/lib/integrations/teams.ts with Microsoft Graph (client credentials): create one online meeting per virtual session when it is published, store joinUrl, send a calendar invite to every confirmed attendee, the booker and the trainer, update on date change and cancel on cancellation. Failures create an INTEGRATION_FAILURE task. Use my test mailbox only."
 - [ ] **1.9 Emails.** "Build the email templates and triggers listed in docs/spec.md 'Notifications and emails' that Phase 1 needs, using the layout in docs/design/EmailTemplate.dc.html. Coded templates for now; the block editor comes in Phase 3."
 - [x] **1.10 Delegate dashboard and booking detail.** "Build the delegate view of docs/design/Dashboard.dc.html and docs/design/BookingDetail.dc.html: upcoming bookings by delivery type, Join on Teams, change date and cancel within the cut-off, certificates."
-- [ ] **1.11 Admin core.** "Build the admin shell and these screens to match their designs: AdminHome, AdminList (bookings), AdminCourse, AdminCourseForm (including the Search and sharing panel), AdminSchedule. ADMIN role only."
-- [ ] **1.12 Tasks inbox.** "Build docs/design/AdminTasks.dc.html on the Task model: filter by type, each task actioned in place, done tasks leave the list."
-- [ ] **1.13 Waitlist.** "Build the waitlist: join from a full session, offer by one-click signed link valid 24 hours, claim and pay, expiry passes the place on. Match docs/design/WaitlistClaim.dc.html."
+- [x] **1.11 Admin core.** "Build the admin shell and these screens to match their designs: AdminHome, AdminList (bookings), AdminCourse, AdminCourseForm (including the Search and sharing panel), AdminSchedule. ADMIN role only."
+- [x] **1.12 Tasks inbox.** "Build docs/design/AdminTasks.dc.html on the Task model: filter by type, each task actioned in place, done tasks leave the list."
+- [x] **1.13 Waitlist.** "Build the waitlist: join from a full session, offer by one-click signed link valid 24 hours, claim and pay, expiry passes the place on. Match docs/design/WaitlistClaim.dc.html."
 - [ ] **1.14 Phase 1 check.** "Run every Phase 1 acceptance criterion in docs/spec.md against staging and give me a pass or fail list with fixes for the fails."
 
 ## Phase 2: Accounts and CompEx (gate: first statement in Xero and a CompEx session delivered)

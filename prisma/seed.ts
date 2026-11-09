@@ -111,6 +111,18 @@ async function main() {
     create: { email: 'sam.taylor@example.co.uk', firstName: 'Sam', lastName: 'Taylor', employer: 'Kemp Civils Ltd', mobile: '07700 900123' },
   });
 
+  // Sample certificates for Sam, one due for renewal.
+  const sam = await db.person.findUniqueOrThrow({ where: { email: 'sam.taylor@example.co.uk' } });
+  if ((await db.certificate.count({ where: { personId: sam.id } })) === 0) {
+    const eusr = await db.course.findUniqueOrThrow({ where: { slug: 'eusr-national-water-hygiene' } });
+    await db.certificate.createMany({
+      data: [
+        { personId: sam.id, courseId: eusr.id, issuedAt: new Date('2025-01-12'), expiresAt: new Date('2028-01-12') },
+        { personId: sam.id, courseId: tw.id, issuedAt: new Date('2023-11-14'), expiresAt: new Date('2026-11-14') },
+      ],
+    });
+  }
+
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
   if (adminEmail) {
     await db.person.upsert({

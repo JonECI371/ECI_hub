@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
 import type { DeliveryType } from '@prisma/client';
-import { startCheckout, type CheckoutState } from '@/app/book/actions';
+import { startCheckout, type CheckoutState } from '@/app/(site)/book/actions';
 import { DeliveryChip, Chip } from '@/components/ui';
 
 export type CheckoutProps = {

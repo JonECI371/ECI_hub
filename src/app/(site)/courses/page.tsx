@@ -230,7 +230,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
 
         {view === 'calendar' && (
           <section className="overflow-hidden rounded-card bg-white shadow-card">
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <div className="min-w-[720px]">
                 <div className="grid grid-cols-7 border-b border-hairline bg-[#FAFAFA]">
                   {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => (

@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Mulish } from 'next/font/google';
-import { SiteHeader, SiteFooter } from '@/components/site-chrome';
 import { SITE_URL } from '@/lib/format';
 import './globals.css';
 
@@ -15,11 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en-GB" className={mulish.className}>
-      <body className="flex min-h-screen flex-col">
-        <SiteHeader />
-        <main className="flex flex-1 flex-col">{children}</main>
-        <SiteFooter />
-      </body>
+      <body className="flex min-h-screen flex-col">{children}</body>
     </html>
   );
 }

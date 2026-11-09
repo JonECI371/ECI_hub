@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
-import { submitRegistration, type RegState } from '@/app/register/[attendeeId]/actions';
+import { submitRegistration, type RegState } from '@/app/(site)/register/[attendeeId]/actions';
 import type { QuestionSet } from '@/lib/registration-sets';
 
 type Props = {

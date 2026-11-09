@@ -6,5 +6,5 @@ if [ -z "$DATABASE_URL" ] && [ -n "$DB_HOST" ]; then
   export DATABASE_URL="postgresql://${DB_USER}:${PW}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-eci}?sslmode=require"
 fi
 # Apply any pending migrations, then start the server.
-node node_modules/prisma/build/index.js migrate deploy
+node /opt/prisma-cli/node_modules/prisma/build/index.js migrate deploy --schema prisma/schema.prisma
 exec node server.js

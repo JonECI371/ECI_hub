@@ -1,8 +1,26 @@
 import 'server-only';
+import type { Course, Session, Subject, Venue } from '@prisma/client';
 import { db } from '@/lib/db';
-import { SITE_URL, fmtSessionDates, fmtTime, gbp } from '@/lib/format';
+import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
+import type { Block } from '@/lib/email-layout';
 import { sendEmail } from '@/lib/integrations/email';
 import { registrationLink } from '@/lib/registration-link';
+
+type C = Course & { subject: Subject };
+type S = (Session & { venue: Venue | null }) | null;
+
+export function whenText(s: S) {
+  return s ? `${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)} to ${fmtTime(s.endsAt)} UK time` : 'Start any time (eLearning)';
+}
+
+/** Where, respecting the venue release rule (address only after approval where the subject requires it). */
+export function whereText(c: C, s: S, approved = false) {
+  if (c.deliveryType === 'ELEARNING') return `Online, on ${c.provider ?? 'the learning platform'}`;
+  if (c.deliveryType === 'VIRTUAL_CLASSROOM') return `${c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams'} (link in your calendar invite)`;
+  if (!s?.venue) return 'Venue to be confirmed';
+  if ((c.subject.approvalRequired || c.venueRelease === 'AFTER_APPROVAL') && !approved) return `${s.venue.name} (full address once your registration is approved)`;
+  return `${s.venue.name}, ${s.venue.address}, ${s.venue.postcode}`;
+}
 
 /** Booking confirmed: one email to the booker, and joining details to each named attendee. */
 export async function sendBookingConfirmation(bookingId: string) {
@@ -10,47 +28,83 @@ export async function sendBookingConfirmation(bookingId: string) {
     where: { id: bookingId },
     include: { booker: true, course: { include: { subject: true } }, session: { include: { venue: true } }, attendees: { include: { person: true } } },
   });
-  const when = b.session
-    ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)}, ${fmtTime(b.session.startsAt)} to ${fmtTime(b.session.endsAt)} UK time`
-    : 'Start any time (eLearning)';
-  const where =
-    b.course.deliveryType === 'IN_PERSON'
-      ? b.course.subject.approvalRequired
-        ? 'The venue address is sent once registration is approved.'
-        : b.session?.venue ? `${b.session.venue.name}, ${b.session.venue.address}, ${b.session.venue.postcode}` : 'Venue to be confirmed'
-      : b.course.deliveryType === 'VIRTUAL_CLASSROOM'
-        ? `Online. Your ${b.course.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams'} invite follows separately.`
-        : 'Online. Access details follow once you are enrolled.';
   const missing = b.attendees.filter((a) => !a.personId).length;
   const own = b.attendees.find((a) => a.personId === b.bookerId);
-  await sendEmail({
-    to: b.booker.email,
-    personId: b.bookerId,
-    trigger: 'BOOKING_CONFIRMED',
-    subject: `Booking confirmed: ${b.course.title} (${b.reference})`,
-    text: [
-      `Hello ${b.booker.firstName},`,
-      '',
-      `Your booking ${b.reference} is confirmed.`,
-      `${b.course.title}`,
-      when,
-      where,
-      `Places: ${b.places}`,
-      `Total paid: ${gbp(b.totalPence)} (including VAT ${gbp(b.vatPence)})`,
-      own ? `\nComplete your registration (about 2 minutes): ${SITE_URL}${registrationLink(own.id)}` : '',
-      missing ? `\n${missing} ${missing === 1 ? 'place still needs' : 'places still need'} attendee details. Add them from your account: ${SITE_URL}/account` : '',
-      '',
-      `Manage your booking: ${SITE_URL}/account`,
-    ].join('\n'),
-  });
+  const blocks: Block[] = [
+    { type: 'heading', text: b.places > 1 ? `${b.places} places booked, ${b.booker.firstName}` : `You're booked, ${b.booker.firstName}` },
+    { type: 'text', text: 'Thanks for booking with ECI-Hub. Here are your details.' },
+    { type: 'summary', rows: [['Course', b.course.title], ['Date', whenText(b.session)], ['Where', whereText(b.course, b.session)], ['Places', String(b.places)], ['Reference', b.reference], ['Paid', b.method === 'CARD' ? `${gbp(b.totalPence)} by card (VAT ${gbp(b.vatPence)})` : `${gbp(b.totalPence)} on account`]] },
+  ];
+  if (own) blocks.push({ type: 'text', text: 'One more thing: complete your registration. It takes about 2 minutes.' }, { type: 'button', label: 'Complete my registration', href: registrationLink(own.id) });
+  if (missing) blocks.push({ type: 'note', text: `${missing} ${missing === 1 ? 'place still needs' : 'places still need'} attendee details. Add them from your account; we remind you 5 days before.` });
+  blocks.push({ type: 'button', label: 'View my booking', href: `/account/bookings/${b.reference}` });
+  await sendEmail({ to: b.booker.email, personId: b.bookerId, trigger: 'BOOKING_CONFIRMED', subject: `Booking confirmed: ${b.course.title} (${b.reference})`, blocks });
+
   for (const a of b.attendees) {
     if (!a.person || a.personId === b.bookerId) continue;
-    await sendEmail({
-      to: a.person.email,
-      personId: a.personId!,
-      trigger: 'ATTENDEE_ADDED',
-      subject: `You're booked on ${b.course.title}`,
-      text: `Hello ${a.person.firstName},\n\n${b.booker.firstName} ${b.booker.lastName} has booked you on ${b.course.title}.\n${when}\n${where}\n\nComplete your registration (about 2 minutes): ${SITE_URL}${registrationLink(a.id)}\n\nSee your joining details any time: ${SITE_URL}/account`,
-    });
+    await sendJoiningDetails(a.id);
+  }
+}
+
+/** Joining details and registration link for one attendee. */
+export async function sendJoiningDetails(attendeeId: string) {
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, booking: { include: { booker: true, course: { include: { subject: true } }, session: { include: { venue: true } } } } } });
+  if (!a.person) return;
+  const b = a.booking;
+  await sendEmail({
+    to: a.person.email, personId: a.person.id, trigger: 'ATTENDEE_ADDED', subject: `You're booked on ${b.course.title}`,
+    blocks: [
+      { type: 'heading', text: `You're booked, ${a.person.firstName}` },
+      { type: 'text', text: `${b.booker.firstName} ${b.booker.lastName} has booked you on ${b.course.title}.` },
+      { type: 'summary', rows: [['Course', b.course.title], ['Date', whenText(b.session)], ['Where', whereText(b.course, b.session)], ['Reference', b.reference]] },
+      { type: 'text', text: 'Please complete your registration. It takes about 2 minutes.' },
+      { type: 'button', label: 'Complete my registration', href: registrationLink(a.id) },
+    ],
+  });
+}
+
+/** Reminder the day before or an hour before a session, to everyone attending. */
+export async function sendSessionReminder(sessionId: string, kind: 'DAY' | 'HOUR') {
+  const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: { venue: true, course: { include: { subject: true } }, bookings: { where: { status: 'CONFIRMED' }, include: { attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true, registration: true } } } } } });
+  const trigger = `REMINDER_${kind}:${s.id}`;
+  for (const a of s.bookings.flatMap((b) => b.attendees)) {
+    if (!a.person) continue;
+    if (await db.emailLog.findFirst({ where: { trigger, personId: a.person.id } })) continue;
+    const approved = a.registration?.approval === 'APPROVED' || a.registration?.approval === 'NOT_REQUIRED';
+    const blocks: Block[] = [
+      { type: 'heading', text: kind === 'DAY' ? `See you tomorrow, ${a.person.firstName}` : `Starting in an hour, ${a.person.firstName}` },
+      { type: 'summary', rows: [['Course', s.course.title], ['Date', whenText(s)], ['Where', whereText(s.course, s, approved)]] },
+    ];
+    if (s.course.deliveryType === 'VIRTUAL_CLASSROOM' && s.joinUrl) blocks.push({ type: 'text', text: 'Join 10 minutes early with your camera and microphone working.' }, { type: 'button', label: `Join on ${s.course.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Teams'}`, href: s.joinUrl });
+    if (s.course.deliveryType === 'IN_PERSON' && s.venue && approved && s.venue.directions) blocks.push({ type: 'text', text: s.venue.directions });
+    if (!a.registration) blocks.push({ type: 'note', text: 'Your registration is not complete yet. Please do it now so the course can go ahead for you.' }, { type: 'button', label: 'Complete my registration', href: registrationLink(a.id) });
+    await sendEmail({ to: a.person.email, personId: a.person.id, trigger, subject: `${kind === 'DAY' ? 'Tomorrow' : 'In one hour'}: ${s.course.title}`, blocks });
+  }
+  if (kind === 'DAY' && s.trainerId) {
+    const t = await db.person.findUnique({ where: { id: s.trainerId } });
+    if (t && !(await db.emailLog.findFirst({ where: { trigger, personId: t.id } }))) {
+      const names = s.bookings.flatMap((b) => b.attendees).map((a) => {
+        const ans = (a.registration?.answers ?? {}) as Record<string, string>;
+        const needs = [ans.dietary && `diet: ${ans.dietary}`, ans.accessNeeds && `access: ${ans.accessNeeds}`].filter(Boolean).join('; ');
+        return [a.person ? `${a.person.firstName} ${a.person.lastName}` : 'Name to follow', needs || '-'] as [string, string];
+      });
+      await sendEmail({ to: t.email, personId: t.id, trigger, subject: `Class list for tomorrow: ${s.course.title}`, blocks: [{ type: 'heading', text: 'Your class list for tomorrow' }, { type: 'summary', rows: [['Course', s.course.title], ['Date', whenText(s)], ['Where', whereText(s.course, s, true)]] }, { type: 'summary', rows: names.length ? names : [['Nobody booked', '-']] }] });
+    }
+  }
+}
+
+/** Five days before: nudge attendees who have not registered, and bookers with unnamed places. */
+export async function sendRegistrationReminders(sessionId: string) {
+  const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: { venue: true, course: { include: { subject: true } }, bookings: { where: { status: 'CONFIRMED' }, include: { booker: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true, registration: true } } } } } });
+  const trigger = `REGISTRATION_MISSING:${s.id}`;
+  for (const b of s.bookings) {
+    for (const a of b.attendees) {
+      if (!a.person || a.registration || (await db.emailLog.findFirst({ where: { trigger, personId: a.person.id } }))) continue;
+      await sendEmail({ to: a.person.email, personId: a.person.id, trigger, subject: `Reminder: complete your registration for ${s.course.title}`, blocks: [{ type: 'heading', text: 'Your registration form is still open' }, { type: 'text', text: `Hi ${a.person.firstName}, we need a few details before your course. It takes about 3 minutes.` }, { type: 'summary', rows: [['Course', s.course.title], ['Date', whenText(s)], ['Booked by', `${b.booker.firstName} ${b.booker.lastName}`]] }, { type: 'button', label: 'Complete my form', href: registrationLink(a.id) }] });
+    }
+    const unnamed = b.attendees.filter((a) => !a.personId).length;
+    if (unnamed && !(await db.emailLog.findFirst({ where: { trigger, personId: b.bookerId } }))) {
+      await sendEmail({ to: b.booker.email, personId: b.bookerId, trigger, subject: `Add attendees for ${s.course.title}`, blocks: [{ type: 'heading', text: `${unnamed} ${unnamed === 1 ? 'place needs' : 'places need'} a name` }, { type: 'text', text: `Hi ${b.booker.firstName}, the course is in 5 days. Add who is attending so they get their joining details.` }, { type: 'summary', rows: [['Course', s.course.title], ['Date', whenText(s)], ['Reference', b.reference]] }, { type: 'button', label: 'Add attendees', href: `/account/bookings/${b.reference}` }] });
+    }
   }
 }

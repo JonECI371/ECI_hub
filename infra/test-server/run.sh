@@ -35,7 +35,7 @@ docker rm -f app >/dev/null 2>&1 || true
 docker run -d --name app --network eci --restart always -p 80:3000 \
   -e DATABASE_URL="$DBURL" -e SITE_URL="$SITE" -e AUTH_SECRET="$AUTH_SECRET" -e NODE_ENV=production \
   -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
-  -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads \
+  -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads -e RUN_JOBS=1 \
   -e MS_TENANT_ID="$MS_TENANT_ID" -e MS_CLIENT_ID="$MS_CLIENT_ID" -e MS_CLIENT_SECRET="$MS_CLIENT_SECRET" \
   -e MS_MEETING_HOST="$MS_MEETING_HOST" -e MS_INVITE_ALLOWLIST="$MS_INVITE_ALLOWLIST" \
   -e PAYMENTS_MODE="$PAYMENTS_MODE" -e STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" -e STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \

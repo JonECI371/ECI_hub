@@ -67,6 +67,12 @@ export async function offerFreedPlaces(sessionId: string) {
       trigger: 'WAITLIST_OFFER',
       subject: `A place is free: ${course.title}`,
       text: `Hello ${o.entry.person.firstName},\n\n${o.entry.places === 1 ? 'A place has' : `${o.entry.places} places have`} come up on ${course.title}, ${fmtSessionDates(o.session.startsAt, o.session.endsAt)} at ${fmtTime(o.session.startsAt)} UK time.\n\nClaim ${o.entry.places === 1 ? 'it' : 'them'} within 24 hours. One click, no code: ${SITE_URL}/waitlist/claim/${o.token}\n\nAfter 24 hours the place goes to the next person on the list.`,
+      blocks: [
+        { type: 'heading', text: o.entry.places === 1 ? 'A place has come up' : `${o.entry.places} places have come up` },
+        { type: 'text', text: `A place is free on the course you were waiting for. Claim it within 24 hours; after that it goes to the next person on the waitlist.` },
+        { type: 'summary', rows: [['Course', course.title], ['Date', `${fmtSessionDates(o.session.startsAt, o.session.endsAt)}, ${fmtTime(o.session.startsAt)}`], ['Places', String(o.entry.places)]] },
+        { type: 'button', label: 'Claim my place', href: `${SITE_URL}/waitlist/claim/${o.token}` },
+      ],
     });
   }
   return offers.length;

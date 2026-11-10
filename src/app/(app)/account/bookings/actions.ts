@@ -10,6 +10,7 @@ import { findOrCreatePerson, splitName } from '@/lib/booking';
 import { placesTakenWhere } from '@/lib/sessions';
 import { withinCutoff } from '@/lib/portal';
 import { registrationLink } from '@/lib/registration-link';
+import { sendJoiningDetails } from '@/lib/notifications';
 import { sendEmail } from '@/lib/integrations/email';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
@@ -55,13 +56,7 @@ export async function setAttendee(form: FormData) {
     return p;
   });
   if (!person) back(ref, 'duplicate');
-  await sendEmail({
-    to: person!.email,
-    personId: person!.id,
-    trigger: 'ATTENDEE_ADDED',
-    subject: `You're booked on ${b.course.title}`,
-    text: `Hello ${person!.firstName},\n\n${me.firstName} ${me.lastName} has booked you on ${b.course.title}${b.session ? `, ${fmtSessionDates(b.session.startsAt, b.session.endsAt)} at ${fmtTime(b.session.startsAt)} UK time` : ''}.\n\nComplete your registration (about 2 minutes): ${SITE_URL}${registrationLink(a!.id)}`,
-  });
+  await sendJoiningDetails(a!.id);
   if (b.sessionId) await syncSessionMeeting(b.sessionId);
   back(ref, swap ? 'swapped' : 'added');
 }

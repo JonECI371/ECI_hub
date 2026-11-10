@@ -47,6 +47,13 @@ export async function requestCode(form: FormData) {
       trigger: 'SIGN_IN_CODE',
       subject: `Your ECI-Hub code: ${code}`,
       text: `Your ECI-Hub sign-in code is ${code}. It expires in 15 minutes.\n\nOr sign in with this link: ${link}\n\nIf you did not ask for this, you can ignore this email.`,
+      blocks: [
+        { type: 'heading', text: 'Your login code' },
+        { type: 'text', text: 'Enter this code to finish logging in. It expires in 15 minutes.' },
+        { type: 'code', label: '6-digit code', code },
+        { type: 'button', label: 'Or log in with one click', href: link },
+        { type: 'text', text: "Didn't try to log in? You can ignore this email. Nobody can log in without the code." },
+      ],
     });
     if (!emailLive()) devCode = code;
   }

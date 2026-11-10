@@ -110,6 +110,7 @@ export class EciHubStack extends Stack {
           NODE_ENV: 'production',
           SITE_URL: siteUrl,
           AWS_REGION: this.region,
+          RUN_JOBS: '1',
           DB_NAME: 'eci',
           FILES_BUCKET: files.bucketName,
           ID_DOCS_BUCKET: idDocs.bucketName,

@@ -1,16 +1,28 @@
 import 'server-only';
 import { db } from '@/lib/db';
+import { renderEmail, type Block } from '@/lib/email-layout';
 
 /**
  * All platform email goes through here.
  * EMAIL_MODE=ses sends through Amazon SES. Anything else (dev, test server) logs the email
  * instead of sending it, so no real mail leaves a test environment.
  */
-export type Email = { to: string; trigger: string; subject: string; text: string; html?: string; personId?: string };
+export type Email = { to: string; trigger: string; subject: string; text?: string; html?: string; blocks?: Block[]; personId?: string };
+
+/** Older plain-text emails get the branded layout too: paragraphs become text, links become buttons. */
+function toBlocks(text: string): Block[] {
+  return text.split(/\n{2,}/).flatMap((para): Block[] => {
+    const m = /^(.*?):?\s*(https?:\/\/\S+)\s*$/s.exec(para.trim());
+    if (m && !m[1].includes('\n')) return [{ type: 'button', label: (m[1] || 'Open').replace(/[.:]+$/, '').slice(0, 60), href: m[2] }];
+    return [{ type: 'text', text: para.trim() }];
+  });
+}
 
 export const emailLive = () => process.env.EMAIL_MODE === 'ses';
 
-export async function sendEmail(e: Email): Promise<void> {
+export async function sendEmail(input: Email): Promise<void> {
+  const rendered = renderEmail(input.subject, input.blocks ?? toBlocks(input.text ?? ''));
+  const e = { ...input, text: input.text ?? rendered.text, html: input.html ?? rendered.html };
   const from = process.env.EMAIL_FROM ?? 'bookings@eci-hub.co.uk';
   if (!emailLive()) {
     console.info(`[email:test] to=${e.to} trigger=${e.trigger} subject="${e.subject}"\n${e.text}`);

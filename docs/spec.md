@@ -1,6 +1,12 @@
 # ECI-Hub Booking Platform: Build Specification
 
-Nov 5, 2026 · @Jon
+| Version | Date | Status | Owner |
+| --- | --- | --- | --- |
+| 2026-11-10 | 10 November 2026 | Baseline: Nov 5 draft plus requirement IDs and this change process | Jon Wallis |
+
+This file in GitHub (`docs/spec.md`) is the master. The shared Claude Doc and the Word copy in SharePoint are readable copies of it, updated each time a version is approved. Every change is listed in the Change log at the end, and the full line-by-line history is in GitHub. How to propose and approve a change: `docs/spec-change-process.md`.
+
+Requirement IDs (for example PUB-04) are used in test logs and automated tests, so each test points at the requirement it checks.
 
 ## Purpose and scope
 
@@ -114,35 +120,35 @@ An audit log and a settings store sit alongside these.
 
 Each screen is built from the canvas artboard of the same name using Design system v2 components; a screen is done when its criteria pass on desktop and on a 390 px phone.
 
-| Area | Screen (artboard) | Done when |
-| --- | --- | --- |
-| Public | Home (Main) | Two calls to action (Book a course, Open a credit account); next dates pulled live; course search returns results as you type |
-| Public | Courses (Courses) | Filter by delivery type and subject; Courses, Dates and Calendar views; filters kept in the URL; eLearning shown in Courses view only |
-| Public | Course page (Course) | Dates near the top; booking panel stays on screen; full dates offer the waitlist; structured data present |
-| Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with optional PO; no password or email verification step; places held 15 minutes |
-| Public | Outcome (Outcome) | One template for confirmed by card, confirmed on account, eLearning, waitlist and payment failed; "Complete registration now" shown when needed |
-| Public | Registration (Registration) | Questions from the subject's set; known answers prefilled; file uploads for photo and ID; saves on submit; approval routed to Tasks where on |
-| Public | Log in (Login) | Email code or magic link; 30-day trusted device; staff and trainers also need an authenticator code |
-| Public | Waitlist claim (WaitlistClaim) | Opens from the email link with no code; pay and confirm in one step; expired state offers other dates |
-| Public | Contact (Enquiry) | One form; topic changes the extra fields; creates a Deal in the right pipeline |
-| Public | Credit account application (CorporateRequest) | Company, booker, other bookers, billing, credit requested, terms; creates an approval task with a Companies House check |
-| Public | Free tools (Hook) | Admin-editable template for a quiz, tool or gated guide; captures name, email and opt-in into the CRM |
-| Public | Legal, System pages | Versioned legal documents; 404, maintenance, no access and expired link states |
-| Portal | Dashboard (Dashboard) | Delegate view: action banner, upcoming by delivery type with Join, Directions or Continue, certificates. Booker view: credit tiles, needs attention, upcoming, team expiries |
-| Portal | Booking detail (BookingDetail) | Attendees and their registration status; add or swap attendees; change date or cancel within cut-off; documents |
-| Portal | Settings (AccountProfile) | My details, Account and billing (limit, statements, company details), Bookers (invite, remove) |
-| Admin | Home (AdminHome) | Next 14 days, counts that link into Tasks, upcoming sessions |
-| Admin | Tasks (AdminTasks) | Filter by type; each task done in place (copy fields, approve, upload, export); done tasks leave the list |
-| Admin | Bookings, Accounts (AdminList) | Search, filter, bulk email, CSV export, pagination |
-| Admin | Person record (AdminPerson) | Tabs for details, bookings, certificates, documents, emails, audit history |
-| Admin | Course record (AdminCourse) | Sessions, attendees with status, waitlist, workflow, edit and cancel |
-| Admin | Course form (AdminCourseForm) | Delivery type switches the form; Teams or Zoom options; venue and address release; eLearning fulfilment; approval toggle; SEO panel; publish rules |
-| Admin | Calendar (AdminSchedule) | Month, week and day; trainer filter; conflicts flagged; create a session from a slot |
-| Admin | Pipelines (AdminPipeline) | Drag deals between stages; owner and value; one board per pipeline |
-| Admin | Reports (AdminReport) | Bookings and revenue, attendance, expiries, waitlists; date and subject filters; CSV |
-| Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults, emails, legal documents, admin users |
-| Admin | Email template (EmailTemplate) | Block editor: heading, text, booking summary, code, button, footer; preview per trigger |
-| Trainer | Sessions, Attendance, Availability, Profile | Phone first; today's session at the top; attendance saved in one tap per delegate; days then times; qualification expiry warnings |
+| ID | Area | Screen (artboard) | Done when |
+| --- | --- | --- | --- |
+| PUB-01 | Public | Home (Main) | Two calls to action (Book a course, Open a credit account); next dates pulled live; course search returns results as you type |
+| PUB-02 | Public | Courses (Courses) | Filter by delivery type and subject; Courses, Dates and Calendar views; filters kept in the URL; eLearning shown in Courses view only |
+| PUB-03 | Public | Course page (Course) | Dates near the top; booking panel stays on screen; full dates offer the waitlist; structured data present |
+| PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with optional PO; no password or email verification step; places held 15 minutes |
+| PUB-05 | Public | Outcome (Outcome) | One template for confirmed by card, confirmed on account, eLearning, waitlist and payment failed; "Complete registration now" shown when needed |
+| PUB-06 | Public | Registration (Registration) | Questions from the subject's set; known answers prefilled; file uploads for photo and ID; saves on submit; approval routed to Tasks where on |
+| PUB-07 | Public | Log in (Login) | Email code or magic link; 30-day trusted device; staff and trainers also need an authenticator code |
+| PUB-08 | Public | Waitlist claim (WaitlistClaim) | Opens from the email link with no code; pay and confirm in one step; expired state offers other dates |
+| PUB-09 | Public | Contact (Enquiry) | One form; topic changes the extra fields; creates a Deal in the right pipeline |
+| PUB-10 | Public | Credit account application (CorporateRequest) | Company, booker, other bookers, billing, credit requested, terms; creates an approval task with a Companies House check |
+| PUB-11 | Public | Free tools (Hook) | Admin-editable template for a quiz, tool or gated guide; captures name, email and opt-in into the CRM |
+| PUB-12 | Public | Legal, System pages | Versioned legal documents; 404, maintenance, no access and expired link states |
+| POR-01 | Portal | Dashboard (Dashboard) | Delegate view: action banner, upcoming by delivery type with Join, Directions or Continue, certificates. Booker view: credit tiles, needs attention, upcoming, team expiries |
+| POR-02 | Portal | Booking detail (BookingDetail) | Attendees and their registration status; add or swap attendees; change date or cancel within cut-off; documents |
+| POR-03 | Portal | Settings (AccountProfile) | My details, Account and billing (limit, statements, company details), Bookers (invite, remove) |
+| ADM-01 | Admin | Home (AdminHome) | Next 14 days, counts that link into Tasks, upcoming sessions |
+| ADM-02 | Admin | Tasks (AdminTasks) | Filter by type; each task done in place (copy fields, approve, upload, export); done tasks leave the list |
+| ADM-03 | Admin | Bookings, Accounts (AdminList) | Search, filter, bulk email, CSV export, pagination |
+| ADM-04 | Admin | Person record (AdminPerson) | Tabs for details, bookings, certificates, documents, emails, audit history |
+| ADM-05 | Admin | Course record (AdminCourse) | Sessions, attendees with status, waitlist, workflow, edit and cancel |
+| ADM-06 | Admin | Course form (AdminCourseForm) | Delivery type switches the form; Teams or Zoom options; venue and address release; eLearning fulfilment; approval toggle; SEO panel; publish rules |
+| ADM-07 | Admin | Calendar (AdminSchedule) | Month, week and day; trainer filter; conflicts flagged; create a session from a slot |
+| ADM-08 | Admin | Pipelines (AdminPipeline) | Drag deals between stages; owner and value; one board per pipeline |
+| ADM-09 | Admin | Reports (AdminReport) | Bookings and revenue, attendance, expiries, waitlists; date and subject filters; CSV |
+| ADM-10 | Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults, emails, legal documents, admin users |
+| ADM-11 | Admin | Email template (EmailTemplate) | Block editor: heading, text, booking summary, code, button, footer; preview per trigger |
+| TRN-01 | Trainer | Sessions, Attendance, Availability, Profile | Phone first; today's session at the top; attendance saved in one tap per delegate; days then times; qualification expiry warnings |
 
 ## Payments and credit accounts
 
@@ -355,3 +361,11 @@ These need an answer before the developer quotes; each assumption stands unless 
 - VAT at 20% on all courses.
 - eLearning in Phase 1 to 2 runs on provider platforms (EUSR QuartzWeb, Trainor); ECI-Hub hosting comes in Phase 3.
 - UK English, GBP, UK time throughout.
+
+## Change log
+
+Newest first. Each change is approved by Jon before it is built. "Tests" lists the requirement and test log IDs to re-test.
+
+| Version | Date | Change | Reason | Approved by | Tests |
+| --- | --- | --- | --- | --- | --- |
+| 2026-11-10 | 10 Nov 2026 | Baseline. Added version table, requirement IDs on the acceptance criteria and this change log. No requirement changed. | Version control and test traceability | Jon Wallis | None |

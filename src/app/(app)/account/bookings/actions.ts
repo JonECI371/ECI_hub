@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { requirePerson } from '@/lib/auth';
+import { managesBooking } from '@/lib/booker';
 import { SITE_URL, fmtSessionDates, fmtTime } from '@/lib/format';
 import { findOrCreatePerson, splitName } from '@/lib/booking';
 import { placesTakenWhere } from '@/lib/sessions';
@@ -23,7 +24,7 @@ async function myBooking(reference: string) {
     where: { reference },
     include: { course: { include: { subject: true } }, session: true, attendees: { include: { person: true, registration: true, enrolment: true } }, payments: true, booker: true },
   });
-  if (!b || b.bookerId !== me.id) redirect('/no-access');
+  if (!b || !(await managesBooking(me.id, b))) redirect('/no-access');
   return { me, b };
 }
 

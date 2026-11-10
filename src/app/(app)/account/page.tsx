@@ -4,6 +4,9 @@ import { db } from '@/lib/db';
 import { requirePerson } from '@/lib/auth';
 import { fmtTime } from '@/lib/format';
 import { attendeeState, bookingsIMade, myPlaces } from '@/lib/portal';
+import { accountSummary, myMembership, teamExpiries } from '@/lib/booker';
+import { money } from '@/lib/format';
+import { statementText } from '@/lib/credit';
 import { registrationLink } from '@/lib/registration-link';
 import { Chip, DeliveryChip } from '@/components/ui';
 
@@ -20,10 +23,14 @@ const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 
 
 export default async function Dashboard() {
   const me = await requirePerson();
-  const [places, made, certs] = await Promise.all([
+  const m = await myMembership(me.id);
+  const [places, made, certs, summary, expiring, teamUpcoming] = await Promise.all([
     myPlaces(me.id),
-    bookingsIMade(me.id),
+    bookingsIMade(me.id, m ? [m.accountId] : []),
     db.certificate.findMany({ where: { personId: me.id }, include: { course: true }, orderBy: { issuedAt: 'desc' } }),
+    m ? accountSummary(m.account) : null,
+    m ? teamExpiries(m.accountId) : [],
+    m ? db.booking.findMany({ where: { accountId: m.accountId, status: 'CONFIRMED', OR: [{ session: { startsAt: { gt: new Date() } } }, { sessionId: null }] }, include: { course: true, session: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { registration: true, enrolment: true } } }, orderBy: { session: { startsAt: 'asc' } }, take: 12 }) : [],
   ]);
   const rows = places.map((a) => ({ a, st: attendeeState(a, a.booking.course) }));
   const action = rows.find((r) => r.st.needsRegistration);
@@ -38,10 +45,34 @@ export default async function Dashboard() {
 
   return (
     <>
-      <div>
-        <p className="mb-1.5 text-xs">My account</p>
-        <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Hello, {me.firstName}</h1>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="mb-1.5 text-xs">{m ? `${m.role === 'MAIN_BOOKER' ? 'Main booker' : 'Booker'} · ${m.account.company} · Credit account` : 'My account'}</p>
+          <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Hello, {me.firstName}</h1>
+        </div>
+        {m && <Link href="/courses" className={`${btn} bg-cyan text-ink`}>Book a course</Link>}
       </div>
+
+      {m && m.account.status === 'ON_HOLD' && (
+        <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Your account is on hold because an invoice is overdue. New bookings need a card payment until it is paid. Questions? Call +44 (0) 1932 963463.</p>
+      )}
+
+      {summary && (
+        <section aria-label="Account summary" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {([
+            ['Available credit', money(summary.available), `of ${money(summary.limit)} limit`],
+            ['Booked this month', money(summary.thisMonth), statementText().replace(/^Added to your \w+ statement, invoiced on (.*)\.$/, 'On your $1 statement')],
+            ['Upcoming places', String(summary.upcomingPlaces), `Across ${summary.upcomingSessions} ${summary.upcomingSessions === 1 ? 'session' : 'sessions'}`],
+            ['Need your attention', String(attention.length), 'Attendee details or registrations'],
+          ] as const).map(([k, v, sub]) => (
+            <div key={k} className="rounded-card bg-white p-5 shadow-card">
+              <p className="text-sm">{k}</p>
+              <p className="mt-1 text-[28px] font-extrabold leading-tight text-ink tabular-nums">{v}</p>
+              <p className="text-[13px]">{sub}</p>
+            </div>
+          ))}
+        </section>
+      )}
 
       {action && (
         <section aria-labelledby="action-h" className="flex flex-col gap-4 rounded-card bg-warn-bg p-6 text-warn-fg md:flex-row md:items-center md:justify-between">
@@ -71,9 +102,69 @@ export default async function Dashboard() {
         </section>
       )}
 
+      {m && (
+        <section aria-labelledby="tb-h" className="overflow-hidden rounded-card bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+            <h2 id="tb-h" className="text-lg font-extrabold text-ink">Upcoming bookings</h2>
+            <Link href="/account/bookings" className="text-sm">All bookings →</Link>
+          </div>
+          {teamUpcoming.length === 0 ? <p className="px-6 py-6 text-sm">No upcoming bookings on the account. <Link href="/courses">Book a course</Link></p> : (
+            <div className="relative overflow-x-auto">
+              <table className="w-full min-w-[640px] text-left text-sm">
+                <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Date', 'Course', 'Type', 'People', 'Status'].map((h) => <th key={h} className="px-6 py-3">{h}</th>)}</tr></thead>
+                <tbody>
+                  {teamUpcoming.map((b) => {
+                    const missing = b.attendees.filter((a) => !a.personId).length;
+                    const named = b.attendees.filter((a) => a.personId);
+                    const reg = named.filter((a) => a.registration || a.enrolment?.enrolledAt).length;
+                    const status: ['soft' | 'warn', string] = missing ? ['warn', `${missing} ${missing === 1 ? 'attendee' : 'attendees'} missing`] : reg < named.length ? ['warn', `${reg} of ${named.length} registered`] : ['soft', b.course.deliveryType === 'ELEARNING' ? 'Enrolled' : 'Ready'];
+                    return (
+                      <tr key={b.id} className="border-t border-hairline">
+                        <td className="whitespace-nowrap px-6 py-3 font-bold text-ink">{b.session ? `${dow.format(b.session.startsAt)} ${dm.format(b.session.startsAt)}` : 'Any time'}</td>
+                        <td className="px-6 py-3"><Link href={`/account/bookings/${b.reference}`} className="font-bold">{b.course.title}</Link></td>
+                        <td className="px-6 py-3"><DeliveryChip type={b.course.deliveryType} /></td>
+                        <td className="px-6 py-3 tabular-nums">{b.places}</td>
+                        <td className="px-6 py-3"><Chip tone={status[0]}>{status[1]}</Chip></td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {m && (
+        <section aria-labelledby="te-h" className="overflow-hidden rounded-card bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
+            <h2 id="te-h" className="text-lg font-extrabold text-ink">Team certificates expiring</h2>
+            <Link href="/account/team" className="text-sm">Whole team →</Link>
+          </div>
+          {expiring.length === 0 ? <p className="px-6 py-6 text-sm">Nothing expires in the next 6 months.</p> : (
+            <div className="relative overflow-x-auto">
+              <table className="w-full min-w-[560px] text-left text-sm">
+                <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Person', 'Certificate', 'Expires', ''].map((h, i) => <th key={i} className="px-6 py-3">{h}</th>)}</tr></thead>
+                <tbody>
+                  {expiring.map((c) => (
+                    <tr key={c.id} className="border-t border-hairline">
+                      <td className="px-6 py-3 font-bold text-ink">{c.person.firstName} {c.person.lastName}</td>
+                      <td className="px-6 py-3">{c.course.title}</td>
+                      <td className="px-6 py-3 tabular-nums">{dmy.format(c.expiresAt!)}</td>
+                      <td className="px-6 py-3 text-right"><Link href={`/courses/${c.course.slug}#dates`} className={`${btn} border border-field bg-white text-ink`}>Book renewal</Link></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </section>
+      )}
+
+      {!(m && rows.length === 0) && (
       <section aria-labelledby="up-h" className="overflow-hidden rounded-card bg-white shadow-card">
         <div className="border-b border-hairline px-6 py-4">
-          <h2 id="up-h" className="text-lg font-extrabold text-ink">Upcoming</h2>
+          <h2 id="up-h" className="text-lg font-extrabold text-ink">{m ? 'Your own places' : 'Upcoming'}</h2>
           <p className="text-sm">Everything you are booked on, with what you need for each.</p>
         </div>
         {rows.length === 0 ? (
@@ -113,6 +204,7 @@ export default async function Dashboard() {
           </ul>
         )}
       </section>
+      )}
 
       <section aria-labelledby="cert-h" className="overflow-hidden rounded-card bg-white shadow-card">
         <h2 id="cert-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">My certificates</h2>

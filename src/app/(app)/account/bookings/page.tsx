@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { requirePerson } from '@/lib/auth';
+import { accountIdsFor } from '@/lib/booker';
 import { gbp } from '@/lib/format';
 import { Chip, DeliveryChip } from '@/components/ui';
 
@@ -14,7 +15,7 @@ const STATUS: Record<string, ['soft' | 'warn' | 'grey' | 'bad', string]> = { CON
 export default async function MyBookings() {
   const me = await requirePerson();
   const bookings = await db.booking.findMany({
-    where: { status: { not: 'PAYMENT_PENDING' }, OR: [{ bookerId: me.id }, { attendees: { some: { personId: me.id } } }] },
+    where: { status: { not: 'PAYMENT_PENDING' }, OR: [{ bookerId: me.id }, { accountId: { in: await accountIdsFor(me.id) } }, { attendees: { some: { personId: me.id } } }] },
     include: { course: true, session: true },
     orderBy: { createdAt: 'desc' },
   });

@@ -122,3 +122,72 @@ export async function declineAccount(accountId: string, actorId: string, reason:
   }
   return acc;
 }
+
+/** Main booker invites a booker. They wait for ECI approval (a New booker task) before they can book on account. */
+export async function inviteBooker(accountId: string, inviterId: string, p: { name: string; email: string; jobTitle?: string }) {
+  return db.$transaction(async (tx) => {
+    const inviter = await tx.accountMember.findFirst({ where: { accountId, personId: inviterId, role: 'MAIN_BOOKER', status: 'ACTIVE' }, include: { account: true } });
+    if (!inviter) throw new AccountRuleError('Only the main booker can invite bookers.');
+    const parts = p.name.trim().split(/\s+/);
+    const person = await findOrCreatePerson(tx, { email: p.email, firstName: parts[0], lastName: parts.slice(1).join(' ') || '-' });
+    if (p.jobTitle && !person.jobTitle) await tx.person.update({ where: { id: person.id }, data: { jobTitle: p.jobTitle } });
+    const existing = await tx.accountMember.findUnique({ where: { accountId_personId: { accountId, personId: person.id } } });
+    if (existing && existing.status !== 'REMOVED') throw new AccountRuleError(existing.status === 'ACTIVE' ? 'They can already book on this account.' : 'They are already waiting for approval.');
+    const m = existing
+      ? await tx.accountMember.update({ where: { id: existing.id }, data: { status: 'PENDING_APPROVAL', role: 'BOOKER' } })
+      : await tx.accountMember.create({ data: { accountId, personId: person.id, role: 'BOOKER', status: 'PENDING_APPROVAL' } });
+    await tx.task.create({ data: { type: 'BOOKER_APPROVAL', title: `New booker: ${person.firstName} ${person.lastName === '-' ? '' : person.lastName} for ${inviter.account.company}`, detail: `${person.email}, invited by the main booker`, recordType: 'AccountMember', recordId: m.id } });
+    await tx.auditLog.create({ data: { actorId: inviterId, action: 'BOOKER_INVITED', recordType: 'Account', recordId: accountId, after: { personId: person.id, email: person.email } } });
+    return m;
+  });
+}
+
+/** Main booker removes a booker, or cancels an invite. The main booker cannot remove themselves. */
+export async function removeBooker(accountId: string, actorId: string, memberId: string) {
+  return db.$transaction(async (tx) => {
+    const actor = await tx.accountMember.findFirst({ where: { accountId, personId: actorId, role: 'MAIN_BOOKER', status: 'ACTIVE' } });
+    if (!actor) throw new AccountRuleError('Only the main booker can remove bookers.');
+    const m = await tx.accountMember.findFirst({ where: { id: memberId, accountId } });
+    if (!m || m.status === 'REMOVED') throw new AccountRuleError('That booker has already been removed.');
+    if (m.role === 'MAIN_BOOKER') throw new AccountRuleError('The main booker cannot be removed here. Contact us to change the main booker.');
+    await tx.accountMember.update({ where: { id: m.id }, data: { status: 'REMOVED' } });
+    await tx.task.updateMany({ where: { type: 'BOOKER_APPROVAL', recordId: m.id, status: 'OPEN' }, data: { status: 'DISMISSED', doneAt: new Date() } });
+    await tx.auditLog.create({ data: { actorId, action: m.status === 'PENDING_APPROVAL' ? 'BOOKER_INVITE_CANCELLED' : 'BOOKER_REMOVED', recordType: 'Account', recordId: accountId, after: { personId: m.personId } } });
+  });
+}
+
+/** ECI approves or declines a booker invited by the main booker. */
+export async function decideBooker(memberId: string, actorId: string, approve: boolean) {
+  const m = await db.$transaction(async (tx) => {
+    const r = await tx.accountMember.updateMany({ where: { id: memberId, status: 'PENDING_APPROVAL' }, data: { status: approve ? 'ACTIVE' : 'REMOVED' } });
+    if (!r.count) throw new AccountRuleError('This request has already been dealt with.');
+    const m = await tx.accountMember.findUniqueOrThrow({ where: { id: memberId }, include: { person: true, account: { include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } } } });
+    if (approve && !m.person.roles.includes('BOOKER')) await tx.person.update({ where: { id: m.personId }, data: { roles: { push: 'BOOKER' } } });
+    await tx.task.updateMany({ where: { type: 'BOOKER_APPROVAL', recordId: memberId, status: 'OPEN' }, data: { status: 'DONE', doneAt: new Date(), assigneeId: actorId } });
+    await tx.auditLog.create({ data: { actorId, action: approve ? 'BOOKER_APPROVED' : 'BOOKER_DECLINED', recordType: 'Account', recordId: m.accountId, after: { personId: m.personId } } });
+    return m;
+  });
+  const main = m.account.members[0]?.person;
+  if (approve) {
+    await sendEmail({
+      to: m.person.email, personId: m.personId, trigger: 'BOOKER_APPROVED', subject: `You can book for ${m.account.company} on ECI-Hub`,
+      blocks: [
+        { type: 'heading', text: `You can book on account, ${m.person.firstName}` },
+        { type: 'text', text: `${main ? `${main.firstName} ${main.lastName} added you` : 'You have been added'} as a booker on the ${m.account.company} credit account. Book any course and choose On account at checkout.` },
+        { type: 'text', text: 'Sign in with your work email. We send you a code each time, so there is no password to remember.' },
+        { type: 'button', label: 'Sign in', href: `${SITE_URL}/login?email=${encodeURIComponent(m.person.email)}` },
+      ],
+    });
+  }
+  if (main) {
+    await sendEmail({
+      to: main.email, personId: main.id, trigger: approve ? 'BOOKER_APPROVED' : 'BOOKER_DECLINED', subject: approve ? `${m.person.firstName} ${m.person.lastName} can now book on your account` : `We could not add ${m.person.firstName} ${m.person.lastName} as a booker`,
+      blocks: [
+        { type: 'heading', text: approve ? 'New booker approved' : 'New booker not approved' },
+        { type: 'text', text: approve ? `${m.person.firstName} ${m.person.lastName} (${m.person.email}) can now book on the ${m.account.company} account. We have emailed them a sign-in link.` : `We were not able to add ${m.person.firstName} ${m.person.lastName} (${m.person.email}) as a booker. Call us on +44 (0) 1932 963463 if you have questions.` },
+        { type: 'button', label: 'See your team', href: '/account/team' },
+      ],
+    });
+  }
+  return m;
+}

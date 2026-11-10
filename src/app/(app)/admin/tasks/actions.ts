@@ -124,3 +124,18 @@ export async function decideAccount(form: FormData) {
     throw err;
   }
 }
+
+/** Approve or decline a booker the main booker invited. */
+export async function decideBookerTask(form: FormData) {
+  const { me, t } = await openTask(form);
+  const { AccountRuleError, decideBooker } = await import('@/lib/accounts');
+  const approve = form.get('decision') === 'approve';
+  try {
+    await decideBooker(t.recordId, me.id, approve);
+  } catch (err) {
+    if (err instanceof AccountRuleError) redirect(`/admin/tasks?msg=rule&detail=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
+  revalidatePath('/admin', 'layout');
+  back(form, approve ? 'bookerapproved' : 'bookerdeclined');
+}

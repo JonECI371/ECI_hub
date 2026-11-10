@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { managesBooking } from '@/lib/booker';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { requirePerson } from '@/lib/auth';
@@ -47,7 +48,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
     },
   });
   if (!b || b.status === 'PAYMENT_PENDING') notFound();
-  const isBooker = b.bookerId === me.id;
+  const isBooker = await managesBooking(me.id, b);
   const mine = b.attendees.find((a) => a.personId === me.id);
   if (!isBooker && !mine) notFound();
 

@@ -49,9 +49,9 @@ export async function myPlaces(personId: string) {
 }
 
 /** Bookings I made that include other people, with what each still needs. */
-export async function bookingsIMade(personId: string) {
+export async function bookingsIMade(personId: string, accountIds: string[] = []) {
   return db.booking.findMany({
-    where: { bookerId: personId, status: 'CONFIRMED', ...upcomingSession(), attendees: { some: { OR: [{ personId: null }, { personId: { not: personId } }] } } },
+    where: { AND: [{ OR: [{ bookerId: personId }, { accountId: { in: accountIds } }] }, upcomingSession()], status: 'CONFIRMED', attendees: { some: { OR: [{ personId: null }, { personId: { not: personId } }] } } },
     include: { course: { include: { subject: true } }, session: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true, registration: true, enrolment: true } } },
     orderBy: { createdAt: 'desc' },
   });

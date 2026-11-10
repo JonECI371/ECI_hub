@@ -6,7 +6,7 @@ import { requireAdmin, TASK_LABEL } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { CopyButton } from '@/components/copy-button';
-import { decideAccount, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
+import { decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { money } from '@/lib/format';
 import { companiesHouseConfigured, companiesHouseLink, type CompanyCheck } from '@/lib/integrations/companies-house';
@@ -19,6 +19,7 @@ const MSG: Record<string, [string, boolean]> = {
   returned: ['Registration returned. The delegate has been asked to update it.', true], moved: ['Booking moved. The booker has been emailed.', true], declined: ['Request declined. The booker has been emailed.', true],
   note: ['Say what needs changing before returning a registration.', false],
   accountapproved: ['Account approved. The bookers have been emailed a sign-in link.', true], accountdeclined: ['Application declined. The main booker has been emailed.', true],
+  bookerapproved: ['Booker approved. They and the main booker have been emailed.', true], bookerdeclined: ['Booker declined. The main booker has been emailed.', true],
   badlimit: ['Enter a credit limit in pounds.', false], reason: ['Give a reason before declining an application.', false], nodate: ['That date no longer has enough places.', false], gone: ['That task has already been dealt with.', false],
 };
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
@@ -49,6 +50,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
     creditDefaults(),
   ]);
   const accById = new Map(accounts.map((x) => [x.id, x]));
+  const memberIds = tasks.filter((t) => t.recordType === 'AccountMember').map((t) => t.recordId);
+  const members = new Map((await db.accountMember.findMany({ where: { id: { in: memberIds } }, include: { person: true, account: { include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } } } })).map((x) => [x.id, x]));
   const isSuper = me.roles.includes('SUPER_ADMIN');
   const aById = new Map(attendees.map((a) => [a.id, a]));
   const bById = new Map(bookings.map((b) => [b.id, b]));
@@ -185,6 +188,29 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                   <label className="flex flex-col gap-1 text-xs font-bold">PO numbers<select name="poRule" defaultValue={acc.poRule} className="h-11 rounded-control border border-field bg-white px-3 text-sm">{Object.entries(PO_RULES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
                   <button type="submit" className={`${btn} bg-cyan text-ink`}>Approve account</button>
                 </form>
+              </>
+            );
+          }
+
+          const mem = members.get(t.recordId);
+          if (t.type === 'BOOKER_APPROVAL' && mem) {
+            const main = mem.account.members[0]?.person;
+            const domain = (e: string) => e.split('@')[1]?.toLowerCase();
+            const sameDomain = main && domain(main.email) === domain(mem.person.email);
+            body = (
+              <>
+                <dl className="grid gap-x-6 gap-y-2 rounded-control bg-page p-4 text-sm sm:grid-cols-2">
+                  {[['Name', `${mem.person.firstName} ${mem.person.lastName === '-' ? '' : mem.person.lastName}`], ['Email', mem.person.email], ['Job title', mem.person.jobTitle ?? 'Not given'], ['Account', `${mem.account.company} (${mem.account.status.toLowerCase().replace('_', ' ')})`], ['Invited by', main ? `${main.firstName} ${main.lastName}, main booker` : '-']].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-4 border-b border-hairline py-1"><dt>{k}</dt><dd className="text-right font-semibold text-ink">{v}</dd></div>
+                  ))}
+                </dl>
+                {!sameDomain && <p className="mt-3 text-sm font-semibold text-warn-fg">Their email domain is different from the main booker&apos;s. Check they work for {mem.account.company}.</p>}
+              </>
+            );
+            actions = (
+              <>
+                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline</button></form>
+                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-ink`}>Approve booker</button></form>
               </>
             );
           }

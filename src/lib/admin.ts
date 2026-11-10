@@ -1,5 +1,5 @@
 import 'server-only';
-import type { Person, Prisma } from '@prisma/client';
+import type { AccountStatus, Person, Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { requirePerson } from '@/lib/auth';
 
@@ -21,3 +21,5 @@ export const TASK_LABEL: Record<string, string> = {
   EMAIL_BOUNCE: 'Bounced email',
   INTEGRATION_FAILURE: 'Integration failure',
 };
+
+export const ACCOUNT_STATUS: Record<AccountStatus, ['soft' | 'warn' | 'grey' | 'bad', string]> = { APPLIED: ['warn', 'Applied'], ACTIVE: ['soft', 'Active'], ON_HOLD: ['bad', 'On hold'], CLOSED: ['grey', 'Closed'], DECLINED: ['grey', 'Declined'] };

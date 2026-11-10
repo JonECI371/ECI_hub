@@ -6,7 +6,9 @@ import { teamsConfigured } from '@/lib/integrations/teams';
 import { publishableKey, stripeEnabled } from '@/lib/integrations/payments';
 import { emailLive } from '@/lib/integrations/email';
 import { Chip } from '@/components/ui';
-import { saveSubjects } from './actions';
+import { saveBilling, saveSubjects } from './actions';
+import { creditDefaults } from '@/lib/accounts';
+import { xeroSettings } from '@/lib/billing';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Settings', robots: { index: false } };
@@ -23,6 +25,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     db.task.count({ where: { type: 'INTEGRATION_FAILURE', status: 'OPEN' } }),
     db.person.count({ where: { roles: { hasSome: ['ADMIN', 'SUPER_ADMIN'] } } }),
   ]);
+  const [credit, xero] = await Promise.all([creditDefaults(), xeroSettings()]);
   const sandbox = publishableKey().startsWith('pk_test_');
   const integrations: [string, string, 'soft' | 'warn' | 'grey' | 'bad', string][] = [
     ['Microsoft Teams', teamsConfigured() ? 'Connected' : 'Not connected', teamsConfigured() ? 'soft' : 'warn', `One meeting per virtual session, invites to delegates, booker and trainer. Host: ${process.env.MS_MEETING_HOST || 'not set'}.${process.env.MS_INVITE_ALLOWLIST ? ` Test safety: invites only to ${process.env.MS_INVITE_ALLOWLIST}.` : ''}`],
@@ -36,7 +39,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
   return (
     <>
       <div><p className="mb-1.5 text-xs">Admin › Settings</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Settings</h1></div>
-      {msg === 'saved' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Subjects saved.</p>}
+      {(msg === 'saved' || msg === 'billingsaved') && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">{msg === 'saved' ? 'Subjects saved.' : 'Credit and Xero settings saved.'}</p>}
+      {msg === 'billinginvalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Check the credit and Xero values: amounts in pounds, terms up to 120 days, account code and tax rate filled in.</p>}
       {teamsFails > 0 && <Link href="/admin/tasks?type=INTEGRATION_FAILURE" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg no-underline">{teamsFails} integration {teamsFails === 1 ? 'problem needs' : 'problems need'} attention in Tasks →</Link>}
 
       <section className={card} aria-labelledby="int-h">
@@ -82,9 +86,23 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Link href="/admin/people?show=staff" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage staff in People</Link>
       </section>
 
+      <section id="billing" className={card} aria-labelledby="bill-h">
+        <h2 id="bill-h" className="mb-1 text-lg font-extrabold text-ink">Credit accounts and Xero</h2>
+        <p className="mb-4 text-sm">Defaults for new credit accounts, and the values written into the month-end Xero import file. Check the account code and tax rate against your Xero chart of accounts.{!isSuper && ' Only a Super Admin can change these.'}</p>
+        <form action={saveBilling} className="grid gap-4 sm:grid-cols-3">
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Default credit limit (£)<input name="defaultLimit" inputMode="numeric" defaultValue={credit.defaultLimitPence / 100} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Admins can approve up to this. Above it needs a Super Admin.</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Low credit warning (£)<input name="lowCredit" inputMode="numeric" defaultValue={credit.lowCreditWarnPence / 100} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Bookers are emailed when available credit drops below this.</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Payment terms (days)<input name="termsDays" type="number" min={0} max={120} defaultValue={credit.termsDays} disabled={!isSuper} className={input} /></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero sales account code<input name="accountCode" defaultValue={xero.accountCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Xero&apos;s default is 200 (Sales).</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero tax rate<input name="taxType" defaultValue={xero.taxType} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Exactly as named in Xero, e.g. 20% (VAT on Income).</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Invoice number prefix<input name="invoicePrefix" defaultValue={xero.invoicePrefix} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Used until you enter Xero&apos;s own invoice number.</span></label>
+          {isSuper && <div className="sm:col-span-3"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save credit and Xero settings</button></div>}
+        </form>
+      </section>
+
       <section className={card} aria-labelledby="later-h">
         <h2 id="later-h" className="mb-1 text-lg font-extrabold text-ink">Coming in later phases</h2>
-        <p className="text-sm">Credit account defaults (Phase 2), email template editor and legal document editor (Phase 3).</p>
+        <p className="text-sm">Email template editor and legal document editor (Phase 3).</p>
       </section>
     </>
   );

@@ -50,6 +50,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
     creditDefaults(),
   ]);
   const accById = new Map(accounts.map((x) => [x.id, x]));
+  const months = tasks.filter((t) => t.recordType === 'Month').map((t) => t.recordId);
+  const monthStatements = await db.statement.findMany({ where: { month: { in: months }, status: { not: 'OPEN' }, lines: { some: {} } }, include: { account: true, lines: true }, orderBy: { account: { company: 'asc' } } });
   const memberIds = tasks.filter((t) => t.recordType === 'AccountMember').map((t) => t.recordId);
   const members = new Map((await db.accountMember.findMany({ where: { id: { in: memberIds } }, include: { person: true, account: { include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } } } })).map((x) => [x.id, x]));
   const isSuper = me.roles.includes('SUPER_ADMIN');
@@ -211,6 +213,30 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
               <>
                 <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline</button></form>
                 <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-ink`}>Approve booker</button></form>
+              </>
+            );
+          }
+
+          if (t.type === 'MONTH_END_BILLING' && t.recordType === 'Month') {
+            const sts = monthStatements.filter((x) => x.month === t.recordId);
+            const total = sts.reduce((n, x) => n + x.lines.reduce((m, l) => m + l.netPence + l.vatPence, 0), 0);
+            body = (
+              <>
+                <p className="mb-3 text-sm">{sts.length} {sts.length === 1 ? 'statement' : 'statements'} closed, {money(total)} including VAT. Download the file, then in Xero go to Business, Invoices, Import, and upload it. Xero creates the invoices as drafts for you to approve and send.</p>
+                {sts.length > 0 && (
+                  <div className="relative overflow-x-auto rounded-control bg-page">
+                    <table className="w-full min-w-[480px] text-left text-sm">
+                      <thead className="text-xs uppercase tracking-[0.06em]"><tr>{['Account', 'Lines', 'Total inc. VAT', 'Due'].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead>
+                      <tbody>{sts.map((x) => <tr key={x.id} className="border-t border-hairline"><td className="px-4 py-2 font-bold text-ink"><Link href={`/admin/accounts/${x.accountId}`}>{x.account.company}</Link></td><td className="px-4 py-2 tabular-nums">{x.lines.length}</td><td className="px-4 py-2 tabular-nums">{money(x.lines.reduce((m, l) => m + l.netPence + l.vatPence, 0))}</td><td className="px-4 py-2">{x.dueAt ? dmy(x.dueAt) : '-'}</td></tr>)}</tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            );
+            actions = (
+              <>
+                <a href={`/admin/billing/xero/${t.recordId}.csv`} className={`${btn} border border-field bg-white text-ink no-underline`}>Download Xero file</a>
+                <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-ink`}>Imported into Xero</button></form>
               </>
             );
           }

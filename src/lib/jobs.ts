@@ -26,6 +26,9 @@ export async function runJobs(): Promise<Record<string, number>> {
     // Accounts with an invoice 14+ days overdue go on hold; paid-up accounts come off it.
     const { applyOverdueHolds } = await import('@/lib/credit');
     await applyOverdueHolds();
+    // Month end: last month's open statements are issued and a billing task is raised.
+    const { closeStatements } = await import('@/lib/billing');
+    done.statements = await closeStatements();
   } catch (err) {
     console.error('[jobs] failed', err);
     await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: 'Scheduled reminders failed', detail: String((err as Error).message).slice(0, 500), recordType: 'System', recordId: 'jobs' } });

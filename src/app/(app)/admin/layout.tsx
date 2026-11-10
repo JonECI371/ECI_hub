@@ -30,6 +30,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: '/admin/schedule', label: 'Calendar', icon: ICONS.calendar },
         { href: '/admin/bookings', label: 'Bookings', icon: ICONS.bookings },
         { href: '/admin/people', label: 'People', icon: ICONS.people, badge: pending },
+        { href: '/admin/accounts', label: 'Accounts', icon: ICONS.accounts },
         { href: '/admin/settings', label: 'Settings', icon: ICONS.settings },
       ]}
     >

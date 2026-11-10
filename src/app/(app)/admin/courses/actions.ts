@@ -13,6 +13,7 @@ import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/tea
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { assertAssignable } from '@/lib/trainers';
 import { storeFile } from '@/lib/integrations/files';
+import { sessionPublishBlock } from '@/lib/publish-rules';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -43,6 +44,10 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   const hasPhoto = photo instanceof File && photo.size > 0;
   if (hasPhoto && (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type) || photo.size > 5 * 1024 * 1024)) fields.photo = 'Upload a JPEG, PNG or WebP photo of 5MB or less';
   if ((hasPhoto || (get('currentPhoto') && get('removePhoto') !== 'on')) && !get('photoAlt')) fields.photoAlt = 'Describe the photo for people using screen readers';
+  if (status === 'PUBLISHED') {
+    if (!get('description')) fields.description = 'Add a description before publishing';
+    if (delivery === 'ELEARNING' && !get('provider')) fields.provider = 'Name the provider before publishing';
+  }
   const clash = await db.course.findFirst({ where: { slug, NOT: get('id') ? { id: get('id') } : undefined } });
   if (clash) fields.slug = 'Another course already uses this web address';
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
@@ -96,16 +101,18 @@ export async function addSession(form: FormData) {
   const endsAt = ukToUtc(endDate, end);
   if (endsAt <= startsAt || startsAt <= new Date()) redirect(`/admin/courses/${courseId}?msg=badsession`);
   try { await assertAssignable(String(form.get('trainerId') ?? '') || null); } catch { redirect(`/admin/courses/${courseId}?msg=trainerblocked`); }
+  const venueId = String(form.get('venueId') ?? '') || course.defaultVenueId;
+  const block = form.get('publish') === 'on' ? sessionPublishBlock(course, { startsAt, venueId }) : null;
   const s = await db.session.create({
     data: {
       courseId, startsAt, endsAt, capacity: Number(form.get('capacity')) || course.placesPerSession || 12,
-      status: form.get('publish') === 'on' ? 'PUBLISHED' : 'DRAFT', venueId: String(form.get('venueId') ?? '') || course.defaultVenueId, trainerId: String(form.get('trainerId') ?? '') || null,
+      status: form.get('publish') === 'on' && !block ? 'PUBLISHED' : 'DRAFT', venueId, trainerId: String(form.get('trainerId') ?? '') || null,
     },
   });
   await audit(me.id, 'SESSION_CREATED', 'Session', s.id, undefined, { courseId, startsAt, endsAt, status: s.status });
   await syncSessionMeeting(s.id);
   revalidatePath('/', 'layout');
-  redirect(`/admin/courses/${courseId}?session=${s.id}&msg=sessionadded`);
+  redirect(`/admin/courses/${courseId}?session=${s.id}&msg=${block ?? 'sessionadded'}`);
 }
 
 /** Change a session's status, capacity or trainer. */
@@ -115,6 +122,10 @@ export async function updateSession(form: FormData) {
   const op = String(form.get('op'));
   if (op === 'trainer') {
     try { await assertAssignable(String(form.get('trainerId') ?? '') || null); } catch { redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=trainerblocked`); }
+  }
+  if (op === 'publish') {
+    const block = sessionPublishBlock(await db.course.findUniqueOrThrow({ where: { id: s.courseId } }), s);
+    if (block) redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=${block}`);
   }
   const data: Prisma.SessionUpdateInput = {};
   if (op === 'publish') data.status = 'PUBLISHED';

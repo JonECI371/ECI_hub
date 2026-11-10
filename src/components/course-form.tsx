@@ -49,7 +49,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label className={label}>VAT rate (%)<input name="vatRatePercent" inputMode="numeric" defaultValue={v.vatRatePercent} className={input} /></label>
             <label className={label}>Duration<input name="durationText" defaultValue={v.durationText} placeholder="Half day, 2 days, Self-paced" className={input} {...err('durationText')} /><E k="durationText" /></label>
             <label className={`${label} sm:col-span-2`}>Short description<input name="shortDescription" maxLength={160} defaultValue={v.shortDescription} className={input} {...err('shortDescription')} /><span className={hint}>On the course card. Up to 160 characters.</span><E k="shortDescription" /></label>
-            <label className={`${label} sm:col-span-2`}>Description<textarea name="description" defaultValue={v.description} className="min-h-[110px] rounded-control border border-field px-3 py-2 text-[15px] font-normal" /><span className={hint}>The opening paragraph on the course page.</span></label>
+            <label className={`${label} sm:col-span-2`}>Description<textarea name="description" defaultValue={v.description} className="min-h-[110px] rounded-control border border-field px-3 py-2 text-[15px] font-normal" {...err('description')} /><span className={hint}>The opening paragraph on the course page. Needed to publish.</span><E k="description" /></label>
           </div>
         </section>
 
@@ -85,7 +85,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
           </div>
           {delivery === 'ELEARNING' ? (
             <div className="grid gap-4 sm:grid-cols-2">
-              <label className={label}>Provider name<input name="provider" defaultValue={v.provider} placeholder="EUSR QuartzWeb, Trainor" className={input} /></label>
+              <label className={label}>Provider name<input name="provider" defaultValue={v.provider} placeholder="EUSR QuartzWeb, Trainor" className={input} {...err('provider')} /><E k="provider" /></label>
               <label className={label}>Days to complete<input name="daysToComplete" inputMode="numeric" defaultValue={v.daysToComplete} className={input} /></label>
               <fieldset className="sm:col-span-2"><legend className="mb-2 text-sm font-bold text-ink">After registration</legend>
                 {[['ADMIN_TASK', 'Add an enrolment task for admin'], ['EMAIL_PROVIDER', 'Email the enrolment pack to the provider']].map(([val, t]) => (

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
+import { SESSION_BLOCK_TEXT } from '@/lib/publish-rules';
 import { requireAdmin } from '@/lib/admin';
 import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
@@ -18,6 +19,7 @@ const MSG: Record<string, [string, boolean]> = {
   saved: ['Course saved.', true], sessionadded: ['Session added.', true], updated: ['Session updated.', true], cancelled: ['Session cancelled. Everyone booked has been emailed and refunds recorded.', true],
   badsession: ['Check the date and times: the session must start in the future and end after it starts.', false],
   trainerblocked: ['That trainer cannot be assigned: they are awaiting approval, suspended, or have an expired qualification. Check their record in People.', false], confirmname: ['Type the course name exactly to cancel the session.', false],
+  ...Object.fromEntries(Object.entries(SESSION_BLOCK_TEXT).map(([k, t]) => [k, [t, false] as [string, boolean]])),
 };
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
 const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';

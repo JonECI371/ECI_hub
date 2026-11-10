@@ -41,7 +41,7 @@ describe('month-end statements and Xero', async () => {
     expect(row).toContain('"Acme, ""Pipes"" Ltd'); // quoted safely
     expect(row).toContain(',1,185.00,,200,20% (VAT on Income),'); // quantity, net amount, no discount, account code, tax rate
     expect(row).toContain('PO 4500-221');
-    expect(row).toContain('GL1 2AA');
+    expect(row).toContain(',Gloucester,,,,,GL1 2AA,United Kingdom,');
     expect(lines).toBe(rows.length - 1);
 
     const st = sts.find((s) => s.accountId === one.account.id)!;

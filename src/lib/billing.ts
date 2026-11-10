@@ -59,7 +59,10 @@ export async function xeroCsv(month: string): Promise<{ csv: string; invoices: n
   for (const st of statements) {
     const a = st.account;
     const addr = (a.invoiceAddress || a.registeredAddress).split(/\n|,\s*/).map((s) => s.trim()).filter(Boolean);
-    const postcode = addr.length > 1 && /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i.test(addr[addr.length - 1]) ? addr.pop()! : '';
+    // UK postcode at the end of the last line ("Gloucester GL1 2AA" or a line of its own) goes in its own column.
+    const pc = addr.length ? /^(.*?)[\s,]*([A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2})$/i.exec(addr[addr.length - 1]) : null;
+    const postcode = pc ? pc[2].toUpperCase() : '';
+    if (pc) { if (pc[1]) addr[addr.length - 1] = pc[1]; else addr.pop(); }
     const number = st.xeroInvoiceNo ?? `${x.invoicePrefix}${month.replace('-', '')}-${a.companyNumber}`;
     const pos = [...new Set(st.lines.map((l) => l.booking.poNumber).filter(Boolean))];
     const reference = `Training ${monthLabel(month)}${a.poRule === 'PER_ACCOUNT' && pos.length === 1 ? `, ${pos[0]}` : ''}`;

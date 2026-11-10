@@ -12,6 +12,7 @@ import { offerFreedPlaces } from '@/lib/waitlist';
 import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/teams';
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { assertAssignable } from '@/lib/trainers';
+import { sendVenueChanged } from '@/lib/notifications';
 import { storeFile } from '@/lib/integrations/files';
 import { sessionPublishBlock } from '@/lib/publish-rules';
 
@@ -132,10 +133,12 @@ export async function updateSession(form: FormData) {
   if (op === 'unpublish') data.status = 'DRAFT';
   if (op === 'capacity') data.capacity = Math.max(1, Math.min(500, Number(form.get('capacity')) || s.capacity));
   if (op === 'trainer') data.trainer = form.get('trainerId') ? { connect: { id: String(form.get('trainerId')) } } : { disconnect: true };
+  if (op === 'venue') data.venue = form.get('venueId') ? { connect: { id: String(form.get('venueId')) } } : { disconnect: true };
   await db.session.update({ where: { id: s.id }, data });
   await audit(me.id, `SESSION_${op.toUpperCase()}`, 'Session', s.id, { status: s.status, capacity: s.capacity, trainerId: s.trainerId }, data);
   if (op === 'capacity' && Number(data.capacity) > s.capacity) await offerFreedPlaces(s.id);
   if (op === 'publish' || op === 'trainer' || op === 'teams') await syncSessionMeeting(s.id);
+  if (op === 'venue' && (form.get('venueId') || null) !== s.venueId) await sendVenueChanged(s.id);
   revalidatePath('/', 'layout');
   redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=updated`);
 }

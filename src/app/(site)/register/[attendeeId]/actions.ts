@@ -8,6 +8,7 @@ import { loadForRegistration } from '@/lib/registration';
 import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets';
 import { storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
+import { sendVenueReleased } from '@/lib/notifications';
 
 export type RegState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -32,6 +33,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   const get = (k: string) => String(values[k] ?? '').trim();
   const fields: Record<string, string> = {};
   const course = a.booking.course;
+  const hadRegistration = !!(await db.registration.findUnique({ where: { attendeeId: a.id }, select: { id: true } }));
   const set = questionSet(course.subject.registrationSet, course.deliveryType, course.subject.approvalRequired, course.subject.name);
 
   for (const [k, schema] of [
@@ -109,5 +111,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
       text: `Please enrol:\nName: ${get('firstName')} ${get('lastName')}\nEmail: ${person.email}\nDate of birth: ${get('dob')}\nEmployer: ${get('employer')}\nCourse: ${course.title}`,
     });
   }
+  // Address held back until registration, and no approval step: release it now.
+  if (course.deliveryType === 'IN_PERSON' && course.venueRelease === 'AFTER_APPROVAL' && !course.subject.approvalRequired && !hadRegistration) await sendVenueReleased(a.id);
   redirect(`/register/${a.id}?done=1${token ? `&t=${encodeURIComponent(token)}` : ''}`);
 }

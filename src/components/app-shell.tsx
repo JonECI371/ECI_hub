@@ -21,13 +21,13 @@ export function AppShell({ label, items, me, roleLabel, children, topbar }: { la
   );
   return (
     <div className="flex min-h-screen flex-1">
-      <nav aria-label={label} className="hidden w-[248px] shrink-0 flex-col bg-ink pb-6 lg:flex">
+      <nav aria-label={label} className="hidden w-[248px] shrink-0 flex-col bg-ink pb-6 lg:flex print:!hidden">
         <Link href="/" className="block px-6 pb-[26px] pt-[22px]"><Image src="/logo.png" alt="ECI-Hub home" width={129} height={46} className="h-[46px] w-auto" /></Link>
         <p className="mb-2 px-6 text-[11px] font-bold uppercase tracking-[0.1em] text-white/55">{label}</p>
         <SideNav items={items} />
       </nav>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex h-[68px] items-center gap-4 border-b border-hairline bg-white px-4 lg:px-8">
+        <div className="flex h-[68px] items-center gap-4 border-b border-hairline bg-white px-4 lg:px-8 print:hidden">
           <details className="group relative lg:hidden">
             <summary className="flex h-11 cursor-pointer list-none items-center rounded-control border border-field px-3 text-sm font-bold text-ink [&::-webkit-details-marker]:hidden">Menu</summary>
             <nav aria-label={label} className="absolute left-0 top-12 z-30 w-[260px] rounded-card bg-ink py-3 shadow-lift">

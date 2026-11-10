@@ -80,6 +80,12 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         </form>
       </section>
 
+      <section className={card} aria-labelledby="ven-h">
+        <h2 id="ven-h" className="mb-1 text-lg font-extrabold text-ink">Venues</h2>
+        <p className="mb-3 text-sm">Training rooms and client sites used for in-person dates, with directions sent once the address is released.</p>
+        <Link href="/admin/venues" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage venues</Link>
+      </section>
+
       <section className={card} aria-labelledby="users-h">
         <h2 id="users-h" className="mb-1 text-lg font-extrabold text-ink">Admin users</h2>
         <p className="mb-3 text-sm">{staff} staff {staff === 1 ? 'account' : 'accounts'}. Add staff, change roles and reset authenticators in People.</p>

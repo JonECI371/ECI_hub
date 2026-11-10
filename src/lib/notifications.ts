@@ -108,3 +108,39 @@ export async function sendRegistrationReminders(sessionId: string) {
     }
   }
 }
+
+/** The venue for a date changed: tell everyone booked (and their bookers), respecting the address release rule. */
+export async function sendVenueChanged(sessionId: string) {
+  const s = await db.session.findUniqueOrThrow({ where: { id: sessionId }, include: { venue: true, course: { include: { subject: true } }, bookings: { where: { status: 'CONFIRMED' }, include: { booker: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true, registration: true } } } } } });
+  const sent = new Set<string>();
+  for (const b of s.bookings) {
+    const people = [...b.attendees.filter((a) => a.person).map((a) => ({ p: a.person!, approved: a.registration?.approval === 'APPROVED' || a.registration?.approval === 'NOT_REQUIRED' })), { p: b.booker, approved: false }];
+    for (const { p, approved } of people) {
+      if (sent.has(p.id)) continue;
+      sent.add(p.id);
+      const blocks: Block[] = [
+        { type: 'heading', text: `New venue for ${s.course.title}` },
+        { type: 'text', text: `Hello ${p.firstName}, the venue for this course has changed. The date and times are the same.` },
+        { type: 'summary', rows: [['Course', s.course.title], ['Date', whenText(s)], ['Where', whereText(s.course, s, approved)]] },
+      ];
+      if (approved && s.venue?.directions) blocks.push({ type: 'text', text: s.venue.directions });
+      blocks.push({ type: 'button', label: 'View my booking', href: `/account/bookings/${b.reference}` });
+      await sendEmail({ to: p.email, personId: p.id, trigger: `VENUE_CHANGED:${s.id}`, subject: `Venue changed: ${s.course.title}`, blocks });
+    }
+  }
+}
+
+/** Venue address released to an attendee (in-person courses whose address waits for registration). */
+export async function sendVenueReleased(attendeeId: string) {
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, booking: { include: { course: { include: { subject: true } }, session: { include: { venue: true } } } } } });
+  const b = a.booking;
+  if (!a.person || b.course.deliveryType !== 'IN_PERSON' || !b.session?.venue) return;
+  const blocks: Block[] = [
+    { type: 'heading', text: `Your venue for ${b.course.title}` },
+    { type: 'text', text: `Thanks for registering, ${a.person.firstName}. Here is where to go.` },
+    { type: 'summary', rows: [['Course', b.course.title], ['Date', whenText(b.session)], ['Where', whereText(b.course, b.session, true)]] },
+  ];
+  if (b.session.venue.directions) blocks.push({ type: 'text', text: b.session.venue.directions });
+  blocks.push({ type: 'button', label: 'View my booking', href: `/account/bookings/${b.reference}` });
+  await sendEmail({ to: a.person.email, personId: a.person.id, trigger: 'VENUE_RELEASED', subject: `Venue details: ${b.course.title}`, blocks });
+}

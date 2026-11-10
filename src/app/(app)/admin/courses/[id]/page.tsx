@@ -165,6 +165,15 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                     <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={selected.capacity} className={input} /></label>
                     <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
                   </form>
+                  {c.deliveryType === 'IN_PERSON' && (
+                    <form action={updateSession} className="flex items-end gap-2">
+                      <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="venue" />
+                      <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Venue<select name="venueId" defaultValue={selected.venueId ?? ''} className={input}><option value="">To be confirmed</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}{v.isClientSite ? ' (client site)' : ''}</option>)}</select></label>
+                      <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
+                    </form>
+                  )}
+                  {c.deliveryType === 'IN_PERSON' && <p className="-mt-2 text-xs">Changing the venue emails everyone booked. <Link href="/admin/venues">Manage venues</Link></p>}
+                  <Link href={`/admin/courses/${c.id}/class-list?session=${selected.id}`} className={`${btn} w-full border border-field bg-white text-ink no-underline`}>Class list (print or PDF)</Link>
                   {c.deliveryType === 'VIRTUAL_CLASSROOM' && (
                     <div className="rounded-control bg-page p-3 text-sm">
                       <p className="mb-2 font-bold text-ink">Teams meeting</p>

@@ -96,6 +96,9 @@ export default async function AdminBooking({ params, searchParams }: { params: P
                 <label className="flex flex-col gap-1 text-sm font-bold text-ink">Reason (included in the email)
                   <textarea name="reason" required maxLength={200} rows={3} className="rounded-control border border-field bg-white px-3 py-2 text-sm font-normal" />
                 </label>
+                {b.method === 'ACCOUNT' && (
+                  <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" name="refund" defaultChecked className="h-5 w-5" />Take {gbp(b.totalPence)} off the company statement</label>
+                )}
                 {b.method === 'CARD' && paid > 0 && (
                   <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" name="refund" defaultChecked className="h-5 w-5" />Refund {gbp(paid)} to the card</label>
                 )}

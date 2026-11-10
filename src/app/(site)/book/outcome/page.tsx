@@ -7,6 +7,7 @@ import { holdLive } from '@/lib/booking';
 import { registrationLink } from '@/lib/registration-link';
 import { DeliveryChip, Chip } from '@/components/ui';
 import { checkoutBookingId } from '../actions';
+import { statementText } from '@/lib/credit';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your booking', robots: { index: false } };
@@ -113,7 +114,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
   return (
     <>
       <Message eyebrow="Booking confirmed" title={elearn ? `You're enrolled, ${b.booker.firstName}` : b.places > 1 ? `${b.places} places booked on ${c.title}` : `You're booked, ${b.booker.firstName}`}>
-        <p>Reference <strong className="text-white">{b.reference}</strong>. Your receipt is on its way to {b.booker.email}.</p>
+        <p>Reference <strong className="text-white">{b.reference}</strong>. {b.method === 'ACCOUNT' ? `Confirmed on account. Your confirmation is on its way to ${b.booker.email}.` : `Your receipt is on its way to ${b.booker.email}.`}</p>
       </Message>
       <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
@@ -144,7 +145,9 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
             <p className="text-sm">{b.session ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)} · ${fmtTime(b.session.startsAt)} to ${fmtTime(b.session.endsAt)} UK time` : `Self-paced${c.daysToComplete ? ` · ${c.daysToComplete} days to complete once your login arrives` : ''}`}</p>
             <dl className="mt-2 flex flex-col gap-2 border-t border-hairline pt-4 text-sm">
               <div className="flex justify-between"><dt>Places</dt><dd>{b.places}</dd></div>
-              <div className="flex justify-between font-extrabold text-ink"><dt>Paid by card</dt><dd>{gbp(b.totalPence)}</dd></div>
+              {b.poNumber && <div className="flex justify-between"><dt>PO number</dt><dd>{b.poNumber}</dd></div>}
+              <div className="flex justify-between font-extrabold text-ink"><dt>{b.method === 'ACCOUNT' ? 'On account' : 'Paid by card'}</dt><dd>{gbp(b.totalPence)}</dd></div>
+              {b.method === 'ACCOUNT' && <p className="text-[13px] font-normal">{statementText()}</p>}
             </dl>
           </div>
         </aside>

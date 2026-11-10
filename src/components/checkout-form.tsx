@@ -20,6 +20,7 @@ export type CheckoutProps = {
   cutoffText: string;
   prefill: { firstName: string; lastName: string; email: string; mobile: string } | null;
   backHref: string;
+  account: { company: string; role: string; available: number; onHold: boolean; poRequired: boolean; lastPo: string; statementText: string; bookerName: string; bookerEmail: string } | null;
 };
 
 const money = (p: number) => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP' }).format(p / 100);
@@ -36,6 +37,8 @@ export function CheckoutForm(p: CheckoutProps) {
   const [places, setPlaces] = useState(1);
   const [bookerAttends, setBookerAttends] = useState(true);
   const [mode, setMode] = useState<'now' | 'later'>('now');
+  const [pay, setPay] = useState<'account' | 'card'>(p.account && !p.account.onHold ? 'account' : 'card');
+  const onAccount = pay === 'account' && !!p.account;
   // Keep the stepper and choices in step with what was submitted (React resets uncontrolled fields after an action).
   const [seen, setSeen] = useState(state);
   if (seen !== state) {
@@ -43,6 +46,7 @@ export function CheckoutForm(p: CheckoutProps) {
     if (state.values?.places) setPlaces(Number(state.values.places));
     if (state.values) setBookerAttends(state.values.bookerAttends === 'on');
     if (state.values?.mode === 'later' || state.values?.mode === 'now') setMode(state.values.mode);
+    if (state.values?.method === 'account' || state.values?.method === 'card') setPay(state.values.method);
   }
   const f = state.fields ?? {};
   const v = state.values ?? {};
@@ -61,6 +65,7 @@ export function CheckoutForm(p: CheckoutProps) {
       <input type="hidden" name="places" value={places} />
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="needsWaiver" value={p.needsWaiver ? '1' : '0'} />
+      <input type="hidden" name="method" value={onAccount ? 'account' : 'card'} />
 
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
@@ -111,6 +116,14 @@ export function CheckoutForm(p: CheckoutProps) {
           )}
         </section>
 
+        {onAccount && p.account ? (
+          <section className={card} aria-labelledby="you-h">
+            <h2 id="you-h" className="mb-3 text-[22px] font-extrabold text-ink">Booking as</h2>
+            <p className="font-bold text-ink">{p.account.bookerName} · {p.account.company}</p>
+            <p className="text-sm">{p.account.bookerEmail} · {p.account.role}</p>
+            <p className="mt-2 text-sm">Not you? <Link href="/logout">Log out</Link></p>
+          </section>
+        ) : (
         <section className={card} aria-labelledby="you-h">
           <h2 id="you-h" className="mb-2 text-[22px] font-extrabold text-ink">Your details</h2>
           {!p.prefill && (
@@ -123,14 +136,14 @@ export function CheckoutForm(p: CheckoutProps) {
             <label className={labelCls}>Mobile<input name="mobile" type="tel" autoComplete="tel" defaultValue={val("mobile", p.prefill?.mobile)} className={input} /></label>
           </div>
         </section>
-
+        )}
         <section className={card} aria-labelledby="terms-h">
           <h2 id="terms-h" className="mb-2 text-[22px] font-extrabold text-ink">Terms</h2>
           <p className="mb-4 text-sm">{p.cutoffText} Full details in our <Link href="/legal/terms">cancellation terms</Link>.</p>
           <div className="flex flex-col gap-3.5">
             <label className="flex cursor-pointer items-start gap-3 text-[15px] text-ink">
               <input type="checkbox" name="terms" defaultChecked={chk("terms")} className="mt-0.5 size-[22px] shrink-0 accent-ink" {...err('terms')} />
-              <span>I accept the <Link href="/legal/terms">Terms &amp; Conditions</Link> and have read the <Link href="/legal/privacy">privacy notice</Link>.</span>
+              <span>I accept the <Link href="/legal/terms">Terms &amp; Conditions</Link>{onAccount ? ' for credit accounts' : <> and have read the <Link href="/legal/privacy">privacy notice</Link></>}.</span>
             </label>
             <FieldError id="terms-err" msg={f.terms} />
             {p.needsWaiver && (
@@ -149,10 +162,37 @@ export function CheckoutForm(p: CheckoutProps) {
           </div>
         </section>
 
+        {p.account && (
+          <section className={card} aria-labelledby="pay-h">
+            <h2 id="pay-h" className="mb-4 text-[22px] font-extrabold text-ink">Payment</h2>
+            {p.account.onHold && <p role="alert" className="mb-4 rounded-control bg-warn-bg px-4 py-3 text-sm font-semibold text-warn-fg">Your company account is on hold because an invoice is overdue, so this booking needs a card payment. Contact us to sort out the account.</p>}
+            <div className="mb-4 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="How to pay">
+              {([['account', 'On account', p.account.statementText], ['card', 'Pay by card', 'Card, Apple Pay or Google Pay now.']] as const).map(([m, t, d]) => (
+                <label key={m} className={`flex cursor-pointer gap-3 rounded-control border p-4 ${pay === m ? 'border-2 border-ink bg-cyan-soft' : 'border-hairline'} ${m === 'account' && p.account!.onHold ? 'pointer-events-none opacity-50' : ''}`}>
+                  <input type="radio" name="payRadio" checked={pay === m} disabled={m === 'account' && p.account!.onHold} onChange={() => setPay(m)} className="mt-1 accent-ink" />
+                  <span><span className="block font-bold text-ink">{t}</span><span className="text-[13px]">{d}</span></span>
+                </label>
+              ))}
+            </div>
+            {onAccount && (
+              <>
+                <div className="mb-4 flex items-center justify-between rounded-control bg-page px-4 py-3 text-sm"><span>Available credit</span><span className="text-base font-extrabold text-ink">{money(p.account.available)}</span></div>
+                {sub + vat > p.account.available && <p role="alert" className="mb-4 rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">This booking is more than your available credit. Pay by card, or contact us to raise your limit.</p>}
+                <label className={labelCls}>Your reference or PO number{p.account.poRequired ? '' : <span className="font-normal"> (optional)</span>}
+                  <input name="poNumber" defaultValue={val('poNumber', p.account.lastPo)} maxLength={50} placeholder="PO 4500-221" className={`${input} sm:max-w-[320px]`} {...err('poNumber')} />
+                  <span className="text-[13px] font-normal">{p.account.poRequired ? 'Your company needs a PO number on every booking. ' : ''}Shown on the invoice line.</span>
+                  <FieldError id="poNumber-err" msg={f.poNumber} />
+                </label>
+              </>
+            )}
+          </section>
+        )}
+
         <button type="submit" disabled={pending} className="inline-flex min-h-[56px] items-center justify-center rounded-chip bg-cyan px-6 text-base font-bold text-ink disabled:opacity-60">
-          {pending ? 'Holding your places…' : `Continue to payment · ${money(sub + vat)}`}
+          {onAccount ? (pending ? 'Booking…' : `Confirm booking · ${money(sub + vat)}`) : pending ? 'Holding your places…' : `Continue to payment · ${money(sub + vat)}`}
         </button>
-        <p className="text-sm">Booking for a company? <Link href="/accounts/apply">Apply for a credit account</Link></p>
+        {onAccount && <p className="-mt-3 text-sm">No payment now. Everyone booked gets their joining details straight away.</p>}
+        {!p.account && <p className="text-sm">Booking for a company? <Link href="/accounts/apply">Apply for a credit account</Link></p>}
       </div>
 
       <aside aria-label="Your booking" className="w-full overflow-hidden rounded-card bg-white shadow-card lg:sticky lg:top-6 lg:w-[380px] lg:shrink-0">
@@ -168,7 +208,7 @@ export function CheckoutForm(p: CheckoutProps) {
             <div className="flex justify-between"><dt>VAT ({p.vatRate}%)</dt><dd>{money(vat)}</dd></div>
             <div className="flex justify-between border-t border-hairline pt-3 text-base font-extrabold text-ink"><dt>Total</dt><dd>{money(sub + vat)}</dd></div>
           </dl>
-          {p.sessionId && <p className="text-[13px]">Places held for you for 15 minutes once you continue to payment.</p>}
+          {p.sessionId && !onAccount && <p className="text-[13px]">Places held for you for 15 minutes once you continue to payment.</p>}
         </div>
       </aside>
     </form>

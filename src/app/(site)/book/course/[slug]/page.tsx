@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { currentPerson } from '@/lib/auth';
 import { checkoutProps } from '@/lib/checkout-props';
+import { bookingAccount } from '@/lib/credit';
 import { CheckoutForm } from '@/components/checkout-form';
 
 export const dynamic = 'force-dynamic';
@@ -15,5 +16,6 @@ export default async function BookCourse({ params }: { params: Promise<{ slug: s
   if (!course) notFound();
   if (course.deliveryType !== 'ELEARNING') redirect(`/courses/${course.slug}#dates`);
   if (!course.pricePence) redirect('/contact');
-  return <CheckoutForm {...checkoutProps(course, null, null, await currentPerson())} />;
+  const me = await currentPerson();
+  return <CheckoutForm {...checkoutProps(course, null, null, me, me ? await bookingAccount(me.id) : null)} />;
 }

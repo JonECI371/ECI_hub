@@ -3,12 +3,16 @@ import type { Course, Person, Session, Subject, Venue } from '@prisma/client';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { MAX_PLACES } from '@/lib/booking';
 import type { CheckoutProps } from '@/components/checkout-form';
+import { statementText } from '@/lib/credit';
+
+export type AccountInfo = { account: { company: string; status: string; poRule: string }; role: string; available: number; lastPo: string | null } | null;
 
 export function checkoutProps(
   course: Course & { subject: Subject },
   session: (Session & { venue: Venue | null }) | null,
   left: number | null,
   me: Person | null,
+  acc: AccountInfo = null,
 ): CheckoutProps {
   const when = session
     ? [
@@ -32,5 +36,9 @@ export function checkoutProps(
     cutoffText: session ? `Free cancellation up to ${cutoff} before the start.` : 'Free cancellation until you are enrolled on the course.',
     prefill: me ? { firstName: me.firstName, lastName: me.lastName, email: me.email, mobile: me.mobile ?? '' } : null,
     backHref: `/courses/${course.slug}`,
+    account: acc && me ? {
+      company: acc.account.company, role: acc.role === 'MAIN_BOOKER' ? 'Main booker' : 'Booker', available: acc.available, onHold: acc.account.status === 'ON_HOLD',
+      poRequired: acc.account.poRule !== 'NONE', lastPo: acc.lastPo ?? '', statementText: statementText(), bookerName: `${me.firstName} ${me.lastName}`, bookerEmail: me.email,
+    } : null,
   };
 }

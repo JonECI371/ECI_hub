@@ -4,6 +4,7 @@ import { sendEmail } from '@/lib/integrations/email';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { offerFreedPlaces } from '@/lib/waitlist';
+import { creditCancelledAccountBooking } from '@/lib/credit';
 
 /**
  * Cancels a confirmed booking: frees the places, refunds card payments when asked (test mode records
@@ -18,14 +19,16 @@ export async function cancelConfirmedBooking(bookingId: string, actorId: string,
     const r = await tx.booking.updateMany({ where: { id: b.id, status: 'CONFIRMED' }, data: { status: 'CANCELLED' } });
     if (!r.count) return false; // someone else cancelled it first
     await tx.attendee.updateMany({ where: { bookingId: b.id }, data: { status: 'CANCELLED' } });
-    if (opts.refund && !stripeEnabled()) {
+    // On account: the refund is a removed statement line, or a credit line if already invoiced.
+    if (opts.refund && b.method === 'ACCOUNT') await creditCancelledAccountBooking(tx, b.id);
+    if (opts.refund && b.method === 'CARD' && !stripeEnabled()) {
       for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: 'refunded_test' } });
     }
     await tx.auditLog.create({ data: { actorId, action: 'BOOKING_CANCELLED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CANCELLED', reason, refund: opts.refund, byAdmin: !!opts.byAdmin } } });
     return true;
   });
   if (!done) return false;
-  if (opts.refund && stripeEnabled()) await refundBooking(b.id);
+  if (opts.refund && b.method === 'CARD' && stripeEnabled()) await refundBooking(b.id);
   if (b.sessionId) await offerFreedPlaces(b.sessionId);
   if (b.sessionId) await syncSessionMeeting(b.sessionId);
   const refunded = opts.refund && b.method === 'CARD' && b.payments.some((p) => p.status === 'succeeded');
@@ -39,6 +42,7 @@ export async function cancelConfirmedBooking(bookingId: string, actorId: string,
         { type: 'heading', text: 'Your booking is cancelled' },
         { type: 'text', text: `Hello ${p!.firstName}, booking ${b.reference} for ${b.course.title} has been cancelled${opts.byAdmin ? ' by the ECI-Hub team' : ''}.` },
         ...(p!.id === b.bookerId && refunded ? [{ type: 'text' as const, text: 'Your refund goes back to the card you paid with within 5 to 10 working days.' }] : []),
+        ...(p!.id === b.bookerId && opts.refund && b.method === 'ACCOUNT' ? [{ type: 'text' as const, text: 'It has been taken off your company statement, or credited if it was already invoiced.' }] : []),
         ...(opts.byAdmin && reason ? [{ type: 'summary' as const, rows: [['Reason', reason]] as [string, string][] }] : []),
         { type: 'text', text: 'Questions? Reply to this email or call +44 (0) 1932 963463.' },
       ],

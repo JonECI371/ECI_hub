@@ -23,6 +23,9 @@ export async function runJobs(): Promise<Record<string, number>> {
     // Expired waitlist offers pass to the next person; freed places are offered.
     const waiting = await db.waitlistEntry.findMany({ where: { session: { status: 'PUBLISHED', startsAt: { gt: new Date() } } }, distinct: ['sessionId'], select: { sessionId: true } });
     for (const w of waiting) done.waitlist += await offerFreedPlaces(w.sessionId);
+    // Accounts with an invoice 14+ days overdue go on hold; paid-up accounts come off it.
+    const { applyOverdueHolds } = await import('@/lib/credit');
+    await applyOverdueHolds();
   } catch (err) {
     console.error('[jobs] failed', err);
     await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: 'Scheduled reminders failed', detail: String((err as Error).message).slice(0, 500), recordType: 'System', recordId: 'jobs' } });

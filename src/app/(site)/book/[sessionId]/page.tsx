@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { currentPerson } from '@/lib/auth';
 import { placesLeft } from '@/lib/sessions';
 import { checkoutProps } from '@/lib/checkout-props';
+import { bookingAccount } from '@/lib/credit';
 import { CheckoutForm } from '@/components/checkout-form';
 
 export const dynamic = 'force-dynamic';
@@ -27,5 +28,6 @@ export default async function BookSession({ params }: { params: Promise<{ sessio
       </div>
     );
   }
-  return <CheckoutForm {...checkoutProps(session.course, session, left, await currentPerson())} />;
+  const me = await currentPerson();
+  return <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null)} />;
 }

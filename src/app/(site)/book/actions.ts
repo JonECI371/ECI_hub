@@ -9,6 +9,10 @@ import { sign, verify } from '@/lib/auth';
 import { CheckoutError, MAX_PLACES, createPendingBooking, holdLive } from '@/lib/booking';
 import { completePaidBooking } from '@/lib/booking-complete';
 import { stripeEnabled } from '@/lib/integrations/payments';
+import { currentPerson } from '@/lib/auth';
+import { createAccountBooking } from '@/lib/credit';
+import { sendBookingConfirmation } from '@/lib/notifications';
+import { syncSessionMeeting } from '@/lib/integrations/teams';
 
 export type CheckoutState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 type CheckoutCookie = { bid: string; exp: number };
@@ -29,6 +33,7 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   const sessionId = get('sessionId') || null;
 
   if (!Number.isInteger(places) || places < 1 || places > MAX_PLACES) return { error: 'Choose between 1 and 20 places.', values };
+  if (get('method') === 'account') return bookOnAccount(form, values, { places, mode, bookerAttends, courseId, sessionId });
 
   const checks: [string, z.ZodTypeAny, string][] = [
     ['firstName', name, get('firstName')],
@@ -70,6 +75,37 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
     httpOnly: true, sameSite: 'lax', path: '/book', secure: SITE_URL.startsWith('https://'),
   });
   redirect('/book/pay');
+}
+
+/** On account: the signed-in booker is the booker; no hold or payment step, confirmed at once. */
+async function bookOnAccount(form: FormData, values: Record<string, string>, o: { places: number; mode: string; bookerAttends: boolean; courseId: string; sessionId: string | null }): Promise<CheckoutState> {
+  const me = await currentPerson();
+  if (!me) return { error: 'Your sign-in has ended. Log in again to book on account.', values };
+  const get = (k: string) => String(form.get(k) ?? '');
+  const fields: Record<string, string> = {};
+  const others: { name: string; email: string }[] = [];
+  if (o.mode === 'now') {
+    for (let i = 0; i < o.places - (o.bookerAttends ? 1 : 0); i++) {
+      const n = name.safeParse(get(`other_name_${i}`)), e = email.safeParse(get(`other_email_${i}`));
+      if (!n.success) fields[`other_name_${i}`] = n.error.issues[0].message;
+      if (!e.success) fields[`other_email_${i}`] = e.error.issues[0].message;
+      others.push({ name: get(`other_name_${i}`), email: get(`other_email_${i}`) });
+    }
+  }
+  if (get('terms') !== 'on') fields.terms = 'Accept the Terms & Conditions to continue';
+  if (get('needsWaiver') === '1' && get('waiver') !== 'on') fields.waiver = 'Tick this box so the course can go ahead within your cancellation period';
+  if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
+  let reference: string;
+  try {
+    const b = await createAccountBooking({ personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber') });
+    reference = b.reference;
+    await sendBookingConfirmation(b.id);
+    if (b.sessionId) await syncSessionMeeting(b.sessionId);
+  } catch (e) {
+    if (e instanceof CheckoutError) return { error: e.message, values, fields: /PO number/.test(e.message) ? { poNumber: 'Enter your PO number' } : undefined };
+    throw e;
+  }
+  redirect(`/book/outcome?ref=${reference}`);
 }
 
 /** The booking this browser is checking out, if any. */

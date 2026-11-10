@@ -13,8 +13,8 @@ import { registrationLink } from '@/lib/registration-link';
 import { sendJoiningDetails } from '@/lib/notifications';
 import { sendEmail } from '@/lib/integrations/email';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
-import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
+import { cancelConfirmedBooking } from '@/lib/booking-cancel';
 
 /** Loads a booking the signed-in person made. Every action checks this on the server. */
 async function myBooking(reference: string) {
@@ -119,20 +119,6 @@ export async function cancelBooking(form: FormData) {
   const { me, b } = await myBooking(ref);
   const enrolled = b.attendees.some((a) => a.enrolment?.enrolledAt);
   if (b.status !== 'CONFIRMED' || !withinCutoff(b.session, b.course.subject, enrolled)) back(ref, 'cutoff');
-  const reason = String(form.get('reason') ?? '').slice(0, 200);
-  await db.$transaction(async (tx) => {
-    await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED' } });
-    await tx.attendee.updateMany({ where: { bookingId: b.id }, data: { status: 'CANCELLED' } });
-    if (!stripeEnabled()) {
-      for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: 'refunded_test' } });
-    }
-    await tx.auditLog.create({ data: { actorId: me.id, action: 'BOOKING_CANCELLED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CANCELLED', reason } } });
-  });
-  if (stripeEnabled()) await refundBooking(b.id);
-  if (b.sessionId) await offerFreedPlaces(b.sessionId);
-  if (b.sessionId) await syncSessionMeeting(b.sessionId);
-  for (const p of [b.booker, ...b.attendees.map((a) => a.person).filter((x) => x && x.id !== b.bookerId)]) {
-    await sendEmail({ to: p!.email, personId: p!.id, trigger: 'BOOKING_CANCELLED', subject: `Cancelled: ${b.course.title} (${b.reference})`, text: `Hello ${p!.firstName},\n\nBooking ${b.reference} for ${b.course.title} has been cancelled.${p!.id === b.bookerId && b.method === 'CARD' ? ' Your refund goes back to the card you paid with within 5 to 10 working days.' : ''}` });
-  }
+  await cancelConfirmedBooking(b.id, me.id, { reason: String(form.get('reason') ?? ''), refund: true });
   back(ref, 'cancelled');
 }

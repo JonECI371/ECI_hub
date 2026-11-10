@@ -58,8 +58,8 @@ describe('payment confirmation', () => {
   it('confirms once, even if the payment is reported twice', async () => {
     const { course: c, session } = await course();
     const b = await createPendingBooking({ courseId: c.id, sessionId: session!.id, places: 1, booker: booker(), bookerAttends: true, others: null });
-    const first = await confirmCardBooking(b.id, 'pi_test_1');
-    const second = await confirmCardBooking(b.id, 'pi_test_1');
+    const first = await confirmCardBooking(b.id, `pi_test_${b.id}`);
+    const second = await confirmCardBooking(b.id, `pi_test_${b.id}`);
     expect(first.already).toBe(false);
     expect(second.already).toBe(true);
     expect(await db.payment.count({ where: { bookingId: b.id } })).toBe(1);

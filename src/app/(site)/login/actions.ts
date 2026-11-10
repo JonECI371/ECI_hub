@@ -101,7 +101,9 @@ export async function verifyStaffCode(form: FormData) {
   }
   await clearMfa();
   await startSession(person.id, mfa.trust);
-  redirect(mfa.next.startsWith('/account') && person.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN') ? '/admin' : mfa.next);
+  // Staff land on their own area unless they were heading somewhere specific.
+  const home = person.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN') ? '/admin' : person.roles.includes('TRAINER') ? '/trainer' : '/account';
+  redirect(mfa.next.startsWith('/account') ? home : mfa.next);
 }
 
 export async function useDifferentEmail() {

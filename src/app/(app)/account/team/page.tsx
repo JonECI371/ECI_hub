@@ -88,7 +88,7 @@ export default async function Team({ searchParams }: { searchParams: Promise<{ m
                   return (
                     <tr key={p.id} className="border-t border-hairline align-top">
                       <td className="px-6 py-3"><span className="block font-bold text-ink">{p.firstName} {p.lastName === '-' ? '' : p.lastName}</span><span className="text-xs">{p.email}</span></td>
-                      <td className="px-6 py-3">{p.certificates.length ? p.certificates.map((c) => c.course.title).join(', ') : 'None yet'}</td>
+                      <td className="px-6 py-3">{p.certificates.length ? p.certificates.map((c, i) => <span key={c.id}>{i > 0 && ', '}{c.fileKey ? <a href={`/account/certificates/${c.id}`} target="_blank" rel="noreferrer">{c.course.title}</a> : c.course.title}</span>) : 'None yet'}</td>
                       <td className="px-6 py-3">{next ? <>{next.course.title}, {dmy.format(next.expiresAt!)} {soon && <Chip tone="warn">Renew soon</Chip>}</> : '-'}</td>
                     </tr>
                   );

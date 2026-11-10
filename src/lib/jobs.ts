@@ -29,6 +29,9 @@ export async function runJobs(): Promise<Record<string, number>> {
     // Month end: last month's open statements are issued and a billing task is raised.
     const { closeStatements } = await import('@/lib/billing');
     done.statements = await closeStatements();
+    // Certificates expiring in about three months: remind the holder and their booker, once.
+    const { sendExpiryReminders } = await import('@/lib/certificates');
+    done.expiry = await sendExpiryReminders();
   } catch (err) {
     console.error('[jobs] failed', err);
     await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: 'Scheduled reminders failed', detail: String((err as Error).message).slice(0, 500), recordType: 'System', recordId: 'jobs' } });

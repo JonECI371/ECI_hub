@@ -6,7 +6,7 @@ import { requireAdmin, TASK_LABEL } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { CopyButton } from '@/components/copy-button';
-import { decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
+import { uploadCertificate, decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { money } from '@/lib/format';
 import { companiesHouseConfigured, companiesHouseLink, type CompanyCheck } from '@/lib/integrations/companies-house';
@@ -19,6 +19,7 @@ const MSG: Record<string, [string, boolean]> = {
   returned: ['Registration returned. The delegate has been asked to update it.', true], moved: ['Booking moved. The booker has been emailed.', true], declined: ['Request declined. The booker has been emailed.', true],
   note: ['Say what needs changing before returning a registration.', false],
   accountapproved: ['Account approved. The bookers have been emailed a sign-in link.', true], accountdeclined: ['Application declined. The main booker has been emailed.', true],
+  certified: ['Certificate issued. The delegate and their booker have been emailed.', true], badcert: ['Attach a PDF, JPEG, PNG or WebP of 10MB or less, and the issue date.', false],
   bookerapproved: ['Booker approved. They and the main booker have been emailed.', true], bookerdeclined: ['Booker declined. The main booker has been emailed.', true],
   badlimit: ['Enter a credit limit in pounds.', false], reason: ['Give a reason before declining an application.', false], nodate: ['That date no longer has enough places.', false], gone: ['That task has already been dealt with.', false],
 };
@@ -50,6 +51,12 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
     creditDefaults(),
   ]);
   const accById = new Map(accounts.map((x) => [x.id, x]));
+  const certSessionIds = tasks.filter((t) => t.type === 'CERTIFICATE_UPLOAD' && t.recordType === 'Session').map((t) => t.recordId);
+  const certAttendeeIds = tasks.filter((t) => t.type === 'CERTIFICATE_UPLOAD' && t.recordType === 'Attendee').map((t) => t.recordId);
+  const certPeople = await db.attendee.findMany({
+    where: { status: { in: ['ATTENDED', 'CERTIFIED'] }, OR: [{ id: { in: certAttendeeIds } }, { booking: { sessionId: { in: certSessionIds }, status: { in: ['CONFIRMED', 'COMPLETED'] } } }] },
+    include: { person: true, booking: { include: { course: true, session: true } } },
+  });
   const months = tasks.filter((t) => t.recordType === 'Month').map((t) => t.recordId);
   const monthStatements = await db.statement.findMany({ where: { month: { in: months }, status: { not: 'OPEN' }, lines: { some: {} } }, include: { account: true, lines: true }, orderBy: { account: { company: 'asc' } } });
   const memberIds = tasks.filter((t) => t.recordType === 'AccountMember').map((t) => t.recordId);
@@ -239,6 +246,35 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                 <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-ink`}>Imported into Xero</button></form>
               </>
             );
+          }
+
+          if (t.type === 'CERTIFICATE_UPLOAD') {
+            const people = certPeople.filter((x) => (t.recordType === 'Session' ? x.booking.sessionId === t.recordId : x.id === t.recordId) && x.person).sort((x, y) => x.person!.lastName.localeCompare(y.person!.lastName));
+            const course = people[0]?.booking.course;
+            const issuedDefault = (people[0]?.booking.session?.endsAt ?? new Date()).toLocaleDateString('en-CA', { timeZone: 'Europe/London' });
+            body = (
+              <>
+                <p className="mb-3 text-sm">{t.detail} {course?.validityYears ? `Certificates are valid for ${course.validityYears} years from the issue date.` : 'This course has no expiry set.'}</p>
+                {people.length === 0 ? <p className="text-sm">Nobody marked as attended.</p> : (
+                  <ul className="flex flex-col gap-2">
+                    {people.map((x) => (
+                      <li key={x.id} className="flex flex-col gap-2 rounded-control bg-page p-3 sm:flex-row sm:items-center sm:justify-between">
+                        <span className="font-bold text-ink">{x.person!.firstName} {x.person!.lastName}<span className="block text-xs font-normal">{x.person!.email}</span></span>
+                        {x.status === 'CERTIFIED' ? <span className="text-sm font-bold text-ink">Issued</span> : (
+                          <form action={uploadCertificate} encType="multipart/form-data" className="flex flex-wrap items-end gap-2">
+                            {hidden}<input type="hidden" name="attendeeId" value={x.id} />
+                            <label className="flex flex-col gap-1 text-xs font-bold">Issued<input type="date" name="issuedAt" defaultValue={issuedDefault} required className="h-11 rounded-control border border-field bg-white px-2 text-sm" /></label>
+                            <label className="flex flex-col gap-1 text-xs font-bold">Certificate<input type="file" name="file" required accept="application/pdf,image/jpeg,image/png,image/webp" className="max-w-[210px] text-xs font-normal" /></label>
+                            <button type="submit" className={`${btn} bg-cyan text-ink`}>Upload</button>
+                          </form>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            );
+            actions = <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-white text-ink`}>Done without uploading</button></form>;
           }
 
           if (t.type === 'DATE_CHANGE' && b) {

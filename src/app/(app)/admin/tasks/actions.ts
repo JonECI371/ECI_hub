@@ -137,3 +137,22 @@ export async function decideBookerTask(form: FormData) {
   revalidatePath('/admin', 'layout');
   back(form, approve ? 'bookerapproved' : 'bookerdeclined');
 }
+
+/** Upload one delegate's certificate from the Certificates to upload task. */
+export async function uploadCertificate(form: FormData) {
+  const me = await requireAdmin('/admin/tasks');
+  const { CertificateError, issueCertificate } = await import('@/lib/certificates');
+  const { EXT } = await import('@/lib/integrations/files');
+  const file = form.get('file');
+  const issued = String(form.get('issuedAt') ?? '');
+  if (!(file instanceof File) || file.size === 0 || !EXT[file.type] || file.size > 10 * 1024 * 1024) back(form, 'badcert');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(issued)) back(form, 'badcert');
+  try {
+    await issueCertificate(String(form.get('attendeeId')), me.id, file as File, new Date(`${issued}T12:00:00Z`));
+  } catch (err) {
+    if (err instanceof CertificateError) redirect(`/admin/tasks?msg=rule&detail=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
+  revalidatePath('/admin', 'layout');
+  back(form, 'certified');
+}

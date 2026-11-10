@@ -20,7 +20,7 @@ export default async function Certificates() {
         ) : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[560px] text-left text-sm">
-              <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr><th className="px-6 py-3">Certificate</th><th className="px-6 py-3">Awarded</th><th className="px-6 py-3">Valid until</th><th className="px-6 py-3"><span className="sr-only">Renew</span></th></tr></thead>
+              <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr><th className="px-6 py-3">Certificate</th><th className="px-6 py-3">Awarded</th><th className="px-6 py-3">Valid until</th><th className="px-6 py-3"><span className="sr-only">Download or renew</span></th></tr></thead>
               <tbody>
                 {certs.map((c) => {
                   const soon = c.expiresAt && c.expiresAt.getTime() - Date.now() < 90 * 86400000;
@@ -29,7 +29,7 @@ export default async function Certificates() {
                       <td className="px-6 py-3 font-bold text-ink">{c.course.title}</td>
                       <td className="px-6 py-3 tabular-nums">{dmy.format(c.issuedAt)}</td>
                       <td className="px-6 py-3 tabular-nums">{c.expiresAt ? dmy.format(c.expiresAt) : 'Does not expire'} {soon && <Chip tone="warn">Renew soon</Chip>}</td>
-                      <td className="px-6 py-3">{soon && <Link href={`/courses/${c.course.slug}`}>Book renewal</Link>}</td>
+                      <td className="px-6 py-3"><span className="flex flex-wrap gap-3">{c.fileKey && <a href={`/account/certificates/${c.id}`} target="_blank" rel="noreferrer">Download</a>}{soon && <Link href={`/courses/${c.course.slug}#dates`}>Book renewal</Link>}</span></td>
                     </tr>
                   );
                 })}

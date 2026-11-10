@@ -36,7 +36,7 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 - [x] **2.5 In person.** "Venues, venue address release rules, dietary and access needs on the class list."
 - [x] **2.6 eLearning enrolment packs.** "Enrolment task with copy fields and Mark enrolled, or email to the provider, per course setting."
 - [x] **2.7 Trainer app.** "Build the four trainer screens (TrainerSessions, TrainerAttendance, TrainerAvailability, TrainerProfile), phone first. Attendance creates the certificate upload task."
-- [ ] **2.8 Certificates and expiry reminders.**
+- [x] **2.8 Certificates and expiry reminders.**
 
 ## Phase 3: Replace Zoho and automate (gate: Zoho switched off)
 

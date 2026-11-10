@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/admin';
 import { fmtTime } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { addSession } from '../courses/actions';
+import { trainerOptions } from '@/lib/trainers';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Calendar', robots: { index: false } };
@@ -31,7 +32,7 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
       include: { course: true, trainer: true },
       orderBy: { startsAt: 'asc' },
     }),
-    db.person.findMany({ where: { roles: { has: 'TRAINER' } }, orderBy: { firstName: 'asc' } }),
+    trainerOptions(),
     db.course.findMany({ where: { deliveryType: { not: 'ELEARNING' }, status: { not: 'WITHDRAWN' } }, orderBy: { title: 'asc' } }),
   ]);
   const inMonth = sessions.filter((s) => { const p = parts(s.startsAt); return p.y === y && p.m === m; });
@@ -53,7 +54,7 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
         <div><p className="mb-1.5 text-xs">Admin › Calendar</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Calendar</h1></div>
         <form className="flex items-end gap-2">
           <input type="hidden" name="month" value={ym(y, m)} />
-          <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainer" defaultValue={sp.trainer ?? ''} className={input}><option value="">All trainers</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}</select></label>
+          <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainer" defaultValue={sp.trainer ?? ''} className={input}><option value="">All trainers</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
           <button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink">Filter</button>
         </form>
       </div>
@@ -67,7 +68,7 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
             <label className="flex flex-col gap-1 text-xs font-bold">Starts<input type="time" name="start" defaultValue="09:00" className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Ends<input type="time" name="end" defaultValue="16:30" className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Days<input type="number" name="days" min={1} max={10} defaultValue={1} className={input} /></label>
-            <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={sp.trainer ?? ''} className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}</select></label>
+            <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={sp.trainer ?? ''} className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
             <label className="flex min-h-11 items-center gap-2 self-end text-sm text-ink"><input type="checkbox" name="publish" className="size-5 accent-ink" />Publish now</label>
             <div className="flex items-end gap-2"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink">Add session</button><Link href={q({ new: undefined })} className="inline-flex min-h-11 items-center text-sm">Cancel</Link></div>
           </form>

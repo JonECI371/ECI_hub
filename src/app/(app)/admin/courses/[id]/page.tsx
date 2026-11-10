@@ -7,6 +7,7 @@ import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { attendeeState } from '@/lib/portal';
 import { offerFreedPlaces } from '@/lib/waitlist';
+import { trainerOptions } from '@/lib/trainers';
 import { Chip, DeliveryChip } from '@/components/ui';
 import { addSession, cancelSession, updateSession } from '../actions';
 
@@ -15,7 +16,8 @@ export const metadata: Metadata = { title: 'Course', robots: { index: false } };
 
 const MSG: Record<string, [string, boolean]> = {
   saved: ['Course saved.', true], sessionadded: ['Session added.', true], updated: ['Session updated.', true], cancelled: ['Session cancelled. Everyone booked has been emailed and refunds recorded.', true],
-  badsession: ['Check the date and times: the session must start in the future and end after it starts.', false], confirmname: ['Type the course name exactly to cancel the session.', false],
+  badsession: ['Check the date and times: the session must start in the future and end after it starts.', false],
+  trainerblocked: ['That trainer cannot be assigned: they are awaiting approval, suspended, or have an expired qualification. Check their record in People.', false], confirmname: ['Type the course name exactly to cancel the session.', false],
 };
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
 const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
@@ -38,7 +40,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
       orderBy: { booking: { createdAt: 'asc' } },
     }),
     selected ? db.waitlistEntry.findMany({ where: { sessionId: selected.id }, include: { person: true }, orderBy: { position: 'asc' } }) : Promise.resolve([]),
-    db.person.findMany({ where: { roles: { has: 'TRAINER' } }, orderBy: { firstName: 'asc' } }),
+    trainerOptions(),
     db.venue.findMany({ orderBy: { name: 'asc' } }),
   ]);
   const notice = msg ? MSG[msg] : null;
@@ -89,7 +91,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                   <label className="flex flex-col gap-1 text-xs font-bold">Ends<input type="time" name="end" defaultValue={c.durationText.toLowerCase().includes('half') ? '12:30' : '16:30'} required className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Days<input type="number" name="days" min={1} max={10} defaultValue={/(\d+) days/.exec(c.durationText)?.[1] ?? 1} className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={c.placesPerSession ?? 12} className={input} /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}</select></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
                   {c.deliveryType === 'IN_PERSON' && <label className="flex flex-col gap-1 text-xs font-bold sm:col-span-2">Venue<select name="venueId" defaultValue={c.defaultVenueId ?? ''} className={input}><option value="">Course default</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>}
                   <label className="flex min-h-11 items-center gap-2 text-sm text-ink sm:col-span-2"><input type="checkbox" name="publish" defaultChecked className="size-5 accent-ink" />Publish now (shows on the website)</label>
                   <button type="submit" className={`${btn} bg-cyan text-ink sm:col-start-3`}>Add session</button>
@@ -153,7 +155,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                 <div className="flex flex-col gap-4">
                   <form action={updateSession} className="flex items-end gap-2">
                     <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="trainer" />
-                    <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={selected.trainerId ?? ''} className={input}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.firstName} {t.lastName}</option>)}</select></label>
+                    <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={selected.trainerId ?? ''} className={input}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
                     <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
                   </form>
                   <form action={updateSession} className="flex items-end gap-2">

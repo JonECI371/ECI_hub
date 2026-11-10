@@ -399,13 +399,24 @@ model Certificate {
   fileKey   String?
 }
 
+enum TrainerStatus {
+  PENDING
+  APPROVED
+  SUSPENDED
+}
+
 model TrainerProfile {
-  id             String   @id @default(cuid())
-  personId       String   @unique
-  person         Person   @relation(fields: [personId], references: [id])
+  id             String        @id @default(cuid())
+  personId       String        @unique
+  person         Person        @relation(fields: [personId], references: [id])
   subjects       String[]
   homeBase       String?
-  qualifications Json     @default("[]") // [{ name, issuer, expiresAt, fileKey }]
+  qualifications Json          @default("[]") // [{ name, issuer, expiresAt, fileKey }]
+  // Only APPROVED trainers with no expired qualification can be assigned to sessions.
+  status         TrainerStatus @default(PENDING)
+  approvedAt     DateTime?
+  approvedById   String?
+  employment     String?       // EMPLOYED | ASSOCIATE
 }
 
 model Availability {

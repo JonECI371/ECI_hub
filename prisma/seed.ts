@@ -125,7 +125,20 @@ async function main() {
 
   // Sample trainers so sessions can be assigned.
   for (const t of [{ email: 'dan.hughes@example.co.uk', firstName: 'Dan', lastName: 'Hughes' }, { email: 'aisha.khan@example.co.uk', firstName: 'Aisha', lastName: 'Khan' }]) {
-    await db.person.upsert({ where: { email: t.email }, update: {}, create: { ...t, roles: ['TRAINER'] } });
+    const tp = await db.person.upsert({ where: { email: t.email }, update: {}, create: { ...t, roles: ['TRAINER'] } });
+    // Sample profile so assignment rules can be tried: approved, one qualification expiring soon.
+    await db.trainerProfile.upsert({
+      where: { personId: tp.id },
+      update: {},
+      create: {
+        personId: tp.id, status: 'APPROVED', approvedAt: new Date(), employment: 'ASSOCIATE',
+        subjects: t.firstName === 'Dan' ? ['CompEx', 'EUSR'] : ['Thames Water', 'Process safety'], homeBase: t.firstName === 'Dan' ? 'Guildford' : 'Reading',
+        qualifications: [
+          { id: 'q1', name: t.firstName === 'Dan' ? 'CompEx Ex12 instructor (sample)' : 'Thames Water passport trainer (sample)', issuer: 'Sample issuer', expiresAt: '2028-03-31' },
+          { id: 'q2', name: 'First aid at work (sample)', issuer: 'St John Ambulance', expiresAt: new Date(Date.now() + 60 * 86400000).toISOString().slice(0, 10) },
+        ],
+      },
+    });
   }
 
   const adminEmail = process.env.SEED_ADMIN_EMAIL;

@@ -11,6 +11,7 @@ import { sendEmail } from '@/lib/integrations/email';
 import { offerFreedPlaces } from '@/lib/waitlist';
 import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/teams';
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
+import { assertAssignable } from '@/lib/trainers';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -83,6 +84,7 @@ export async function addSession(form: FormData) {
   const endDate = new Date(Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10) + days - 1)).toISOString().slice(0, 10);
   const endsAt = ukToUtc(endDate, end);
   if (endsAt <= startsAt || startsAt <= new Date()) redirect(`/admin/courses/${courseId}?msg=badsession`);
+  try { await assertAssignable(String(form.get('trainerId') ?? '') || null); } catch { redirect(`/admin/courses/${courseId}?msg=trainerblocked`); }
   const s = await db.session.create({
     data: {
       courseId, startsAt, endsAt, capacity: Number(form.get('capacity')) || course.placesPerSession || 12,
@@ -100,6 +102,9 @@ export async function updateSession(form: FormData) {
   const me = await requireAdmin('/admin/courses');
   const s = await db.session.findUniqueOrThrow({ where: { id: String(form.get('sessionId')) } });
   const op = String(form.get('op'));
+  if (op === 'trainer') {
+    try { await assertAssignable(String(form.get('trainerId') ?? '') || null); } catch { redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=trainerblocked`); }
+  }
   const data: Prisma.SessionUpdateInput = {};
   if (op === 'publish') data.status = 'PUBLISHED';
   if (op === 'unpublish') data.status = 'DRAFT';

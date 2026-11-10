@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 /** Admin back office: ADMIN and SUPER_ADMIN only, checked on the server. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const me = await requireAdmin();
-  const open = await db.task.count({ where: { status: 'OPEN' } });
+  const [open, pending] = await Promise.all([db.task.count({ where: { status: 'OPEN' } }), db.trainerProfile.count({ where: { status: 'PENDING' } })]);
   return (
     <AppShell
       label="Admin"
@@ -29,6 +29,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         { href: '/admin/courses', label: 'Courses', icon: ICONS.courses },
         { href: '/admin/schedule', label: 'Calendar', icon: ICONS.calendar },
         { href: '/admin/bookings', label: 'Bookings', icon: ICONS.bookings },
+        { href: '/admin/people', label: 'People', icon: ICONS.people, badge: pending },
       ]}
     >
       {children}

@@ -7,7 +7,7 @@ import type { CourseFormState } from '@/app/(app)/admin/courses/actions';
 export type CourseFormValues = {
   id?: string; title: string; slug: string; subjectId: string; pricePounds: string; vatRatePercent: string; shortDescription: string; description: string;
   deliveryType: DeliveryType; durationText: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
-  provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; accreditation: string; seoTitle: string; seoDescription: string; status: string;
+  provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
 };
 
 const input = 'box-border h-[44px] w-full rounded-control border border-field bg-white px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
@@ -50,6 +50,25 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label className={label}>Duration<input name="durationText" defaultValue={v.durationText} placeholder="Half day, 2 days, Self-paced" className={input} {...err('durationText')} /><E k="durationText" /></label>
             <label className={`${label} sm:col-span-2`}>Short description<input name="shortDescription" maxLength={160} defaultValue={v.shortDescription} className={input} {...err('shortDescription')} /><span className={hint}>On the course card. Up to 160 characters.</span><E k="shortDescription" /></label>
             <label className={`${label} sm:col-span-2`}>Description<textarea name="description" defaultValue={v.description} className="min-h-[110px] rounded-control border border-field px-3 py-2 text-[15px] font-normal" /><span className={hint}>The opening paragraph on the course page.</span></label>
+          </div>
+        </section>
+
+        <section className={card} aria-labelledby="photo-h">
+          <h2 id="photo-h" className="mb-1 text-lg font-extrabold text-ink">Course photo</h2>
+          <p className="mb-4 text-sm">Shown on the course card and when the page is shared. Landscape works best, at least 1200 pixels wide.</p>
+          <input type="hidden" name="currentPhoto" value={initial.photoUrl} />
+          <div className="grid gap-4 sm:grid-cols-[220px_minmax(0,1fr)]">
+            {initial.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={initial.photoUrl} alt={initial.photoAlt} className="aspect-[3/2] w-full rounded-control object-cover" />
+            ) : (
+              <div className="flex aspect-[3/2] w-full items-center justify-center rounded-control bg-[#D9DBDF] text-xs font-bold uppercase tracking-[0.08em] text-slate">No photo yet</div>
+            )}
+            <div className="flex flex-col gap-3">
+              <label className={label}>{initial.photoUrl ? 'Replace photo' : 'Upload a photo'}<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm font-normal" {...err('photo')} /><span className={hint}>JPEG, PNG or WebP, up to 5MB.</span><E k="photo" /></label>
+              <label className={label}>Describe the photo<input name="photoAlt" defaultValue={v.photoAlt} placeholder="Delegate checking an Ex d enclosure on a training rig" className={input} {...err('photoAlt')} /><span className={hint}>Read out by screen readers. Say what the photo shows.</span><E k="photoAlt" /></label>
+              {initial.photoUrl && <label className="flex min-h-11 items-center gap-2 text-sm text-ink"><input type="checkbox" name="removePhoto" className="size-5 accent-ink" />Remove the photo</label>}
+            </div>
           </div>
         </section>
 

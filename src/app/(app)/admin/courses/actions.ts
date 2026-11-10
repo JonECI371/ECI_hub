@@ -12,6 +12,7 @@ import { offerFreedPlaces } from '@/lib/waitlist';
 import { cancelSessionMeeting, syncSessionMeeting } from '@/lib/integrations/teams';
 import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { assertAssignable } from '@/lib/trainers';
+import { storeFile } from '@/lib/integrations/files';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -38,6 +39,10 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   if (delivery !== 'ELEARNING' && (!places || places < 1 || places > 500)) fields.placesPerSession = 'Enter the number of places per session';
   if (get('providerEmail') && !z.string().email().safeParse(get('providerEmail')).success) fields.providerEmail = 'Enter a valid email address';
   if (delivery === 'ELEARNING' && get('fulfilment') === 'EMAIL_PROVIDER' && !get('providerEmail')) fields.providerEmail = 'Enter the provider email to send packs to';
+  const photo = form.get('photo');
+  const hasPhoto = photo instanceof File && photo.size > 0;
+  if (hasPhoto && (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type) || photo.size > 5 * 1024 * 1024)) fields.photo = 'Upload a JPEG, PNG or WebP photo of 5MB or less';
+  if ((hasPhoto || (get('currentPhoto') && get('removePhoto') !== 'on')) && !get('photoAlt')) fields.photoAlt = 'Describe the photo for people using screen readers';
   const clash = await db.course.findFirst({ where: { slug, NOT: get('id') ? { id: get('id') } : undefined } });
   if (clash) fields.slug = 'Another course already uses this web address';
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
@@ -56,7 +61,13 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     providerEmail: get('providerEmail') || null, daysToComplete: delivery === 'ELEARNING' ? optInt(get('daysToComplete')) : null,
     validityYears: optInt(get('validityYears')), accreditation: get('accreditation') || null,
     seoTitle: get('seoTitle').slice(0, 60) || null, seoDescription: get('seoDescription').slice(0, 155) || null,
+    photoAlt: get('photoAlt').slice(0, 200) || null,
+    ...(get('removePhoto') === 'on' ? { photoUrl: null, photoAlt: null } : {}),
   };
+  if (hasPhoto) {
+    const key = await storeFile('files', `courses/${slug.replace(/[^A-Za-z0-9_-]/g, '')}`, photo as File);
+    data.photoUrl = `/media/${key.slice(key.indexOf(':') + 1)}`;
+  }
   let id = get('id');
   if (id) {
     const before = await db.course.findUniqueOrThrow({ where: { id } });

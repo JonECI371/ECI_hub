@@ -9,6 +9,6 @@ export function courseFormValues(c: Course | null, defaultSubjectId: string): Co
     durationText: s(c?.durationText), placesPerSession: s(c?.placesPerSession ?? 12), meetingPlatform: s(c?.meetingPlatform ?? 'TEAMS'), meetingHost: s(c?.meetingHost),
     defaultVenueId: s(c?.defaultVenueId), venueRelease: s(c?.venueRelease ?? 'ON_CONFIRMATION'), provider: s(c?.provider), fulfilment: s(c?.fulfilment ?? 'ADMIN_TASK'),
     providerEmail: s(c?.providerEmail), daysToComplete: s(c?.daysToComplete), validityYears: s(c?.validityYears), accreditation: s(c?.accreditation),
-    seoTitle: s(c?.seoTitle), seoDescription: s(c?.seoDescription), status: c?.status ?? 'DRAFT',
+    seoTitle: s(c?.seoTitle), seoDescription: s(c?.seoDescription), status: c?.status ?? 'DRAFT', photoUrl: s(c?.photoUrl), photoAlt: s(c?.photoAlt),
   };
 }

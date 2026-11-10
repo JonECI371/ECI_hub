@@ -8,7 +8,7 @@ import { loadForRegistration } from '@/lib/registration';
 import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets';
 import { storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
-import { sendVenueReleased } from '@/lib/notifications';
+import { sendEnrolmentPack, sendVenueReleased } from '@/lib/notifications';
 
 export type RegState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -103,14 +103,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     }
   });
 
-  if (course.deliveryType === 'ELEARNING' && course.fulfilment === 'EMAIL_PROVIDER' && course.providerEmail) {
-    await sendEmail({
-      to: course.providerEmail,
-      trigger: 'ENROLMENT_PACK',
-      subject: `Enrolment: ${get('firstName')} ${get('lastName')}, ${course.title}`,
-      text: `Please enrol:\nName: ${get('firstName')} ${get('lastName')}\nEmail: ${person.email}\nDate of birth: ${get('dob')}\nEmployer: ${get('employer')}\nCourse: ${course.title}`,
-    });
-  }
+  if (course.deliveryType === 'ELEARNING' && course.fulfilment === 'EMAIL_PROVIDER' && course.providerEmail && !hadRegistration) await sendEnrolmentPack(a.id);
   // Address held back until registration, and no approval step: release it now.
   if (course.deliveryType === 'IN_PERSON' && course.venueRelease === 'AFTER_APPROVAL' && !course.subject.approvalRequired && !hadRegistration) await sendVenueReleased(a.id);
   redirect(`/register/${a.id}?done=1${token ? `&t=${encodeURIComponent(token)}` : ''}`);

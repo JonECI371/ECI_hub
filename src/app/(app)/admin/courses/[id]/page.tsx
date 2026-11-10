@@ -10,7 +10,7 @@ import { attendeeState } from '@/lib/portal';
 import { offerFreedPlaces } from '@/lib/waitlist';
 import { trainerOptions } from '@/lib/trainers';
 import { Chip, DeliveryChip } from '@/components/ui';
-import { addSession, cancelSession, updateSession } from '../actions';
+import { addSession, cancelSession, markCompleted, updateSession } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Course', robots: { index: false } };
@@ -19,6 +19,7 @@ const MSG: Record<string, [string, boolean]> = {
   saved: ['Course saved.', true], sessionadded: ['Session added.', true], updated: ['Session updated.', true], cancelled: ['Session cancelled. Everyone booked has been emailed and refunds recorded.', true],
   badsession: ['Check the date and times: the session must start in the future and end after it starts.', false],
   trainerblocked: ['That trainer cannot be assigned: they are awaiting approval, suspended, or have an expired qualification. Check their record in People.', false], confirmname: ['Type the course name exactly to cancel the session.', false],
+  completed: ['Marked completed. A certificate task is in Tasks.', true], notenrolled: ['Only an enrolled learner who has not finished can be marked completed.', false],
   ...Object.fromEntries(Object.entries(SESSION_BLOCK_TEXT).map(([k, t]) => [k, [t, false] as [string, boolean]])),
 };
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
@@ -109,7 +110,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
             {live.length === 0 ? <p className="px-6 py-6 text-sm">Nobody booked yet.</p> : (
               <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Delegate', 'Booking', 'Payment', 'Registration', 'Needs'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+                  <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Delegate', 'Booking', 'Payment', 'Registration', c.deliveryType === 'ELEARNING' ? 'Progress' : 'Needs'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
                   <tbody>
                     {live.map((a) => {
                       const st = attendeeState(a, { ...c, subject: c.subject });
@@ -121,7 +122,11 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                           <td className="px-4 py-3"><Link href={`/admin/bookings?q=${a.booking.reference}`}>{a.booking.reference}</Link><span className="block text-xs">{a.booking.account ? `Account · ${a.booking.account.company}` : `${a.booking.booker.firstName} ${a.booking.booker.lastName}`}</span></td>
                           <td className="px-4 py-3">{a.booking.method === 'CARD' ? 'Card' : 'On account'}</td>
                           <td className="px-4 py-3"><Chip tone={st.tone}>{st.label}</Chip></td>
-                          <td className="px-4 py-3 text-xs">{needs || '-'}</td>
+                          <td className="px-4 py-3 text-xs">{c.deliveryType === 'ELEARNING' ? (
+                            a.enrolment?.completedAt ? `Completed ${a.enrolment.completedAt.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`
+                              : a.enrolment?.enrolledAt ? <form action={markCompleted}><input type="hidden" name="attendeeId" value={a.id} /><span className="mb-1 block">Enrolled{a.enrolment.deadline ? `, finish by ${a.enrolment.deadline.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}` : ''}</span><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-3 text-xs font-bold text-ink">Mark completed</button></form>
+                              : a.enrolment?.packSentAt ? 'Pack sent to provider' : 'Not enrolled yet'
+                          ) : needs || '-'}</td>
                         </tr>
                       );
                     })}

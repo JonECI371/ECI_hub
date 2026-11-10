@@ -144,3 +144,47 @@ export async function sendVenueReleased(attendeeId: string) {
   blocks.push({ type: 'button', label: 'View my booking', href: `/account/bookings/${b.reference}` });
   await sendEmail({ to: a.person.email, personId: a.person.id, trigger: 'VENUE_RELEASED', subject: `Venue details: ${b.course.title}`, blocks });
 }
+
+/**
+ * eLearning, "email the provider" courses: send the enrolment pack, record when it went, and raise a task
+ * so the team confirms the enrolment (and marks it) once the provider replies.
+ */
+export async function sendEnrolmentPack(attendeeId: string) {
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, registration: true, booking: { include: { account: true, course: true } } } });
+  const c = a.booking.course;
+  if (!a.person || !c.providerEmail) return;
+  const p = a.person;
+  const scheme = (p.schemeIds ?? {}) as Record<string, string>;
+  const ans = (a.registration?.answers ?? {}) as Record<string, string>;
+  await sendEmail({
+    to: c.providerEmail, trigger: 'ENROLMENT_PACK', subject: `Enrolment request: ${p.firstName} ${p.lastName}, ${c.title}`,
+    blocks: [
+      { type: 'heading', text: 'Please enrol this learner' },
+      { type: 'text', text: `ECI-Hub has booked ${p.firstName} ${p.lastName} on ${c.title}. Please enrol them and send their login directly to the learner, then reply to confirm.` },
+      { type: 'summary', rows: [['Course', c.title], ['Name', `${p.firstName} ${p.lastName}`], ['Email', p.email], ['Date of birth', p.dateOfBirth ? p.dateOfBirth.toLocaleDateString('en-GB', { timeZone: 'UTC' }) : 'Not given'], ['Employer', p.employer ?? a.booking.account?.company ?? 'Not given'], ['Scheme ID', scheme.eusr ?? scheme.compex ?? ans.eusrId ?? ans.compexId ?? 'None'], ['Booking reference', a.booking.reference]] },
+      { type: 'note', text: 'Photo and ID files are held securely by ECI-Hub and sent on request. They are not attached to email.' },
+    ],
+  });
+  await db.$transaction(async (tx) => {
+    await tx.enrolment.update({ where: { attendeeId: a.id }, data: { packSentAt: new Date() } });
+    const open = await tx.task.findFirst({ where: { type: 'ELEARNING_ENROLMENT', recordId: a.id, status: 'OPEN' } });
+    if (!open) await tx.task.create({ data: { type: 'ELEARNING_ENROLMENT', title: `Confirm enrolment: ${p.firstName} ${p.lastName} with ${c.provider ?? 'the provider'}`, detail: `Pack emailed to ${c.providerEmail}. Mark enrolled once they confirm.`, recordType: 'Attendee', recordId: a.id, payload: { packSent: true } } });
+    await tx.auditLog.create({ data: { action: 'ENROLMENT_PACK_SENT', recordType: 'Attendee', recordId: a.id, after: { to: c.providerEmail } } });
+  });
+}
+
+/** Learner enrolled: access details and the finish-by date. */
+export async function sendEnrolled(attendeeId: string) {
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, enrolment: true, booking: { include: { course: true } } } });
+  if (!a.person || !a.enrolment) return;
+  const e = a.enrolment;
+  await sendEmail({
+    to: a.person.email, personId: a.person.id, trigger: 'ELEARNING_ENROLLED', subject: `You're enrolled: ${a.booking.course.title}`,
+    blocks: [
+      { type: 'heading', text: `You're enrolled, ${a.person.firstName}` },
+      { type: 'text', text: `Your login for ${a.booking.course.title} comes from ${e.provider} by email, usually within one working day. Check your junk folder if it hasn't arrived.` },
+      { type: 'summary', rows: [['Course', a.booking.course.title], ['Platform', e.provider], ['Finish by', e.deadline ? e.deadline.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' }) : 'No deadline'], ['Reference', a.booking.reference]] },
+      { type: 'button', label: 'View my booking', href: `/account/bookings/${a.booking.reference}` },
+    ],
+  });
+}

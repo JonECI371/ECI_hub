@@ -180,3 +180,18 @@ function ukToUtc(date: string, time: string): Date {
   const offset = (ukHour - guess.getUTCHours() + 24) % 24; // 0 in winter, 1 in summer
   return new Date(guess.getTime() - offset * 3600000);
 }
+
+/** eLearning: record that a learner finished on the provider platform, and raise the certificate task. */
+export async function markCompleted(form: FormData) {
+  const me = await requireAdmin('/admin/courses');
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: String(form.get('attendeeId')) }, include: { person: true, enrolment: true, booking: { include: { course: true } } } });
+  if (!a.enrolment?.enrolledAt || a.enrolment.completedAt) redirect(`/admin/courses/${a.booking.courseId}?msg=notenrolled`);
+  await db.$transaction(async (tx) => {
+    await tx.enrolment.update({ where: { attendeeId: a.id }, data: { completedAt: new Date() } });
+    await tx.attendee.update({ where: { id: a.id }, data: { status: 'ATTENDED' } });
+    await tx.task.create({ data: { type: 'CERTIFICATE_UPLOAD', title: `Upload certificate: ${a.person?.firstName ?? ''} ${a.person?.lastName ?? ''}`.trim(), detail: `${a.booking.course.title} (eLearning), completed ${new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`, recordType: 'Attendee', recordId: a.id } });
+    await tx.auditLog.create({ data: { actorId: me.id, action: 'ELEARNING_COMPLETED', recordType: 'Attendee', recordId: a.id } });
+  });
+  revalidatePath('/admin', 'layout');
+  redirect(`/admin/courses/${a.booking.courseId}?msg=completed`);
+}

@@ -8,6 +8,7 @@ import { SITE_URL, fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesTakenWhere } from '@/lib/sessions';
 import { registrationLink } from '@/lib/registration-link';
 import { sendEmail } from '@/lib/integrations/email';
+import { sendEnrolled } from '@/lib/notifications';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
 import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
 
@@ -33,20 +34,17 @@ export async function markDone(form: FormData) {
 
 export async function markEnrolled(form: FormData) {
   const { me, t } = await openTask(form);
-  const a = await db.attendee.findUniqueOrThrow({ where: { id: t.recordId }, include: { person: true, enrolment: true, booking: { include: { course: true } } } });
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: t.recordId }, include: { enrolment: true, booking: { include: { course: true } } } });
+  const c = a.booking.course;
+  // The finish-by date runs from enrolment, not from registration.
+  const deadline = c.daysToComplete ? new Date(Date.now() + c.daysToComplete * 86400000) : null;
   const enr = await db.enrolment.upsert({
     where: { attendeeId: a.id },
-    update: { enrolledAt: new Date() },
-    create: { attendeeId: a.id, provider: a.booking.course.provider ?? 'Provider', enrolledAt: new Date(), deadline: a.booking.course.daysToComplete ? new Date(Date.now() + a.booking.course.daysToComplete * 86400000) : null },
+    update: { enrolledAt: new Date(), deadline },
+    create: { attendeeId: a.id, provider: c.provider ?? 'Provider', enrolledAt: new Date(), deadline },
   });
-  await audit(me.id, 'ENROLLED', 'Attendee', a.id, { enrolledAt: a.enrolment?.enrolledAt ?? null }, { enrolledAt: enr.enrolledAt });
-  if (a.person) {
-    await sendEmail({
-      to: a.person.email, personId: a.person.id, trigger: 'ELEARNING_ENROLLED',
-      subject: `You're enrolled: ${a.booking.course.title}`,
-      text: `Hello ${a.person.firstName},\n\nYou are enrolled on ${a.booking.course.title}. Your login comes from ${enr.provider} by email.${enr.deadline ? ` Please finish by ${enr.deadline.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}.` : ''}`,
-    });
-  }
+  await audit(me.id, 'ENROLLED', 'Attendee', a.id, { enrolledAt: a.enrolment?.enrolledAt ?? null }, { enrolledAt: enr.enrolledAt, deadline });
+  await sendEnrolled(a.id);
   await done(t.id, me.id, 'Enrolled');
   back(form, 'enrolled');
 }

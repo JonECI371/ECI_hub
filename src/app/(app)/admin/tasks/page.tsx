@@ -102,7 +102,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             ];
             body = (
               <>
-                <p className="mb-3 text-sm">{a.booking.method === 'CARD' ? 'Paid by card' : `On account (${a.booking.account?.company})`} · registration {a.registration ? 'complete' : 'not yet submitted'} · enrol on the provider platform, then mark enrolled. The learner is emailed automatically.</p>
+                <p className="mb-3 text-sm">{a.booking.method === 'CARD' ? 'Paid by card' : `On account (${a.booking.account?.company})`} · registration {a.registration ? 'complete' : 'not yet submitted'} · {(t.payload as { packSent?: boolean } | null)?.packSent ? `pack emailed to ${a.booking.course.providerEmail ?? 'the provider'}; mark enrolled once they confirm.` : 'enrol on the provider platform, then mark enrolled.'} The learner is emailed automatically.</p>
                 <div className="rounded-control bg-page p-4">
                   <p className="mb-2 text-xs font-bold uppercase tracking-[0.08em]">Enrolment pack · {a.booking.course.provider ?? 'Provider'}</p>
                   <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2">{pack.map(([k, v]) => <div key={k} className="flex justify-between gap-4 border-b border-hairline py-1"><dt>{k}</dt><dd className="text-right font-semibold text-ink">{v}</dd></div>)}</dl>

@@ -226,6 +226,7 @@ model Person {
   mobile          String?
   dateOfBirth     DateTime?
   employer        String?
+  jobTitle        String?
   schemeIds       Json      @default("{}") // { skillguard, compex, eusr }
   roles           Role[]    @default([DELEGATE])
   marketingOptIn  Boolean   @default(false)
@@ -265,6 +266,13 @@ model Account {
   paymentTermsDays Int            @default(30)
   poRule          String          @default("NONE") // NONE | PER_BOOKING | PER_ACCOUNT
   status          AccountStatus   @default(APPLIED)
+  website         String?
+  industry        String?
+  creditRequestedPence Int?
+  expectedDelegates Int?
+  companiesHouse  Json            @default("{}") // lookup result at application time
+  approvedAt      DateTime?
+  approvedById    String?
   members         AccountMember[]
   bookings        Booking[]
   statements      Statement[]

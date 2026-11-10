@@ -29,7 +29,7 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 
 ## Phase 2: Accounts and CompEx (gate: first statement in Xero and a CompEx session delivered)
 
-- [ ] **2.1 Credit account application.** "Build docs/design/CorporateRequest.dc.html and the approval task with a Companies House lookup."
+- [x] **2.1 Credit account application.** "Build docs/design/CorporateRequest.dc.html and the approval task with a Companies House lookup."
 - [ ] **2.2 Book on account.** "Add the credit account state of docs/design/Checkout.dc.html: available credit check, PO number, statement line, account on hold rules."
 - [ ] **2.3 Booker portal.** "Build the booker view of docs/design/Dashboard.dc.html and docs/design/AccountProfile.dc.html: credit tiles, needs attention, team expiries, statements, invite and remove bookers."
 - [ ] **2.4 Month-end statements.** "Close statements on the statement date and produce one Xero sales invoice import CSV from the Tasks inbox. Check the columns against Xero's import template."

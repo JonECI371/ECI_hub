@@ -100,3 +100,27 @@ export async function decideDateChange(form: FormData) {
   await done(t.id, me.id, approve ? 'Date changed' : 'Declined');
   back(form, approve ? 'moved' : 'declined');
 }
+
+/** Approve or decline a credit account application. Limits above the default need a Super Admin. */
+export async function decideAccount(form: FormData) {
+  const { me, t } = await openTask(form);
+  const { AccountRuleError, PO_RULES, approveAccount, declineAccount } = await import('@/lib/accounts');
+  try {
+    if (form.get('decision') === 'approve') {
+      const pounds = Number(String(form.get('limit') ?? '').replace(/[£,\s]/g, ''));
+      const poRule = String(form.get('poRule') ?? 'NONE');
+      if (!Number.isFinite(pounds) || pounds <= 0 || !(poRule in PO_RULES)) back(form, 'badlimit');
+      await approveAccount(t.recordId, me, { creditLimitPence: Math.round(pounds * 100), paymentTermsDays: Number(form.get('terms') ?? 30) || 30, poRule: poRule as keyof typeof PO_RULES });
+      revalidatePath('/admin', 'layout');
+      back(form, 'accountapproved');
+    }
+    const reason = String(form.get('reason') ?? '').trim().slice(0, 300);
+    if (!reason) back(form, 'reason');
+    await declineAccount(t.recordId, me.id, reason);
+    revalidatePath('/admin', 'layout');
+    back(form, 'accountdeclined');
+  } catch (err) {
+    if (err instanceof AccountRuleError) redirect(`/admin/tasks?msg=rule&detail=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
+}

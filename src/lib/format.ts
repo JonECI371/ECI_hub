@@ -8,6 +8,11 @@ export const DELIVERY_LABEL: Record<DeliveryType, string> = {
   IN_PERSON: 'In person',
 };
 
+/** A money amount, including £0 (gbp() shows 0 as "Price on request", for prices). */
+export function money(pence: number): string {
+  return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: pence % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 }).format(pence / 100);
+}
+
 export function gbp(pence: number): string {
   if (!pence) return 'Price on request';
   const whole = pence % 100 === 0;

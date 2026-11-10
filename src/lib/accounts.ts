@@ -1,0 +1,124 @@
+import 'server-only';
+import type { Prisma } from '@prisma/client';
+import { db } from '@/lib/db';
+import { SITE_URL, money as gbp } from '@/lib/format';
+import { findOrCreatePerson } from '@/lib/booking';
+import { sendEmail } from '@/lib/integrations/email';
+import { checkCompany } from '@/lib/integrations/companies-house';
+
+export type CreditDefaults = { defaultLimitPence: number; lowCreditWarnPence: number; termsDays: number };
+const DEFAULTS: CreditDefaults = { defaultLimitPence: 500000, lowCreditWarnPence: 50000, termsDays: 30 };
+
+/** Credit account defaults from Settings (key "credit"), falling back to £5,000 limit, £500 warning, 30 days. */
+export async function creditDefaults(): Promise<CreditDefaults> {
+  const s = await db.setting.findUnique({ where: { key: 'credit' } });
+  return { ...DEFAULTS, ...((s?.value ?? {}) as Partial<CreditDefaults>) };
+}
+
+export const INDUSTRIES = ['Water and utilities', 'Oil and gas', 'Chemical and petrochemical', 'COMAH site', 'Contractor', 'Other'];
+export const PO_RULES = { NONE: 'No', PER_BOOKING: 'Yes, one PO per booking', PER_ACCOUNT: 'Yes, one PO for the account' } as const;
+export type PoRule = keyof typeof PO_RULES;
+
+export type Application = {
+  company: string; companyNumber: string; vatNumber?: string; registeredAddress: string; website?: string; industry: string;
+  main: { firstName: string; lastName: string; email: string; phone: string; jobTitle: string };
+  others: { name: string; email: string; jobTitle?: string }[];
+  accountsName: string; accountsEmail: string; invoiceAddress?: string;
+  creditRequestedPence: number; poRule: PoRule; expectedDelegates?: number;
+};
+
+/** Saves an application: the account (APPLIED), its bookers (pending), an approval task, and a Companies House check. */
+export async function submitApplication(a: Application) {
+  const account = await db.$transaction(async (tx) => {
+    const main = await findOrCreatePerson(tx, { email: a.main.email, firstName: a.main.firstName, lastName: a.main.lastName, mobile: a.main.phone });
+    await tx.person.update({ where: { id: main.id }, data: { jobTitle: main.jobTitle ?? (a.main.jobTitle || null), employer: main.employer ?? a.company } });
+    const acc = await tx.account.create({
+      data: {
+        company: a.company, companyNumber: a.companyNumber, vatNumber: a.vatNumber || null, registeredAddress: a.registeredAddress, website: a.website || null, industry: a.industry,
+        invoiceAddress: a.invoiceAddress || null, accountsName: a.accountsName, accountsEmail: a.accountsEmail.toLowerCase(), creditRequestedPence: a.creditRequestedPence,
+        poRule: a.poRule, expectedDelegates: a.expectedDelegates ?? null, status: 'APPLIED',
+        members: { create: [{ personId: main.id, role: 'MAIN_BOOKER', status: 'PENDING_APPROVAL' }] },
+      },
+    });
+    for (const o of a.others) {
+      const parts = o.name.trim().split(/\s+/);
+      const p = await findOrCreatePerson(tx, { email: o.email, firstName: parts[0], lastName: parts.slice(1).join(' ') || '-' });
+      if (o.jobTitle && !p.jobTitle) await tx.person.update({ where: { id: p.id }, data: { jobTitle: o.jobTitle } });
+      if (p.id !== main.id) await tx.accountMember.upsert({ where: { accountId_personId: { accountId: acc.id, personId: p.id } }, create: { accountId: acc.id, personId: p.id, role: 'BOOKER', status: 'PENDING_APPROVAL' }, update: {} });
+    }
+    await tx.task.create({ data: { type: 'ACCOUNT_APPLICATION', title: `Credit account: ${a.company}`, detail: `${gbp(a.creditRequestedPence)} requested by ${a.main.firstName} ${a.main.lastName}`, recordType: 'Account', recordId: acc.id } });
+    await tx.auditLog.create({ data: { actorId: main.id, action: 'ACCOUNT_APPLIED', recordType: 'Account', recordId: acc.id, after: { company: a.company, companyNumber: a.companyNumber, creditRequestedPence: a.creditRequestedPence } } });
+    return acc;
+  });
+  const check = await checkCompany(a.companyNumber, account.id);
+  await db.account.update({ where: { id: account.id }, data: { companiesHouse: check as Prisma.InputJsonValue } });
+  await sendEmail({
+    to: a.main.email, trigger: 'ACCOUNT_APPLIED', subject: `We're checking your credit account application`,
+    blocks: [
+      { type: 'heading', text: `Thanks ${a.main.firstName}, we're checking your application` },
+      { type: 'text', text: "We check Companies House and run a credit check, usually within one working day. Once approved, you and your bookers get a sign-in link to start booking on account." },
+      { type: 'summary', rows: [['Company', a.company], ['Company number', a.companyNumber], ['Credit requested', gbp(a.creditRequestedPence)]] },
+      { type: 'text', text: 'Need to book before then? You can book and pay by card at any time.' },
+      { type: 'button', label: 'Browse courses', href: '/courses' },
+    ],
+  });
+  return account;
+}
+
+export class AccountRuleError extends Error {}
+
+/** Approve an application. Limits above the default need a Super Admin. Activates the bookers and sends sign-in links. */
+export async function approveAccount(accountId: string, actor: { id: string; roles: string[] }, terms: { creditLimitPence: number; paymentTermsDays: number; poRule: PoRule }) {
+  const d = await creditDefaults();
+  if (terms.creditLimitPence > d.defaultLimitPence && !actor.roles.includes('SUPER_ADMIN')) throw new AccountRuleError(`Limits above ${gbp(d.defaultLimitPence)} need a Super Admin.`);
+  if (terms.creditLimitPence < 0 || terms.paymentTermsDays < 0 || terms.paymentTermsDays > 120) throw new AccountRuleError('Check the limit and terms.');
+  const acc = await db.$transaction(async (tx) => {
+    const r = await tx.account.updateMany({ where: { id: accountId, status: 'APPLIED' }, data: { status: 'ACTIVE', creditLimitPence: terms.creditLimitPence, paymentTermsDays: terms.paymentTermsDays, poRule: terms.poRule, approvedAt: new Date(), approvedById: actor.id } });
+    if (!r.count) throw new AccountRuleError('This application has already been dealt with.');
+    await tx.accountMember.updateMany({ where: { accountId, status: 'PENDING_APPROVAL' }, data: { status: 'ACTIVE' } });
+    const acc = await tx.account.findUniqueOrThrow({ where: { id: accountId }, include: { members: { include: { person: true } } } });
+    for (const m of acc.members) if (!m.person.roles.includes('BOOKER')) await tx.person.update({ where: { id: m.personId }, data: { roles: { push: 'BOOKER' } } });
+    await tx.auditLog.create({ data: { actorId: actor.id, action: 'ACCOUNT_APPROVED', recordType: 'Account', recordId: accountId, before: { status: 'APPLIED' }, after: { status: 'ACTIVE', ...terms } } });
+    await tx.task.updateMany({ where: { type: 'ACCOUNT_APPLICATION', recordId: accountId, status: 'OPEN' }, data: { status: 'DONE', doneAt: new Date(), assigneeId: actor.id } });
+    return acc;
+  });
+  for (const m of acc.members) {
+    await sendEmail({
+      to: m.person.email, personId: m.personId, trigger: 'ACCOUNT_APPROVED', subject: `Your ECI-Hub credit account is ready: ${acc.company}`,
+      blocks: [
+        { type: 'heading', text: `You can book on account, ${m.person.firstName}` },
+        { type: 'text', text: `${acc.company} now has a credit account with ECI-Hub. Book any course and choose Pay on account at checkout. We bill once a month.` },
+        { type: 'summary', rows: [['Company', acc.company], ['Credit limit', gbp(acc.creditLimitPence)], ['Payment terms', `${acc.paymentTermsDays} days`], ['PO numbers', PO_RULES[acc.poRule as PoRule] ?? 'No']] },
+        { type: 'text', text: 'Sign in with your work email. We send you a code each time, so there is no password to remember.' },
+        { type: 'button', label: 'Sign in', href: `${SITE_URL}/login?email=${encodeURIComponent(m.person.email)}` },
+      ],
+    });
+  }
+  return acc;
+}
+
+/** Decline an application, with a reason that goes to the main booker. */
+export async function declineAccount(accountId: string, actorId: string, reason: string) {
+  const acc = await db.$transaction(async (tx) => {
+    const r = await tx.account.updateMany({ where: { id: accountId, status: 'APPLIED' }, data: { status: 'DECLINED' } });
+    if (!r.count) throw new AccountRuleError('This application has already been dealt with.');
+    await tx.accountMember.updateMany({ where: { accountId }, data: { status: 'REMOVED' } });
+    await tx.auditLog.create({ data: { actorId, action: 'ACCOUNT_DECLINED', recordType: 'Account', recordId: accountId, before: { status: 'APPLIED' }, after: { status: 'DECLINED', reason } } });
+    await tx.task.updateMany({ where: { type: 'ACCOUNT_APPLICATION', recordId: accountId, status: 'OPEN' }, data: { status: 'DONE', doneAt: new Date(), assigneeId: actorId } });
+    return tx.account.findUniqueOrThrow({ where: { id: accountId }, include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } });
+  });
+  const main = acc.members[0]?.person;
+  if (main) {
+    await sendEmail({
+      to: main.email, personId: main.id, trigger: 'ACCOUNT_DECLINED', subject: 'Your credit account application',
+      blocks: [
+        { type: 'heading', text: 'We cannot open a credit account this time' },
+        { type: 'text', text: `Hello ${main.firstName}, thank you for applying for a credit account for ${acc.company}. We are not able to open one at the moment.` },
+        ...(reason ? [{ type: 'summary' as const, rows: [['Reason', reason]] as [string, string][] }] : []),
+        { type: 'text', text: 'You can still book any course and pay by card. Questions? Call us on +44 (0) 1932 963463.' },
+        { type: 'button', label: 'Browse courses', href: '/courses' },
+      ],
+    });
+  }
+  return acc;
+}

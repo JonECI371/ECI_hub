@@ -10,7 +10,7 @@ import { requestCode, useDifferentEmail, verifyCode, verifyStaffCode, type Login
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Log in', robots: { index: false } };
 
-type Search = Promise<{ step?: string; error?: string; next?: string }>;
+type Search = Promise<{ step?: string; error?: string; next?: string; email?: string }>;
 
 const ERRORS: Record<string, string> = {
   email: 'Enter a valid email address, like name@company.co.uk.',
@@ -43,7 +43,7 @@ function ErrorMsg({ id, code }: { id: string; code?: string }) {
 }
 
 export default async function LoginPage({ searchParams }: { searchParams: Search }) {
-  const { step, error, next } = await searchParams;
+  const { step, error, next, email: emailHint } = await searchParams;
 
   if (step === 'staff') {
     const mfa = await pendingMfa();
@@ -123,7 +123,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
         <input type="hidden" name="next" value={safeNext(next)} />
         <label className="flex flex-col gap-1.5 text-sm font-bold text-ink">
           Email address
-          <input type="email" name="email" autoComplete="email" required autoFocus aria-describedby={error ? 'email-error' : undefined} className={field} />
+          <input type="email" name="email" autoComplete="email" required autoFocus defaultValue={emailHint?.slice(0, 200)} aria-describedby={error ? 'email-error' : undefined} className={field} />
         </label>
         <button type="submit" className={primary}>Send my code</button>
       </form>

@@ -155,7 +155,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
                   <form action={changeDate} className="mt-4 flex flex-col gap-3">
                     <input type="hidden" name="ref" value={b.reference} />
                     {choices.length === 0 && c.deliveryType !== 'IN_PERSON' ? (
-                      <p className="text-sm">No other dates have {b.places} {b.places === 1 ? 'place' : 'places'} free right now.</p>
+                      <p className="text-sm">No other dates are available. <Link href="/contact?topic=team">Contact us</Link> for additional dates or an in-house course.</p>
                     ) : (
                       <fieldset className="flex flex-col gap-2">
                         <legend className="mb-1 text-sm font-bold text-ink">New date for all {b.places} {b.places === 1 ? 'attendee' : 'attendees'}</legend>
@@ -168,7 +168,9 @@ export default async function BookingDetail({ params, searchParams }: { params: 
                         ))}
                       </fieldset>
                     )}
+                    {(choices.length > 0 || c.deliveryType === 'IN_PERSON') && (
                     <label className="flex flex-col gap-1 text-sm font-bold text-ink">Reason for the change <span className="font-normal">(optional)</span><textarea name="reason" className="min-h-[72px] rounded-control border border-field px-3 py-2 font-normal" /></label>
+                    )}
                     {(choices.length > 0 || c.deliveryType === 'IN_PERSON') && <button type="submit" className={`${btn} bg-cyan text-ink`}>{c.deliveryType === 'IN_PERSON' ? 'Send request' : 'Confirm new date'}</button>}
                   </form>
                 </details>

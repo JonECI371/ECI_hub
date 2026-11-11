@@ -20,7 +20,7 @@ const CONSULTANCY = [
   ['Hazardous area classification', 'Zone drawings, area classification reports and equipment schedules to BS EN 60079-10.'],
   ['DSEAR risk assessment', 'Assessment, action planning and the documented evidence your regulator expects to see.'],
   ['Functional safety and SIL', 'SIL determination, verification and safety requirement specifications under IEC 61511.'],
-  ['EC and I design assurance', 'Independent review of electrical, control and instrumentation design on capital projects.'],
+  ['EC&I design assurance', 'Independent review of electrical, control and instrumentation design on capital projects.'],
 ] as const;
 
 const SECTORS = [
@@ -34,7 +34,7 @@ const SECTORS = [
 const STATS = [
   ['[NUMBER]+', 'Delegates trained'],
   ['[NUMBER]%', 'Positive delegate feedback'],
-  ['20 yrs', 'EC and I safety experience'],
+  ['20 yrs', 'EC&I safety experience'],
   ['[NUMBER]', 'COMAH sites supported'],
 ] as const;
 
@@ -70,7 +70,7 @@ export default async function Home() {
       {/* Hero: thesis, search and live next dates */}
       <section className="hero-motif flex flex-col gap-12 px-4 pb-16 pt-14 md:px-20 md:pb-[72px] md:pt-[88px] lg:flex-row lg:items-start lg:gap-16">
         <div className="max-w-[620px] flex-1">
-          <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">EC and I safety engineering</p>
+          <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">EC&I safety engineering</p>
           <h1 className="mb-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-white [text-wrap:balance] md:text-[58px]">Stories that stay with you, skills that protect</h1>
           <p className="mb-9 text-[17px] leading-[1.7] text-white/70">Accredited training and specialist high hazard Process Industries | COMAH, Chemical, Oil and Gas, and Water and Waste Treatment. Delivered by engineers who have worked on them.</p>
           <div className="flex flex-wrap gap-3.5">

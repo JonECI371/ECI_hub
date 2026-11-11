@@ -67,6 +67,9 @@ export async function createPendingBooking(input: CheckoutInput) {
     }
 
     const booker = await findOrCreatePerson(tx, input.booker);
+    // Stops anyone holding places they have no intention of paying for: two open checkouts at a time.
+    const open = await tx.booking.count({ where: { bookerId: booker.id, status: 'PAYMENT_PENDING', holdExpiresAt: { gt: new Date() } } });
+    if (open >= 2) throw new CheckoutError('You already have two checkouts open. Finish paying for one, or wait a few minutes and try again.');
     const money = pricing(course.pricePence, course.vatRatePercent, input.places);
     const booking = await tx.booking.create({
       data: {

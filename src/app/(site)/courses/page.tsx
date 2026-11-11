@@ -183,7 +183,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
                     <p className="flex-1 text-sm leading-relaxed">{c.shortDescription}</p>
                     <div className="flex items-baseline justify-between gap-3 border-t border-[#F0F1F3] pt-3">
                       <span className="text-[13px]">{c.durationText} · {nextText}</span>
-                      <strong className="shrink-0 text-[17px] text-ink">{price.amount}</strong>
+                      <strong className="shrink-0 text-[17px] text-ink">{price.amount}{price.vatNote && <span className="ml-1 text-xs font-normal text-slate">+ VAT</span>}</strong>
                     </div>
                     <span className="text-sm font-extrabold text-ink">See dates and book →</span>
                   </div>
@@ -214,7 +214,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
                       <p className="mt-1 text-[13px]">{time(s)} UK time · {where(s)}</p>
                     </div>
                     <span className={`col-start-2 text-sm font-bold md:col-start-auto ${full ? 'text-bad-fg' : 'text-ink'}`}>{label?.text ?? 'Places available'}</span>
-                    <strong className="col-start-2 text-base text-ink md:col-start-auto">{price.amount}</strong>
+                    <strong className="col-start-2 text-base text-ink md:col-start-auto">{price.amount}{price.vatNote && <span className="ml-1 text-xs font-normal text-slate">+ VAT</span>}</strong>
                     <Link
                       href={full ? `/waitlist/${s.id}` : `/book/${s.id}`}
                       className="col-start-2 inline-flex min-h-11 items-center justify-center rounded-chip bg-cyan px-5 text-sm font-extrabold text-ink no-underline md:col-start-auto"

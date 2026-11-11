@@ -53,7 +53,7 @@ async function main() {
       shortDescription: 'Hazardous area awareness for anyone who enters, supervises or plans work in Ex areas.' },
     { slug: 'compex-exf-foundation', title: 'CompEx ExF Foundation', subject: 'compex', deliveryType: DeliveryType.IN_PERSON, durationText: '2 days', pricePence: 45000, placesPerSession: 8, validityYears: 5,
       shortDescription: 'The foundation knowledge needed before the practical CompEx competency units.' },
-    { slug: 'compex-ex12-application-design-engineer', title: 'CompEx Ex12 Application Design Engineer', subject: 'compex', deliveryType: DeliveryType.IN_PERSON, durationText: 'TODO duration', pricePence: 0 /* TODO price */, placesPerSession: 8, validityYears: 5,
+    { slug: 'compex-ex12-application-design-engineer', title: 'CompEx Ex12 Application Design Engineer', subject: 'compex', deliveryType: DeliveryType.IN_PERSON, durationText: '2 days', pricePence: 0 /* TODO price */, placesPerSession: 8, validityYears: 5,
       shortDescription: 'For engineers who design and specify equipment for hazardous areas.' },
     { slug: 'compex-exa-awareness-elearning', title: 'CompEx ExA Awareness (eLearning)', subject: 'compex', deliveryType: DeliveryType.ELEARNING, durationText: 'Self-paced', pricePence: 0 /* TODO price */, provider: 'Trainor', fulfilment: 'ADMIN_TASK' as const, daysToComplete: 28,
       shortDescription: 'The ExA syllabus online, at your own pace.' },

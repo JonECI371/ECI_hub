@@ -88,7 +88,9 @@ export async function changeDate(form: FormData) {
   const target = String(form.get('sessionId') ?? '');
 
   if (b.course.deliveryType === 'IN_PERSON') {
-    await db.task.create({ data: { type: 'DATE_CHANGE', title: `Date change request: ${b.reference}`, detail: `${b.course.title}. ${reason || 'No reason given.'}${target ? ` Preferred session ${target}.` : ''}`, recordType: 'Booking', recordId: b.id, payload: { sessionId: target || null } } });
+    const wanted = target ? await db.session.findUnique({ where: { id: target } }) : null;
+    const targetText = wanted ? `${fmtSessionDates(wanted.startsAt, wanted.endsAt)}, ${fmtTime(wanted.startsAt)}` : '';
+    await db.task.create({ data: { type: 'DATE_CHANGE', title: `Date change request: ${b.reference}`, detail: `${b.course.title}. ${reason || 'No reason given.'}${targetText ? ` Preferred date: ${targetText}.` : ''}`, recordType: 'Booking', recordId: b.id, payload: { sessionId: target || null } } });
     await db.auditLog.create({ data: { actorId: me.id, action: 'DATE_CHANGE_REQUESTED', recordType: 'Booking', recordId: b.id, after: { target, reason } } });
     back(ref, 'requested');
   }

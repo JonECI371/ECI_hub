@@ -31,10 +31,43 @@ function age(d: Date) {
   return h < 1 ? 'Just now' : h < 24 ? `${h} ${h === 1 ? 'hour' : 'hours'}` : `${Math.floor(h / 24)} ${Math.floor(h / 24) === 1 ? 'day' : 'days'}`;
 }
 
-export default async function Tasks({ searchParams }: { searchParams: Promise<{ type?: string; msg?: string; detail?: string }> }) {
+export default async function Tasks({ searchParams }: { searchParams: Promise<{ type?: string; msg?: string; detail?: string; view?: string; q?: string; page?: string }> }) {
   const me = await requireAdmin('/admin/tasks');
-  const { type, msg, detail } = await searchParams;
+  const { type, msg, detail, view, q, page } = await searchParams;
   const filter = type && type in TASK_LABEL ? (type as TaskType) : undefined;
+
+  if (view === 'done') {
+    const term = (q ?? '').trim().slice(0, 80);
+    const p = Math.max(1, Number(page) || 1);
+    const where = { status: { in: ['DONE', 'DISMISSED'] as ('DONE' | 'DISMISSED')[] }, type: filter, ...(term ? { OR: [{ title: { contains: term, mode: 'insensitive' as const } }, { detail: { contains: term, mode: 'insensitive' as const } }] } : {}) };
+    const [rows, total] = await Promise.all([db.task.findMany({ where, orderBy: { doneAt: 'desc' }, skip: (p - 1) * 50, take: 50 }), db.task.count({ where })]);
+    const who = new Map((await db.person.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.assigneeId).filter(Boolean) as string[])] } }, select: { id: true, firstName: true, lastName: true } })).map((x) => [x.id, `${x.firstName} ${x.lastName}`]));
+    const qs = (extra: Record<string, string | number | undefined>) => { const u = new URLSearchParams({ view: 'done' }); for (const [k, v] of Object.entries({ q: term, type: filter, ...extra })) if (v) u.set(k, String(v)); return u.toString(); };
+    const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
+    return (
+      <>
+        <div><p className="mb-1.5 text-xs"><Link href="/admin/tasks">Tasks</Link> › Done</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Done tasks</h1></div>
+        <form className="flex flex-wrap items-end gap-3" role="search">
+          <input type="hidden" name="view" value="done" />
+          <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={term} placeholder="Name, course, reference" className="h-11 w-[280px] max-w-full rounded-control border border-field bg-white px-3 text-sm text-ink" /></label>
+          <label className="flex flex-col gap-1 text-xs font-bold">Type<select name="type" defaultValue={filter ?? ''} className="h-11 rounded-control border border-field bg-white px-3 text-sm text-ink"><option value="">All types</option>{Object.entries(TASK_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
+          {(term || filter) && <Link href="/admin/tasks?view=done" className="inline-flex min-h-11 items-center text-sm">Clear all filters</Link>}
+        </form>
+        <section className="overflow-hidden rounded-card bg-white shadow-card">
+          <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{total} done {total === 1 ? 'task' : 'tasks'}, newest first</p>
+          {rows.length === 0 ? <p className="px-6 py-8">No done tasks match.</p> : (
+            <ul>{rows.map((r) => <li key={r.id} className="flex flex-wrap justify-between gap-2 border-b border-hairline px-6 py-3 text-sm last:border-0"><span><span className="block text-xs font-bold uppercase tracking-[0.08em]">{TASK_LABEL[r.type]}</span><span className="font-bold text-ink">{r.title}</span>{r.detail && <span className="block text-xs">{r.detail}</span>}</span><span className="text-right text-xs">{r.doneAt ? when.format(r.doneAt) : '-'}<span className="block">{r.status === 'DISMISSED' ? 'Dismissed' : 'Done'}{r.assigneeId ? ` by ${who.get(r.assigneeId) ?? 'someone'}` : ''}</span></span></li>)}</ul>
+          )}
+        </section>
+        {total > 50 && (
+          <nav aria-label="Pages" className="flex items-center justify-between gap-4 text-sm">
+            {p > 1 ? <Link href={`/admin/tasks?${qs({ page: p - 1 })}`}>← Newer</Link> : <span />}<span>Page {p} of {Math.ceil(total / 50)}</span>{p * 50 < total ? <Link href={`/admin/tasks?${qs({ page: p + 1 })}`}>Older →</Link> : <span />}
+          </nav>
+        )}
+      </>
+    );
+  }
   const [tasks, counts] = await Promise.all([
     db.task.findMany({ where: { status: 'OPEN', type: filter }, orderBy: { createdAt: 'asc' }, take: 100 }),
     db.task.groupBy({ by: ['type'], where: { status: 'OPEN' }, _count: true }),
@@ -79,12 +112,19 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
       {notice && <p role="status" className={`rounded-control px-4 py-3 text-sm font-semibold ${notice[1] ? 'bg-cyan-soft text-ink' : 'bg-bad-bg text-bad-fg'}`}>{notice[0]}</p>}
       <nav aria-label="Task types" className="flex flex-wrap gap-2">
         <Link href="/admin/tasks" className={pill(!filter)} aria-current={!filter ? 'true' : undefined}>All <span className="text-xs opacity-75">{total}</span></Link>
+        <Link href="/admin/tasks?view=done" className={pill(false)}>Done</Link>
         {counts.map((c) => (
           <Link key={c.type} href={`/admin/tasks?type=${c.type}`} className={pill(filter === c.type)} aria-current={filter === c.type ? 'true' : undefined}>{TASK_LABEL[c.type]} <span className="text-xs opacity-75">{c._count}</span></Link>
         ))}
       </nav>
 
-      {tasks.length === 0 && <p className="rounded-card bg-white p-8 shadow-card">Nothing to do here. Done tasks leave the list.</p>}
+      {filter && (
+        <p className="flex flex-wrap items-center gap-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">
+          <span><strong>Filter on:</strong> {TASK_LABEL[filter]} only{total > tasks.length ? ` · ${total - tasks.length} ${total - tasks.length === 1 ? 'task' : 'tasks'} of other types are hidden` : ''}</span>
+          <Link href="/admin/tasks" className="font-bold">Clear all filters</Link>
+        </p>
+      )}
+      {tasks.length === 0 && <p className="rounded-card bg-white p-8 shadow-card">{filter ? `No open ${TASK_LABEL[filter].toLowerCase()} tasks.${total > 0 ? ` ${total} ${total === 1 ? 'task is' : 'tasks are'} waiting under other types.` : ''} ` : 'Nothing to do here. Done tasks leave the list. '}{filter && total > 0 && <Link href="/admin/tasks" className="font-bold">Show all tasks</Link>}</p>}
 
       <ul className="flex flex-col gap-4">
         {tasks.map((t) => {
@@ -280,7 +320,15 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
           if (t.type === 'DATE_CHANGE' && b) {
             const pref = (t.payload as { sessionId?: string } | null)?.sessionId;
             const options = altSessions.filter((s) => s.courseId === b.courseId && s.id !== b.sessionId && (left.get(s.id) ?? 0) >= b.places);
-            body = <p className="text-sm">{b.booker.firstName} {b.booker.lastName} · {b.places} {b.places === 1 ? 'place' : 'places'} · now {b.session ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)}` : 'no date'} · {t.detail}</p>;
+            const prefSession = altSessions.find((x) => x.id === pref);
+            const legacy = (t.detail ?? '').replace(/ ?Preferred session \S+\./, '');
+            body = (
+              <div className="text-sm">
+                <p>{b.booker.firstName} {b.booker.lastName} · {b.places} {b.places === 1 ? 'place' : 'places'} · now {b.session ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)}` : 'no date'}</p>
+                <p className="mt-1">{legacy}</p>
+                {prefSession && !/Preferred date/.test(legacy) && <p className="mt-1 font-bold text-ink">Preferred date: {fmtSessionDates(prefSession.startsAt, prefSession.endsAt)}, {fmtTime(prefSession.startsAt)}</p>}
+              </div>
+            );
             actions = (
               <>
                 <form action={decideDateChange}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline</button></form>

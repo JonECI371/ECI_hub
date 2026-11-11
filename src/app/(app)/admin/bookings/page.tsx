@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin';
 import { gbp } from '@/lib/format';
-import { STATUSES, STATUS_LABEL, bookingWhere } from '@/lib/admin-bookings';
+import { STATUSES, STATUS_LABEL, bookingWhere, isExpiredHold, statusLabel } from '@/lib/admin-bookings';
 import { Chip, DeliveryChip } from '@/components/ui';
 import { emailBookers } from './actions';
 
@@ -40,7 +40,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
       <form className="flex flex-wrap items-end gap-3" role="search">
         <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={q} placeholder="Reference, name, email, course" className={`${input} w-[280px] max-w-full`} /></label>
         <label className="flex flex-col gap-1 text-xs font-bold">Status
-          <select name="status" defaultValue={status ?? ''} className={input}><option value="">Any status</option>{STATUSES.map((s) => <option key={s} value={s}>{STATUS_LABEL[s]}</option>)}</select>
+          <select name="status" defaultValue={status ?? ''} className={input}><option value="">Any status</option>{STATUSES.map((s) => <option key={s} value={s}>{s === 'PAYMENT_PENDING' ? 'Not paid (checkout open)' : STATUS_LABEL[s]}</option>)}<option value="EXPIRED">Expired checkouts</option></select>
         </label>
         <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
         {(q || status) && <Link href="/admin/bookings" className="inline-flex min-h-11 items-center text-sm">Clear</Link>}
@@ -74,7 +74,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
                     <td className="px-4 py-3">{b.booker.firstName} {b.booker.lastName}<span className="block text-xs">{b.account?.company ?? b.booker.email}</span></td>
                     <td className="px-4 py-3">{b.places}{b.attendees.some((a) => !a.personId) && <span className="block text-xs text-warn-fg">{b.attendees.filter((a) => !a.personId).length} unnamed</span>}</td>
                     <td className="whitespace-nowrap px-4 py-3 tabular-nums">{gbp(b.totalPence)}<span className="block text-xs">{b.method === 'CARD' ? 'Card' : 'Account'}</span></td>
-                    <td className="px-4 py-3"><Chip tone={TONE[b.status]}>{STATUS_LABEL[b.status]}</Chip></td>
+                    <td className="px-4 py-3"><Chip tone={isExpiredHold(b) ? 'grey' : TONE[b.status]}>{statusLabel(b)}</Chip></td>
                   </tr>
                 ))}
               </tbody>

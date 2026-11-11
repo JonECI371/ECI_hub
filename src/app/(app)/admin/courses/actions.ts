@@ -15,6 +15,7 @@ import { assertAssignable } from '@/lib/trainers';
 import { sendVenueChanged } from '@/lib/notifications';
 import { storeFile } from '@/lib/integrations/files';
 import { sessionPublishBlock } from '@/lib/publish-rules';
+import { composeDuration, durationDays } from '@/lib/duration';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -32,7 +33,10 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
 
   if (!get('title')) fields.title = 'Enter a course name';
   if (!get('shortDescription')) fields.shortDescription = 'Enter a short description';
-  if (!get('durationText')) fields.durationText = 'Enter a duration';
+  const durationText = composeDuration(get('durationValue'), get('durationUnit')) ?? (get('durationUnit') ? null : get('durationText') || null);
+  if (!durationText) fields.durationValue = 'Enter how long the course lasts, like 2 days';
+  const hhmm = /^\d{2}:\d{2}$/;
+  if ((get('defaultStartTime') && !hhmm.test(get('defaultStartTime'))) || (get('defaultEndTime') && !hhmm.test(get('defaultEndTime'))) || (get('defaultStartTime') && get('defaultEndTime') && get('defaultStartTime') >= get('defaultEndTime'))) fields.defaultStartTime = 'Set a start time before the end time';
   const price = Number(get('pricePounds') || '0');
   if (!Number.isFinite(price) || price < 0 || price > 100000) fields.pricePounds = 'Enter a price in pounds, like 185.00';
   const slug = get('slug').replace(/^-+|-+$/g, '');
@@ -46,6 +50,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   if (hasPhoto && (!['image/jpeg', 'image/png', 'image/webp'].includes(photo.type) || photo.size > 5 * 1024 * 1024)) fields.photo = 'Upload a JPEG, PNG or WebP photo of 5MB or less';
   if ((hasPhoto || (get('currentPhoto') && get('removePhoto') !== 'on')) && !get('photoAlt')) fields.photoAlt = 'Describe the photo for people using screen readers';
   if (status === 'PUBLISHED') {
+    if (/\bTODO\b/i.test([get('title'), get('shortDescription'), get('description'), durationText ?? ''].join(' '))) fields.shortDescription = fields.shortDescription ?? 'Remove the placeholder text (TODO) before publishing';
     if (!get('description')) fields.description = 'Add a description before publishing';
     if (delivery === 'ELEARNING' && !get('provider')) fields.provider = 'Name the provider before publishing';
   }
@@ -55,7 +60,8 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
 
   const data: Prisma.CourseUncheckedCreateInput = {
     title: get('title'), slug, subjectId: get('subjectId'), deliveryType: delivery, status: status as 'DRAFT' | 'PUBLISHED' | 'WITHDRAWN',
-    shortDescription: get('shortDescription').slice(0, 160), description: get('description') || get('shortDescription'), durationText: get('durationText'),
+    shortDescription: get('shortDescription').slice(0, 160), description: get('description') || get('shortDescription'), durationText: durationText ?? '',
+    defaultStartTime: delivery === 'ELEARNING' ? null : get('defaultStartTime') || null, defaultEndTime: delivery === 'ELEARNING' ? null : get('defaultEndTime') || null,
     pricePence: Math.round(price * 100), vatRatePercent: optInt(get('vatRatePercent')) ?? 20,
     placesPerSession: delivery === 'ELEARNING' ? null : places,
     meetingPlatform: delivery === 'VIRTUAL_CLASSROOM' ? (get('meetingPlatform') === 'ZOOM' ? 'ZOOM' : 'TEAMS') : null,
@@ -93,11 +99,15 @@ export async function addSession(form: FormData) {
   const course = await db.course.findUnique({ where: { id: courseId } });
   if (!course) redirect('/admin/schedule');
   const date = String(form.get('date') ?? '');
-  const start = String(form.get('start') ?? '');
-  const end = String(form.get('end') ?? '');
-  const days = Math.max(1, Math.min(10, Number(form.get('days') ?? 1)));
+  // Times and last day are optional: blank means the course's usual times and its duration.
+  const start = String(form.get('start') ?? '') || course.defaultStartTime || '09:00';
+  const end = String(form.get('end') ?? '') || course.defaultEndTime || (course.durationText.toLowerCase().includes('half') ? '12:30' : '16:30');
+  const lastDay = String(form.get('lastDay') ?? '');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(start) || !/^\d{2}:\d{2}$/.test(end)) redirect(`/admin/courses/${courseId}?msg=badsession`);
   const startsAt = ukToUtc(date, start);
+  const daysFromDates = /^\d{4}-\d{2}-\d{2}$/.test(lastDay) ? Math.round((Date.parse(`${lastDay}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / 86400000) + 1 : null;
+  if (daysFromDates !== null && (daysFromDates < 1 || daysFromDates > 10)) redirect(`/admin/courses/${courseId}?msg=badsession`);
+  const days = daysFromDates ?? Math.max(1, Math.min(10, Number(form.get('days')) || durationDays(course.durationText)));
   const endDate = new Date(Date.UTC(+date.slice(0, 4), +date.slice(5, 7) - 1, +date.slice(8, 10) + days - 1)).toISOString().slice(0, 10);
   const endsAt = ukToUtc(endDate, end);
   if (endsAt <= startsAt || startsAt <= new Date()) redirect(`/admin/courses/${courseId}?msg=badsession`);

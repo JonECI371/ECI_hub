@@ -4,12 +4,14 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { SESSION_BLOCK_TEXT } from '@/lib/publish-rules';
 import { requireAdmin } from '@/lib/admin';
-import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
+import { SITE_URL, fmtSessionDates, fmtTime, gbp } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { attendeeState } from '@/lib/portal';
 import { offerFreedPlaces } from '@/lib/waitlist';
 import { trainerOptions } from '@/lib/trainers';
 import { Chip, DeliveryChip } from '@/components/ui';
+import { durationDays } from '@/lib/duration';
+import { CopyButton } from '@/components/copy-button';
 import { addSession, cancelSession, markCompleted, updateSession } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -78,7 +80,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                       <li key={s.id} className={`border-b border-hairline last:border-0 ${on ? 'bg-cyan-soft shadow-[inset_4px_0_0_#2EC39B]' : ''}`}>
                         <Link href={`/admin/courses/${c.id}?session=${s.id}`} aria-current={on ? 'true' : undefined} className="flex flex-wrap items-center justify-between gap-3 px-6 py-3 text-ink no-underline">
                           <span><span className="block font-bold">{short.format(s.startsAt)} · {fmtTime(s.startsAt)}</span><span className="text-[13px]">{s.trainer ? `${s.trainer.firstName} ${s.trainer.lastName}` : 'No trainer'}{s.venue ? ` · ${s.venue.name}` : ''}</span></span>
-                          <span className="flex items-center gap-2 text-sm"><span className="tabular-nums">{booked} of {s.capacity}</span><Chip tone={s.status === 'PUBLISHED' ? 'soft' : s.status === 'CANCELLED' ? 'bad' : 'grey'}>{s.status === 'PUBLISHED' ? 'Published' : s.status.charAt(0) + s.status.slice(1).toLowerCase()}</Chip></span>
+                          <span className="flex items-center gap-2 text-sm"><span className="tabular-nums">{booked} of {s.capacity}</span><Chip tone={s.status === 'PUBLISHED' && (left.get(s.id) ?? 0) <= 0 ? 'warn' : s.status === 'PUBLISHED' ? 'soft' : s.status === 'CANCELLED' ? 'bad' : 'grey'}>{s.status === 'PUBLISHED' ? ((left.get(s.id) ?? 0) <= 0 ? 'Full' : 'Published') : s.status.charAt(0) + s.status.slice(1).toLowerCase()}</Chip></span>
                         </Link>
                       </li>
                     );
@@ -90,9 +92,9 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                 <form action={addSession} className="mt-3 grid gap-3 sm:grid-cols-3">
                   <input type="hidden" name="courseId" value={c.id} />
                   <label className="flex flex-col gap-1 text-xs font-bold">Date<input type="date" name="date" required className={input} /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">Starts (UK time)<input type="time" name="start" defaultValue="09:00" required className={input} /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">Ends<input type="time" name="end" defaultValue={c.durationText.toLowerCase().includes('half') ? '12:30' : '16:30'} required className={input} /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">Days<input type="number" name="days" min={1} max={10} defaultValue={/(\d+) days/.exec(c.durationText)?.[1] ?? 1} className={input} /></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Starts (UK time)<input type="time" name="start" defaultValue={c.defaultStartTime ?? '09:00'} required className={input} /></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Ends<input type="time" name="end" defaultValue={c.defaultEndTime ?? (c.durationText.toLowerCase().includes('half') ? '12:30' : '16:30')} required className={input} /></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Last day <span className="font-normal">(blank = {durationDays(c.durationText)} {durationDays(c.durationText) === 1 ? 'day' : 'days'}, from the course)</span><input type="date" name="lastDay" className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={c.placesPerSession ?? 12} className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
                   {c.deliveryType === 'IN_PERSON' && <label className="flex flex-col gap-1 text-xs font-bold sm:col-span-2">Venue<select name="venueId" defaultValue={c.defaultVenueId ?? ''} className={input}><option value="">Course default</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>}
@@ -144,7 +146,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                   {waitlist.map((w, i) => (
                     <li key={w.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-6 py-3 last:border-0">
                       <span><span className="font-bold text-ink">{i + 1}. {w.person.firstName} {w.person.lastName}</span> <span className="text-xs">{w.person.email} · {w.places} {w.places === 1 ? 'place' : 'places'}</span></span>
-                      {w.offerExpiresAt && w.offerExpiresAt > new Date() ? <Chip tone="warn">Offered, until {fmtTime(w.offerExpiresAt)} {short.format(w.offerExpiresAt)}</Chip> : <Chip tone="grey">Waiting</Chip>}
+                      {w.offerExpiresAt && w.offerExpiresAt > new Date() && w.offerToken ? <span className="flex flex-wrap items-center gap-2"><Chip tone="warn">Offered, until {fmtTime(w.offerExpiresAt)} {short.format(w.offerExpiresAt)}</Chip><CopyButton text={`${SITE_URL}/waitlist/claim/${w.offerToken}`} label="Copy claim link" /></span> : <Chip tone="grey">Waiting</Chip>}
                     </li>
                   ))}
                 </ol>

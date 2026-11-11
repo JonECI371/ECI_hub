@@ -47,7 +47,7 @@ export default async function WaitlistJoin({ params, searchParams }: { params: P
           <section className="flex-1 rounded-card bg-white p-6 shadow-card md:p-8">
             <h2 className="mb-5 text-[22px] font-extrabold text-ink">What happens next</h2>
             <ol className="grid gap-5 md:grid-cols-3">
-              {[['We email you', 'If a place comes up, you get an email with a one-click link.'], ['Claim within 24 hours', 'Click the link and pay to confirm. No code to type.'], ['Leave any time', 'Use the link in your offer email, or ignore it.']].map(([h, d], i) => (
+              {[['We email you', 'If a place comes up, you get an email with a one-click link.'], ['Claim within 24 hours', 'Click the link and pay to confirm. No code to type.'], ['Leave any time', 'Changed your mind? Leave the waitlist any time from your dashboard (log in with your email), or ignore the offer email.']].map(([h, d], i) => (
                 <li key={h}><p className="mb-2 text-xl font-bold text-cyan">{String(i + 1).padStart(2, '0')}</p><h3 className="mb-1 font-bold text-ink">{h}</h3><p className="text-sm">{d}</p></li>
               ))}
             </ol>

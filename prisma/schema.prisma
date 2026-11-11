@@ -155,6 +155,8 @@ model Course {
   shortDescription String
   description      String
   durationText     String
+  defaultStartTime String? // HH:mm, used when adding a date
+  defaultEndTime   String?
   pricePence       Int
   vatRatePercent   Int                 @default(20)
   placesPerSession Int?

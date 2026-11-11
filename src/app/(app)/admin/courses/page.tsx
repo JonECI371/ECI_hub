@@ -33,8 +33,8 @@ export default async function AdminCourses() {
                   <td className="px-4 py-3">{c.subject.name}</td>
                   <td className="px-4 py-3"><DeliveryChip type={c.deliveryType} /></td>
                   <td className="px-4 py-3 tabular-nums">{gbp(c.pricePence)}</td>
-                  <td className="px-4 py-3">{c.deliveryType === 'ELEARNING' ? 'Any time' : c.sessions[0] ? dt.format(c.sessions[0].startsAt) : 'None'}</td>
-                  <td className="px-4 py-3">{c.deliveryType === 'ELEARNING' ? '-' : c.sessions.length}</td>
+                  <td className="px-4 py-3">{c.deliveryType === 'ELEARNING' ? 'Any time' : (() => { const n = c.sessions.find((x) => x.status === 'PUBLISHED' || x.status === 'FULL'); return n ? dt.format(n.startsAt) : c.sessions[0] ? 'Draft only' : 'None'; })()}</td>
+                  <td className="px-4 py-3">{c.deliveryType === 'ELEARNING' ? '-' : <>{c.sessions.filter((x) => x.status !== 'DRAFT').length}{c.sessions.some((x) => x.status === 'DRAFT') && <span className="block text-xs text-warn-fg">+ {c.sessions.filter((x) => x.status === 'DRAFT').length} draft</span>}</>}</td>
                   <td className="px-4 py-3"><Chip tone={STATUS[c.status][0]}>{STATUS[c.status][1]}</Chip></td>
                 </tr>
               ))}

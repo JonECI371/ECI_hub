@@ -10,6 +10,12 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-11 (later): Test Log 1 fixes, batch 1
+
+Jon signed off the Test Log 1 fixes (with notes) and answered the open questions. Built and deployed this batch: waitlist on the customer dashboard (claim, leave) and claim link and expiry for admins; booked-for-others list; draft dates no longer counted as upcoming; "+ VAT" on course cards; date-change task shows the date; empty date-change message; EC&I wording; Done tab (all history, searchable) and a "Filter on, clear all filters" banner in Tasks; Full label on dates; richer bookings export; Expired checkouts hidden from Bookings; two open checkouts per person; duration as number and unit, usual start and end times per course, and a last-day field when adding a date; placeholder text (TODO) blocks publishing; friendly error pages. Not reproduced: the first-login crash (#1); error pages added, Kirsty to re-test and capture the browser console if it recurs.
+
+**Decided by Jon, still to build (batch 2):** cancellation policy. Customers can request a cancellation, an Admin decides: inside the late-cancellation window they see a steer to charge it (or waive for extenuating circumstances); outside it, a steer to refund or offer a transfer. Applies to card and on-account bookings. Policy terms (tiers) live in one editable place that also drives the public Terms page. Waiting on Jon to confirm the tiers and the checkout hold length (recommended 5 minutes, currently 15). "Add places to a booking" is approved and still to build.
+
 ## 2026-11-11: Phase 2 build complete (tasks 2.1 to 2.8)
 
 **Live on the test site** http://13.63.252.95 (http only, sample data, emails not sent). 45 automated tests pass (`npm test`), typecheck and build clean.

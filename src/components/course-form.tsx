@@ -1,12 +1,13 @@
 'use client';
 
+import { DURATION_UNITS } from '@/lib/duration';
 import { useActionState, useState } from 'react';
 import type { DeliveryType } from '@prisma/client';
 import type { CourseFormState } from '@/app/(app)/admin/courses/actions';
 
 export type CourseFormValues = {
   id?: string; title: string; slug: string; subjectId: string; pricePounds: string; vatRatePercent: string; shortDescription: string; description: string;
-  deliveryType: DeliveryType; durationText: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
+  deliveryType: DeliveryType; durationText: string; durationValue: string; durationUnit: string; defaultStartTime: string; defaultEndTime: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
   provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
 };
 
@@ -47,7 +48,21 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label className={label}>Subject<select name="subjectId" defaultValue={v.subjectId} className={input}>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
             <label className={label}>Price per place (excl. VAT, £)<input name="pricePounds" inputMode="decimal" defaultValue={v.pricePounds} className={input} {...err('pricePounds')} /><span className={hint}>Leave at 0 to show &ldquo;Price on request&rdquo;. Online booking needs a price.</span><E k="pricePounds" /></label>
             <label className={label}>VAT rate (%)<input name="vatRatePercent" inputMode="numeric" defaultValue={v.vatRatePercent} className={input} /></label>
-            <label className={label}>Duration<input name="durationText" defaultValue={v.durationText} placeholder="Half day, 2 days, Self-paced" className={input} {...err('durationText')} /><E k="durationText" /></label>
+            <div className={label}>
+              <span>Duration</span>
+              <span className="flex gap-2">
+                <input name="durationValue" type="number" min={1} max={999} aria-label="Duration number" defaultValue={v.durationValue} placeholder="2" className={`${input} w-24`} {...err('durationValue')} />
+                <select name="durationUnit" aria-label="Duration unit" defaultValue={v.durationUnit || 'days'} className={input}>{DURATION_UNITS.map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select>
+              </span>
+              <span className={hint}>Choose Half day or Self-paced if there is no number. A new date fills in its last day from this.</span>
+              <E k="durationValue" />
+            </div>
+            {delivery !== 'ELEARNING' && (
+              <>
+                <label className={label}>Usual start time<input name="defaultStartTime" type="time" defaultValue={v.defaultStartTime} className={input} /><span className={hint}>Used when adding a date. You can change it per date.</span></label>
+                <label className={label}>Usual end time<input name="defaultEndTime" type="time" defaultValue={v.defaultEndTime} className={input} /></label>
+              </>
+            )}
             <label className={`${label} sm:col-span-2`}>Short description<input name="shortDescription" maxLength={160} defaultValue={v.shortDescription} className={input} {...err('shortDescription')} /><span className={hint}>On the course card. Up to 160 characters.</span><E k="shortDescription" /></label>
             <label className={`${label} sm:col-span-2`}>Description<textarea name="description" defaultValue={v.description} className="min-h-[110px] rounded-control border border-field px-3 py-2 text-[15px] font-normal" {...err('description')} /><span className={hint}>The opening paragraph on the course page. Needed to publish.</span><E k="description" /></label>
           </div>

@@ -7,6 +7,9 @@ import { attendeeState, bookingsIMade, myPlaces } from '@/lib/portal';
 import { accountSummary, myMembership, teamExpiries } from '@/lib/booker';
 import { money } from '@/lib/format';
 import { statementText } from '@/lib/credit';
+import { fmtSessionDates } from '@/lib/format';
+import { SITE_URL } from '@/lib/format';
+import { leaveWaitlist } from './waitlist-actions';
 import { registrationLink } from '@/lib/registration-link';
 import { Chip, DeliveryChip } from '@/components/ui';
 
@@ -24,12 +27,14 @@ const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 
 export default async function Dashboard() {
   const me = await requirePerson();
   const m = await myMembership(me.id);
-  const [places, made, certs, summary, expiring, teamUpcoming] = await Promise.all([
+  const [places, made, certs, summary, expiring, waits, madeForOthers, teamUpcoming] = await Promise.all([
     myPlaces(me.id),
     bookingsIMade(me.id, m ? [m.accountId] : []),
     db.certificate.findMany({ where: { personId: me.id }, include: { course: true }, orderBy: { issuedAt: 'desc' } }),
     m ? accountSummary(m.account) : null,
     m ? teamExpiries(m.accountId) : [],
+    db.waitlistEntry.findMany({ where: { personId: me.id, session: { startsAt: { gt: new Date() }, status: { not: 'CANCELLED' } } }, include: { session: { include: { course: true } } }, orderBy: { createdAt: 'asc' } }),
+    db.booking.findMany({ where: { bookerId: me.id, status: 'CONFIRMED', ...(m ? { accountId: null } : {}), OR: [{ session: { startsAt: { gt: new Date() } } }, { sessionId: null }], attendees: { some: { personId: { not: me.id } } } }, include: { course: true, session: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true } } }, orderBy: { createdAt: 'desc' }, take: 10 }),
     m ? db.booking.findMany({ where: { accountId: m.accountId, status: 'CONFIRMED', OR: [{ session: { startsAt: { gt: new Date() } } }, { sessionId: null }] }, include: { course: true, session: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { registration: true, enrolment: true } } }, orderBy: { session: { startsAt: 'asc' } }, take: 12 }) : [],
   ]);
   const rows = places.map((a) => ({ a, st: attendeeState(a, a.booking.course) }));
@@ -82,6 +87,49 @@ export default async function Dashboard() {
             <p className="text-sm">{action.a.booking.session ? `${longDay.format(action.a.booking.session.startsAt)}. ` : ''}Takes about 3 minutes.</p>
           </div>
           <Link href={registrationLink(action.a.id)} className={`${btn} shrink-0 bg-ink text-white hover:text-white`}>Complete registration</Link>
+        </section>
+      )}
+
+      {waits.length > 0 && (
+        <section aria-labelledby="wl-h" className="overflow-hidden rounded-card bg-white shadow-card">
+          <h2 id="wl-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Your waitlist</h2>
+          <ul>
+            {waits.map((w) => {
+              const offered = !!w.offerToken && !!w.offerExpiresAt && w.offerExpiresAt > new Date();
+              const hours = offered ? Math.max(1, Math.ceil((w.offerExpiresAt!.getTime() - Date.now()) / 3600000)) : 0;
+              return (
+                <li key={w.id} className={`flex flex-col gap-3 border-b border-hairline px-6 py-4 last:border-0 md:flex-row md:items-center md:justify-between ${offered ? 'bg-cyan-soft' : ''}`}>
+                  <div>
+                    {offered && <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">A place is waiting for you</p>}
+                    <p className="font-bold text-ink">{w.session.course.title}</p>
+                    <p className="text-sm">{fmtSessionDates(w.session.startsAt, w.session.endsAt)}, {fmtTime(w.session.startsAt)} · {w.places} {w.places === 1 ? 'place' : 'places'}</p>
+                    <p className="text-sm">{offered ? `Claim it within ${hours} ${hours === 1 ? 'hour' : 'hours'}, then it goes to the next person.` : `You are on the waitlist. We email you if a place comes up.`}</p>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {offered && <a href={`${SITE_URL}/waitlist/claim/${w.offerToken}`} className={`${btn} bg-cyan text-ink`}>Claim my place</a>}
+                    <form action={leaveWaitlist}><input type="hidden" name="entryId" value={w.id} /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Leave the waitlist</button></form>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
+
+      {madeForOthers.length > 0 && (
+        <section aria-labelledby="mfo-h" className="overflow-hidden rounded-card bg-white shadow-card">
+          <h2 id="mfo-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Booked for others</h2>
+          <ul>
+            {madeForOthers.map((b) => (
+              <li key={b.id} className="flex flex-col gap-2 border-b border-hairline px-6 py-4 last:border-0 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="font-bold text-ink">{b.course.title}{b.session ? ` · ${dm.format(b.session.startsAt)}` : ''}</p>
+                  <p className="text-sm">{b.attendees.filter((a) => a.person && a.personId !== me.id).map((a) => `${a.person!.firstName} ${a.person!.lastName}`).join(', ') || 'Names to follow'}</p>
+                </div>
+                <Link href={`/account/bookings/${b.reference}`} className={`${btn} shrink-0 border border-field bg-white text-ink`}>View booking</Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 

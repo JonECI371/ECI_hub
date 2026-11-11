@@ -1,6 +1,6 @@
 import { db } from '@/lib/db';
 import { audit, requireAdmin } from '@/lib/admin';
-import { STATUS_LABEL, bookingWhere } from '@/lib/admin-bookings';
+import { statusLabel, bookingWhere } from '@/lib/admin-bookings';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,14 +16,14 @@ export async function GET(req: Request) {
   const u = new URL(req.url);
   const rows = await db.booking.findMany({
     where: bookingWhere(u.searchParams.get('q') ?? undefined, u.searchParams.get('status') ?? undefined),
-    include: { booker: true, account: true, course: true, session: true },
+    include: { booker: true, account: true, course: true, session: true, payments: true, attendees: { where: { status: { not: 'CANCELLED' } }, include: { person: true } } },
     orderBy: { createdAt: 'desc' },
     take: 10000,
   });
-  const head = ['Reference', 'Booked at', 'Course', 'Session start', 'Booker', 'Booker email', 'Company', 'Places', 'Method', 'PO', 'Net (GBP)', 'VAT (GBP)', 'Total (GBP)', 'Status'];
+  const head = ['Reference', 'Booked at', 'Course', 'Session start', 'Booker', 'Booker email', 'Company', 'Attendees', 'Places', 'Method', 'Payment reference', 'PO', 'Net (GBP)', 'VAT (GBP)', 'Total (GBP)', 'Status'];
   const lines = rows.map((b) => [
     b.reference, b.createdAt.toISOString(), b.course.title, b.session?.startsAt.toISOString() ?? '', `${b.booker.firstName} ${b.booker.lastName}`, b.booker.email,
-    b.account?.company ?? '', b.places, b.method, b.poNumber ?? '', (b.subtotalPence / 100).toFixed(2), (b.vatPence / 100).toFixed(2), (b.totalPence / 100).toFixed(2), STATUS_LABEL[b.status],
+    b.account?.company ?? b.booker.employer ?? '', b.attendees.map((a) => (a.person ? `${a.person.firstName} ${a.person.lastName}` : 'Name to follow')).join('; '), b.places, b.method, b.payments.map((x) => x.stripeIntentId).join('; '), b.poNumber ?? '', (b.subtotalPence / 100).toFixed(2), (b.vatPence / 100).toFixed(2), (b.totalPence / 100).toFixed(2), statusLabel(b),
   ].map(cell).join(','));
   await audit(me.id, 'BOOKINGS_EXPORTED', 'Booking', '*', undefined, { count: rows.length, q: u.searchParams.get('q'), status: u.searchParams.get('status') });
   return new Response([head.map(cell).join(','), ...lines].join('\r\n'), {

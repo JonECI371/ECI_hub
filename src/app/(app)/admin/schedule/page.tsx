@@ -64,7 +64,7 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
   const next = view === 'month' ? `${ym(y, m + 1)}-01` : iso(anchor + (view === 'week' ? 7 : 1) * DAY);
   const q = (extra: Record<string, string | undefined>) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ view: view === 'month' ? undefined : view, date: iso(anchor), trainer: sp.trainer, ...extra })) if (v) u.set(k, v); return `/admin/schedule?${u}`; };
   const pill = (s: (typeof inRange)[number]) => `block rounded-chip px-1.5 py-1 text-[11px] font-bold leading-tight no-underline ${clash.has(s.id) ? 'bg-bad-bg text-bad-fg' : s.status === 'PUBLISHED' ? (s.course.deliveryType === 'IN_PERSON' ? 'bg-ink text-white hover:text-white' : 'bg-cyan-tint text-ink') : 'border border-dashed border-field bg-white text-slate'}`;
-  const sub = (s: (typeof inRange)[number]) => `${fmtTime(s.startsAt)} · ${s.capacity - (left.get(s.id) ?? 0)}/${s.capacity}${s.trainer ? ` · ${s.trainer.firstName}` : ' · no trainer'}${s.status !== 'PUBLISHED' ? ' · draft' : ''}`;
+  const sub = (s: (typeof inRange)[number]) => `${fmtTime(s.startsAt)} · ${s.capacity - (left.get(s.id) ?? 0)}/${s.capacity}${(left.get(s.id) ?? 0) <= 0 ? ' FULL' : ''}${s.trainer ? ` · ${s.trainer.firstName}` : ' · no trainer'}${s.status !== 'PUBLISHED' ? ' · draft' : ''}`;
 
   return (
     <>
@@ -83,9 +83,9 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
           <form action={addSession} className="grid gap-3 sm:grid-cols-4">
             <input type="hidden" name="date" value={sp.new} />
             <label className="flex flex-col gap-1 text-xs font-bold sm:col-span-2">Course<select name="courseId" required className={input}>{courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}</select></label>
-            <label className="flex flex-col gap-1 text-xs font-bold">Starts<input type="time" name="start" defaultValue="09:00" className={input} /></label>
-            <label className="flex flex-col gap-1 text-xs font-bold">Ends<input type="time" name="end" defaultValue="16:30" className={input} /></label>
-            <label className="flex flex-col gap-1 text-xs font-bold">Days<input type="number" name="days" min={1} max={10} defaultValue={1} className={input} /></label>
+            <label className="flex flex-col gap-1 text-xs font-bold">Starts <span className="font-normal">(blank = usual)</span><input type="time" name="start" className={input} /></label>
+            <label className="flex flex-col gap-1 text-xs font-bold">Ends <span className="font-normal">(blank = usual)</span><input type="time" name="end" className={input} /></label>
+            <label className="flex flex-col gap-1 text-xs font-bold">Last day <span className="font-normal">(blank = course length)</span><input type="date" name="lastDay" className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={sp.trainer ?? ''} className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
             <label className="flex min-h-11 items-center gap-2 self-end text-sm text-ink"><input type="checkbox" name="publish" className="size-5 accent-ink" />Publish now</label>
             <div className="flex items-end gap-2"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink">Add session</button><Link href={q({ new: undefined })} className="inline-flex min-h-11 items-center text-sm">Cancel</Link></div>

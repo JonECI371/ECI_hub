@@ -101,7 +101,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
             </label>
             <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-normal text-ink">
               <input type="checkbox" name="trust" defaultChecked className="mt-0.5 size-[22px] shrink-0 accent-ink" />
-              <span>Keep me logged in on this device for 30 days</span>
+              <span>Keep me logged in on this device for 30 days<span className="block text-[13px] text-slate">Admin accounts always sign in again after 12 hours.</span></span>
             </label>
             <button type="submit" className={primary}>Log in</button>
           </form>

@@ -7,7 +7,7 @@ process.env.LOCAL_UPLOAD_DIR = mkdtempSync(join(tmpdir(), 'eci-sec-'));
 
 describe('security controls', async () => {
   const { sniffType, storeFile, UploadError } = await import('@/lib/integrations/files');
-  const { sessionRevoked, safeNext } = await import('@/lib/auth');
+  const { sessionRevoked, safeNext, sessionLifetimeMs } = await import('@/lib/auth');
 
   const bytes = (...b: number[]) => new Uint8Array([...b, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
   const png = bytes(0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a);
@@ -41,5 +41,14 @@ describe('security controls', async () => {
     expect(safeNext('//evil.example')).toBe('/account');
     expect(safeNext('https://evil.example')).toBe('/account');
     expect(safeNext('javascript:alert(1)')).toBe('/account');
+  });
+
+  it('admin sessions last 12 hours whatever the device setting; others can be trusted for 30 days', () => {
+    const h = 3600000;
+    expect(sessionLifetimeMs(['ADMIN'], true)).toBe(12 * h);
+    expect(sessionLifetimeMs(['DELEGATE', 'SUPER_ADMIN'], true)).toBe(12 * h);
+    expect(sessionLifetimeMs(['TRAINER'], true)).toBe(30 * 24 * h);
+    expect(sessionLifetimeMs(['DELEGATE'], true)).toBe(30 * 24 * h);
+    expect(sessionLifetimeMs(['DELEGATE'], false)).toBe(12 * h);
   });
 });

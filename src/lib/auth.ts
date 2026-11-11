@@ -74,14 +74,23 @@ type SessionPayload = { pid: string; exp: number; v: 1; iat?: number };
 /** A session is valid unless the person revoked sessions after it started. Sessions from before this existed count as started at 0. */
 export const sessionRevoked = (iat: number | undefined, validFrom: Date | null) => !!validFrom && (iat ?? 0) < validFrom.getTime();
 
+/** How long a session lasts. Admin and Super Admin sessions are always 12 hours: no trusted device. */
+export function sessionLifetimeMs(roles: readonly string[], trusted: boolean): number {
+  const privileged = roles.includes('ADMIN') || roles.includes('SUPER_ADMIN');
+  return trusted && !privileged ? TRUSTED_DAYS * 86400000 : 12 * 3600000;
+}
+
 export async function startSession(personId: string, trusted: boolean) {
-  const exp = Date.now() + (trusted ? TRUSTED_DAYS * 86400000 : 12 * 3600000);
+  const person = await db.person.findUnique({ where: { id: personId }, select: { roles: true } });
+  const ms = sessionLifetimeMs(person?.roles ?? [], trusted);
+  const exp = Date.now() + ms;
+  const persistent = ms > 12 * 3600000;
   (await cookies()).set(SESSION_COOKIE, sign({ pid: personId, exp, v: 1, iat: Date.now() }), {
     httpOnly: true,
     sameSite: 'lax',
     secure: secure(),
     path: '/',
-    ...(trusted ? { expires: new Date(exp) } : {}),
+    ...(persistent ? { expires: new Date(exp) } : {}),
   });
 }
 export async function endSession() {

@@ -1,6 +1,6 @@
 # Security and ISO 27001 readiness
 
-Version 2026-11-11. Owner: Jon Wallis. Build standard: OWASP Top 10 and OWASP ASVS Level 2.
+Version 2026-11-11 (matches specification 2026-11-11). Owner: Jon Wallis. Build standard: OWASP Top 10 and OWASP ASVS Level 2.
 
 **Position in plain words.** The platform is built to the controls a penetration tester checks, and this file lists what is in place and what is still open. No document can promise a pass. A pass comes from an independent test of the live configuration, and ISO 27001 certifies how ECFIO manages security across the organisation, not only the software. The platform supplies evidence for that.
 
@@ -9,7 +9,7 @@ Version 2026-11-11. Owner: Jon Wallis. Build standard: OWASP Top 10 and OWASP AS
 | Area | Control | Where |
 | --- | --- | --- |
 | Authentication | Passwordless sign-in, 6-digit code or one-click link, 15-minute expiry, 5 attempts, 5 live codes per person; authenticator app (TOTP) for staff and trainers; unknown emails get the same response | `src/lib/auth.ts`, `login/actions.ts` |
-| Sessions | Signed, httpOnly, SameSite cookies, Secure on HTTPS; 12 hours, or 30 days on a trusted device; **sign out of all devices**; sessions revoked automatically when roles change or an authenticator is reset | `src/lib/auth.ts` |
+| Sessions | Signed, httpOnly, SameSite cookies, Secure on HTTPS; Admin and Super Admin 12 hours always, others 12 hours or 30 days on a trusted device; **sign out of all devices**; sessions revoked automatically when roles change or an authenticator is reset | `src/lib/auth.ts` |
 | Authorisation | Server-side role checks on every admin, trainer and account action; customers only see their own or their company account's records; trainer sees only assigned sessions | `requireAdmin`, `requirePerson`, `managesBooking`, `trainerSession` |
 | Input handling | Parameterised database access only (no string-built SQL); form validation with Zod; only same-site paths accepted after sign-in | Prisma, `safeNext` |
 | Uploads | Type checked by file **content** (not the browser's claim), 10MB cap, random names, stored outside the web root, ID documents deleted after 30 days in production | `sniffType`, `storeFile` |
@@ -18,7 +18,7 @@ Version 2026-11-11. Owner: Jon Wallis. Build standard: OWASP Top 10 and OWASP AS
 | Audit | Every change to a booking, person, account, setting, file view or download is written to an audit log (who, what, when, before and after) | `AuditLog` |
 | Secrets | In AWS Secrets Manager; none in the repository (checked); `.env` ignored | `infra/` |
 | Dependencies | `npm audit` run; critical issue fixed (see open items for the rest) | `package-lock.json` |
-| Testing | 49 automated tests cover booking, payment, credit, access and these controls | `test/` |
+| Testing | 50 automated tests cover booking, payment, credit, access and these controls | `test/` |
 
 ## Open items, in priority order
 
@@ -29,7 +29,7 @@ Version 2026-11-11. Owner: Jon Wallis. Build standard: OWASP Top 10 and OWASP AS
 | 3 | **Dependency upgrades:** Prisma 7, Next 16, Zod 4 clear the remaining 5 high audit findings (build tools and form parsing; limited reach today because of size limits) | Scanners flag them | Claude |
 | 4 | **CI security checks:** GitHub Dependabot, CodeQL and secret scanning on every change | Evidence for A.8.8 and A.8.28 | Claude |
 | 5 | **Logging and alerts:** central log retention, CloudWatch alarms for failed sign-ins, errors and failed integrations; append-only audit log database role | A.8.15 and A.8.16 | Claude |
-| 6 | **Staff sessions:** consider 12 hours with no 30-day trusted device for Admin and Super Admin | Shorter exposure if a laptop is stolen | **Jon to decide** |
+| 6 | ~~Staff sessions~~ Done: Admin and Super Admin sessions last 12 hours with no trusted device (approved 11 Nov 2026) | Shorter exposure if a laptop is stolen | Done |
 | 7 | **Authenticator hardening:** one-time use of each code, backup codes | Stops replay | Claude |
 | 8 | **Malware scanning of uploads** (for example S3 malware protection) | Uploaded files are opened by staff | Claude |
 | 9 | **Backups and restore test**, KMS encryption at rest, S3 block public access, IAM least privilege, MFA on AWS and Microsoft admin accounts | A.8.13, A.8.24 | Jon and Claude |

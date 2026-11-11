@@ -2,7 +2,7 @@
 
 | Version | Date | Status | Owner |
 | --- | --- | --- | --- |
-| 2026-11-10 | 10 November 2026 | Baseline: Nov 5 draft plus requirement IDs and this change process | Jon Wallis |
+| 2026-11-11 | 11 November 2026 | Adds the security standard and the Admin session rule to the 2026-11-10 baseline | Jon Wallis |
 
 This file in GitHub (`docs/spec.md`) is the master. The shared Claude Doc and the Word copy in SharePoint are readable copies of it, updated each time a version is approved. Every change is listed in the Change log at the end, and the full line-by-line history is in GitHub. How to propose and approve a change: `docs/spec-change-process.md`.
 
@@ -276,6 +276,7 @@ The recommended stack is TypeScript end to end on AWS in the UK region (eu-west-
 **Security and sign-in**
 
 - Passwordless sign-in by 6-digit email code or magic link, 15-minute expiry, 5 attempts. Staff and trainers add TOTP (authenticator app).
+- Admin and Super Admin sessions last 12 hours and never use a trusted device; delegates, bookers and trainers can stay signed in for 30 days on a trusted device. Anyone can sign out of all devices, and sessions are revoked when roles change or an authenticator is reset.
 - Role-based access checked on the server for every request; customers only ever see their own or their account's records.
 - No card data stored; Stripe handles it. All traffic over HTTPS; secrets in AWS Secrets Manager.
 - Rate limits on sign-in, checkout and forms; bot protection on public forms.
@@ -293,6 +294,7 @@ The recommended stack is TypeScript end to end on AWS in the UK region (eu-west-
 **Quality**
 
 - Automated tests on booking, payment, credit limit, invite creation and statement export.
+- Built to OWASP ASVS Level 2, with a strict Content Security Policy and security headers. An independent penetration test by a CREST-accredited tester on staging, with every high and critical finding fixed and re-tested, is required before go-live. The control mapping for ISO 27001 is kept in `docs/security.md`.
 - Staging mirrors production with Stripe test mode and a test Microsoft 365 mailbox.
 - Source code, infrastructure and data owned by ECFIO Engineering Ltd, in ECI-Hub's own GitHub and AWS accounts.
 
@@ -368,4 +370,5 @@ Newest first. Each change is approved by Jon before it is built. "Tests" lists t
 
 | Version | Date | Change | Reason | Approved by | Tests |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-11 | 11 Nov 2026 | Security standard: built to OWASP ASVS Level 2 with a penetration test before go-live. Admin and Super Admin sessions limited to 12 hours with no trusted device. | ISO 27001 readiness and penetration testing | Jon Wallis | PUB-07, ADM-04 (sign-in and sessions) |
 | 2026-11-10 | 10 Nov 2026 | Baseline. Added version table, requirement IDs on the acceptance criteria and this change log. No requirement changed. | Version control and test traceability | Jon Wallis | None |

@@ -1,0 +1,42 @@
+# Sandbox-only build: same stages as the repo Dockerfile, but based on a cached Node image
+# (Docker Hub is rate limited from this build machine) and trusting the proxy CA.
+FROM eci-base:node22 AS deps
+USER root
+WORKDIR /src
+COPY proxy-ca.crt /proxy-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/proxy-ca.crt
+COPY package.json package-lock.json* ./
+COPY prisma ./prisma
+RUN npm ci --include=dev
+
+FROM deps AS build
+WORKDIR /src
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm run build
+
+FROM eci-base:node22 AS prismacli
+USER root
+WORKDIR /cli
+COPY proxy-ca.crt /proxy-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/proxy-ca.crt
+COPY package.json /tmp/app-package.json
+RUN npm init -y >/dev/null && npm install --no-package-lock --no-fund --no-audit "prisma@$(node -p "require('/tmp/app-package.json').devDependencies.prisma")"
+
+FROM eci-base:node22 AS run
+USER root
+RUN rm -rf /app /opt/prisma-cli /proxy-ca.crt && mkdir /app
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 NODE_EXTRA_CA_CERTS=
+COPY --from=build /src/.next/standalone ./
+COPY --from=build /src/.next/static ./.next/static
+COPY --from=build /src/public ./public
+COPY --from=build /src/prisma ./prisma
+COPY --from=build /src/node_modules/@prisma ./node_modules/@prisma
+COPY --from=build /src/node_modules/.prisma ./node_modules/.prisma
+COPY --from=prismacli /cli/node_modules /opt/prisma-cli/node_modules
+COPY scripts/docker-entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh && (id app >/dev/null 2>&1 || useradd -m app) && chown -R app /app && mkdir -p /data/uploads && chown app /data/uploads
+USER app
+EXPOSE 3000
+CMD ["./entrypoint.sh"]

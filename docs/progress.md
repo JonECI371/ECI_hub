@@ -10,6 +10,14 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-11 (evening): Xero sync built
+
+- Paid card bookings go to Xero straight away: authorised invoice plus a payment into the Stripe clearing account. Refunds become credit notes.
+- Credit accounts: approval creates the Xero contact from the application (structured registered and invoice addresses, accounts phone). Month end creates one DRAFT invoice per account dated the last day of the month; a payment in Xero marks the statement paid and restores credit. Statement due date now runs from month end (resolves P2 wording).
+- All sends use a retrying queue (lease based, nothing sent twice, failures raise a task). Settings has the Xero panel. 66 tests pass against a simulated Xero.
+- Not live: needs the secure domain (Xero requires https), the Xero app keys in Secrets Manager (`docs/xero-setup.md`), and the Stripe clearing account code from the accountant. Test on the Demo Company first.
+- Fixed in passing: cancelling a session now credits on-account bookings too.
+
 ## 2026-11-11 (later): Test Log 1 fixes, batch 1
 
 Jon signed off the Test Log 1 fixes (with notes) and answered the open questions. Built and deployed this batch: waitlist on the customer dashboard (claim, leave) and claim link and expiry for admins; booked-for-others list; draft dates no longer counted as upcoming; "+ VAT" on course cards; date-change task shows the date; empty date-change message; EC&I wording; Done tab (all history, searchable) and a "Filter on, clear all filters" banner in Tasks; Full label on dates; richer bookings export; Expired checkouts hidden from Bookings; two open checkouts per person; duration as number and unit, usual start and end times per course, and a last-day field when adding a date; placeholder text (TODO) blocks publishing; friendly error pages. Not reproduced: the first-login crash (#1); error pages added, Kirsty to re-test and capture the browser console if it recurs.

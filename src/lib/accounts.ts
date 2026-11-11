@@ -5,6 +5,8 @@ import { SITE_URL, money as gbp } from '@/lib/format';
 import { findOrCreatePerson } from '@/lib/booking';
 import { sendEmail } from '@/lib/integrations/email';
 import { checkCompany } from '@/lib/integrations/companies-house';
+import { enqueueXero } from '@/lib/xero-queue';
+import { kickXero } from '@/lib/xero-sync';
 
 export type CreditDefaults = { defaultLimitPence: number; lowCreditWarnPence: number; termsDays: number };
 const DEFAULTS: CreditDefaults = { defaultLimitPence: 500000, lowCreditWarnPence: 50000, termsDays: 30 };
@@ -19,11 +21,14 @@ export const INDUSTRIES = ['Water and utilities', 'Oil and gas', 'Chemical and p
 export const PO_RULES = { NONE: 'No', PER_BOOKING: 'Yes, one PO per booking', PER_ACCOUNT: 'Yes, one PO for the account' } as const;
 export type PoRule = keyof typeof PO_RULES;
 
+export type Address = { line1: string; line2?: string; town: string; county?: string; postcode: string };
+const addressText = (a: Address) => [a.line1, a.line2, a.town, a.county, a.postcode].filter(Boolean).join(', ');
+
 export type Application = {
-  company: string; companyNumber: string; vatNumber?: string; registeredAddress: string; website?: string; industry: string;
+  company: string; companyNumber: string; vatNumber?: string; registered: Address; invoice?: Address; accountsPhone?: string; website?: string; industry: string;
   main: { firstName: string; lastName: string; email: string; phone: string; jobTitle: string };
   others: { name: string; email: string; jobTitle?: string }[];
-  accountsName: string; accountsEmail: string; invoiceAddress?: string;
+  accountsName: string; accountsEmail: string;
   creditRequestedPence: number; poRule: PoRule; expectedDelegates?: number;
 };
 
@@ -34,8 +39,8 @@ export async function submitApplication(a: Application) {
     await tx.person.update({ where: { id: main.id }, data: { jobTitle: main.jobTitle ?? (a.main.jobTitle || null), employer: main.employer ?? a.company } });
     const acc = await tx.account.create({
       data: {
-        company: a.company, companyNumber: a.companyNumber, vatNumber: a.vatNumber || null, registeredAddress: a.registeredAddress, website: a.website || null, industry: a.industry,
-        invoiceAddress: a.invoiceAddress || null, accountsName: a.accountsName, accountsEmail: a.accountsEmail.toLowerCase(), creditRequestedPence: a.creditRequestedPence,
+        company: a.company, companyNumber: a.companyNumber, vatNumber: a.vatNumber || null, registeredAddress: addressText(a.registered), addresses: { registered: a.registered, ...(a.invoice ? { invoice: a.invoice } : {}) }, accountsPhone: a.accountsPhone ?? null, website: a.website || null, industry: a.industry,
+        invoiceAddress: a.invoice ? addressText(a.invoice) : null, accountsName: a.accountsName, accountsEmail: a.accountsEmail.toLowerCase(), creditRequestedPence: a.creditRequestedPence,
         poRule: a.poRule, expectedDelegates: a.expectedDelegates ?? null, status: 'APPLIED',
         members: { create: [{ personId: main.id, role: 'MAIN_BOOKER', status: 'PENDING_APPROVAL' }] },
       },
@@ -78,10 +83,12 @@ export async function approveAccount(accountId: string, actor: { id: string; rol
     await tx.accountMember.updateMany({ where: { accountId, status: 'PENDING_APPROVAL' }, data: { status: 'ACTIVE' } });
     const acc = await tx.account.findUniqueOrThrow({ where: { id: accountId }, include: { members: { include: { person: true } } } });
     for (const m of acc.members) if (!m.person.roles.includes('BOOKER')) await tx.person.update({ where: { id: m.personId }, data: { roles: { push: 'BOOKER' } } });
+    await enqueueXero(tx, 'CONTACT', 'Account', accountId, `CONTACT:${accountId}:approved`); // the full company contact goes to Xero
     await tx.auditLog.create({ data: { actorId: actor.id, action: 'ACCOUNT_APPROVED', recordType: 'Account', recordId: accountId, before: { status: 'APPLIED' }, after: { status: 'ACTIVE', ...terms } } });
     await tx.task.updateMany({ where: { type: 'ACCOUNT_APPLICATION', recordId: accountId, status: 'OPEN' }, data: { status: 'DONE', doneAt: new Date(), assigneeId: actor.id } });
     return acc;
   });
+  kickXero();
   for (const m of acc.members) {
     await sendEmail({
       to: m.person.email, personId: m.personId, trigger: 'ACCOUNT_APPROVED', subject: `Your ECI-Hub credit account is ready: ${acc.company}`,

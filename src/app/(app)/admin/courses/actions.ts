@@ -15,6 +15,9 @@ import { assertAssignable } from '@/lib/trainers';
 import { sendVenueChanged } from '@/lib/notifications';
 import { storeFile } from '@/lib/integrations/files';
 import { sessionPublishBlock } from '@/lib/publish-rules';
+import { enqueueXero } from '@/lib/xero-queue';
+import { creditCancelledAccountBooking } from '@/lib/credit';
+import { kickXero } from '@/lib/xero-sync';
 import { composeDuration, durationDays } from '@/lib/duration';
 
 export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
@@ -164,11 +167,15 @@ export async function cancelSession(form: FormData) {
       await tx.booking.update({ where: { id: b.id }, data: { status: 'CANCELLED' } });
       await tx.attendee.updateMany({ where: { bookingId: b.id }, data: { status: 'CANCELLED' } });
       if (!stripeEnabled()) for (const p of b.payments) if (p.status === 'succeeded') await tx.payment.update({ where: { id: p.id }, data: { refundedPence: p.amountPence, status: 'refunded_test' } });
+      const paid = b.payments.filter((p) => p.status === 'succeeded').reduce((n, p) => n + p.amountPence, 0);
+      if (b.method === 'CARD' && paid > 0) await enqueueXero(tx, 'CREDIT_NOTE', 'Booking', b.id, `CREDIT_NOTE:${b.id}:${paid}`, { amountPence: paid });
+      if (b.method === 'ACCOUNT') await creditCancelledAccountBooking(tx, b.id); // a cancelled date is not billed
     }
     await tx.waitlistEntry.deleteMany({ where: { sessionId: s.id } });
     await tx.auditLog.create({ data: { actorId: me.id, action: 'SESSION_CANCELLED', recordType: 'Session', recordId: s.id, before: { status: s.status }, after: { status: 'CANCELLED', bookings: s.bookings.length } } });
   });
   if (stripeEnabled()) for (const b of s.bookings) await refundBooking(b.id);
+  kickXero();
   await cancelSessionMeeting(s.id);
   const when = `${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)}`;
   const people = new Map<string, { email: string; firstName: string; id: string }>();

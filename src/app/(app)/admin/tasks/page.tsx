@@ -9,6 +9,7 @@ import { CopyButton } from '@/components/copy-button';
 import { decideCancellationTask, uploadCertificate, decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { loadPolicy, steer } from '@/lib/cancellation-policy';
+import { xeroLink, xeroStatus } from '@/lib/integrations/xero';
 import { money } from '@/lib/format';
 import { companiesHouseConfigured, companiesHouseLink, type CompanyCheck } from '@/lib/integrations/companies-house';
 
@@ -98,6 +99,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
   const members = new Map((await db.accountMember.findMany({ where: { id: { in: memberIds } }, include: { person: true, account: { include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } } } })).map((x) => [x.id, x]));
   const isSuper = me.roles.includes('SUPER_ADMIN');
   const policy = await loadPolicy();
+  const xs = await xeroStatus();
   const aById = new Map(attendees.map((a) => [a.id, a]));
   const bById = new Map(bookings.map((b) => [b.id, b]));
   const altSessions = await db.session.findMany({ where: { courseId: { in: bookings.map((b) => b.courseId) }, status: 'PUBLISHED', startsAt: { gt: new Date() } }, orderBy: { startsAt: 'asc' } });
@@ -272,12 +274,12 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             const total = sts.reduce((n, x) => n + x.lines.reduce((m, l) => m + l.netPence + l.vatPence, 0), 0);
             body = (
               <>
-                <p className="mb-3 text-sm">{sts.length} {sts.length === 1 ? 'statement' : 'statements'} closed, {money(total)} including VAT. Download the file, then in Xero go to Business, Invoices, Import, and upload it. Xero creates the invoices as drafts for you to approve and send.</p>
+                <p className="mb-3 text-sm">{sts.length} {sts.length === 1 ? 'statement' : 'statements'} closed, {money(total)} including VAT. {xs.connected ? 'Each company is sent to Xero automatically as one draft invoice with a line per booking. In Xero, open Business, Invoices, Draft, check each one, then approve and send it. The Xero file below is only a backup.' : 'Xero is not connected yet. Download the file, then in Xero go to Business, Invoices, Import, and upload it. Xero creates the invoices as drafts for you to approve and send.'}</p>
                 {sts.length > 0 && (
                   <div className="relative overflow-x-auto rounded-control bg-page">
                     <table className="w-full min-w-[480px] text-left text-sm">
-                      <thead className="text-xs uppercase tracking-[0.06em]"><tr>{['Account', 'Lines', 'Total inc. VAT', 'Due'].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead>
-                      <tbody>{sts.map((x) => <tr key={x.id} className="border-t border-hairline"><td className="px-4 py-2 font-bold text-ink"><Link href={`/admin/accounts/${x.accountId}`}>{x.account.company}</Link></td><td className="px-4 py-2 tabular-nums">{x.lines.length}</td><td className="px-4 py-2 tabular-nums">{money(x.lines.reduce((m, l) => m + l.netPence + l.vatPence, 0))}</td><td className="px-4 py-2">{x.dueAt ? dmy(x.dueAt) : '-'}</td></tr>)}</tbody>
+                      <thead className="text-xs uppercase tracking-[0.06em]"><tr>{['Account', 'Lines', 'Total inc. VAT', 'Due', 'Xero'].map((h) => <th key={h} className="px-4 py-2">{h}</th>)}</tr></thead>
+                      <tbody>{sts.map((x) => <tr key={x.id} className="border-t border-hairline"><td className="px-4 py-2 font-bold text-ink"><Link href={`/admin/accounts/${x.accountId}`}>{x.account.company}</Link></td><td className="px-4 py-2 tabular-nums">{x.lines.length}</td><td className="px-4 py-2 tabular-nums">{money(x.lines.reduce((m, l) => m + l.netPence + l.vatPence, 0))}</td><td className="px-4 py-2">{x.dueAt ? dmy(x.dueAt) : '-'}</td><td className="px-4 py-2">{x.xeroInvoiceId ? <a href={xeroLink(x.xeroInvoiceId)} target="_blank" rel="noreferrer">Draft in Xero</a> : xs.connected ? 'Sending' : 'Not connected'}</td></tr>)}</tbody>
                     </table>
                   </div>
                 )}

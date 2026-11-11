@@ -232,6 +232,7 @@ model Person {
   employer        String?
   jobTitle        String?
   sessionsValidFrom DateTime? // sessions started before this are no longer valid (sign out everywhere, role change)
+  xeroContactId   String?
   schemeIds       Json      @default("{}") // { skillguard, compex, eusr }
   roles           Role[]    @default([DELEGATE])
   marketingOptIn  Boolean   @default(false)
@@ -272,6 +273,9 @@ model Account {
   poRule          String          @default("NONE") // NONE | PER_BOOKING | PER_ACCOUNT
   status          AccountStatus   @default(APPLIED)
   website         String?
+  accountsPhone   String?
+  addresses       Json            @default("{}") // structured registered and invoice addresses, for Xero
+  xeroContactId   String?
   industry        String?
   creditRequestedPence Int?
   expectedDelegates Int?
@@ -324,6 +328,8 @@ model Booking {
   cancellationNote String?
   cancellationDecidedAt DateTime?
   cancellationDecidedById String?
+  xeroInvoiceId String?
+  xeroInvoiceNo String?
   attendees     Attendee[]
   payments      Payment[]
   statementLines StatementLine[]
@@ -383,6 +389,7 @@ model Payment {
   amountPence      Int
   refundedPence    Int      @default(0)
   status           String
+  xeroPaymentId    String?
   createdAt        DateTime @default(now())
 }
 
@@ -393,6 +400,7 @@ model Statement {
   month         String          // YYYY-MM
   status        StatementStatus @default(OPEN)
   xeroInvoiceNo String?
+  xeroInvoiceId String?
   issuedAt      DateTime?
   dueAt         DateTime?
   paidAt        DateTime?
@@ -515,4 +523,22 @@ model AuditLog {
 model Setting {
   key   String @id
   value Json
+}
+
+/** Work to send to Xero, kept in the database so nothing is lost if Xero is down or not yet connected. */
+model XeroJob {
+  id            String    @id @default(cuid())
+  key           String    @unique // one job per thing, e.g. CARD_INVOICE:<bookingId>
+  kind          String    // CONTACT | CARD_INVOICE | CREDIT_NOTE | ACCOUNT_DRAFT
+  recordType    String
+  recordId      String
+  payload       Json      @default("{}")
+  status        String    @default("PENDING") // PENDING | DONE | FAILED
+  attempts      Int       @default(0)
+  nextAttemptAt DateTime  @default(now())
+  lastError     String?
+  xeroId        String?
+  createdAt     DateTime  @default(now())
+  doneAt        DateTime?
+  @@index([status, nextAttemptAt])
 }

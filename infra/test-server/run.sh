@@ -27,6 +27,14 @@ if [ -n "$STRIPE_SECRET_ID" ]; then
   STRIPE_WEBHOOK_SECRET=$(echo "$STRIPE_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("STRIPE_WEBHOOK_SECRET",""))' 2>/dev/null || true)
   [ -n "$STRIPE_SECRET_KEY" ] && [ -n "$STRIPE_PUBLISHABLE_KEY" ] && PAYMENTS_MODE="stripe"
 fi
+# Xero: secret name in /opt/eci/xero.env (XERO_SECRET_ID); the secret holds XERO_CLIENT_ID and XERO_CLIENT_SECRET.
+XERO_SECRET_ID=""; XERO_CLIENT_ID=""; XERO_CLIENT_SECRET=""
+[ -f /opt/eci/xero.env ] && source /opt/eci/xero.env
+if [ -n "$XERO_SECRET_ID" ]; then
+  XERO_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$XERO_SECRET_ID" --query SecretString --output text 2>/dev/null || true)
+  XERO_CLIENT_ID=$(echo "$XERO_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("XERO_CLIENT_ID",""))' 2>/dev/null || true)
+  XERO_CLIENT_SECRET=$(echo "$XERO_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("XERO_CLIENT_SECRET",""))' 2>/dev/null || true)
+fi
 if [ -n "$MS_SECRET_ID" ]; then
   MS_CLIENT_SECRET=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$MS_SECRET_ID" --query SecretString --output text 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("MS_CLIENT_SECRET",""))' 2>/dev/null || true)
 fi
@@ -38,7 +46,7 @@ docker run -d --name app --network eci --restart always -p 80:3000 \
   -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads -e RUN_JOBS=1 \
   -e MS_TENANT_ID="$MS_TENANT_ID" -e MS_CLIENT_ID="$MS_CLIENT_ID" -e MS_CLIENT_SECRET="$MS_CLIENT_SECRET" \
   -e MS_MEETING_HOST="$MS_MEETING_HOST" -e MS_INVITE_ALLOWLIST="$MS_INVITE_ALLOWLIST" \
-  -e PAYMENTS_MODE="$PAYMENTS_MODE" -e STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" -e STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" \
+  -e PAYMENTS_MODE="$PAYMENTS_MODE" -e STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" -e STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" -e XERO_CLIENT_ID="$XERO_CLIENT_ID" -e XERO_CLIENT_SECRET="$XERO_CLIENT_SECRET" \
   "$REG/eci-hub:app"
 if [ "$SEED" = "seed" ]; then
   sleep 10   # let the app apply migrations first

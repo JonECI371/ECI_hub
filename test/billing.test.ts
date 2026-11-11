@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 describe('month-end statements and Xero', async () => {
   const { db } = await import('@/lib/db');
-  const { closeStatements, xeroCsv, markStatementPaid, XERO_COLUMNS } = await import('@/lib/billing');
+  const { closeStatements, monthEnd, xeroCsv, markStatementPaid, XERO_COLUMNS } = await import('@/lib/billing');
   const { availableCredit, createAccountBooking } = await import('@/lib/credit');
   const { course } = await import('./fixtures');
 
@@ -29,7 +29,7 @@ describe('month-end statements and Xero', async () => {
     await closeStatements();
     await closeStatements(); // safe to run again
     const sts = await db.statement.findMany({ where: { accountId: { in: [one.account.id, two.account.id] } } });
-    expect(sts.every((s) => s.status === 'ISSUED' && s.dueAt && s.dueAt.getTime() - s.issuedAt!.getTime() === 30 * 86400000)).toBe(true);
+    expect(sts.every((s) => s.status === 'ISSUED' && s.dueAt && s.dueAt.getTime() === monthEnd(s.month).getTime() + 30 * 86400000)).toBe(true);
     expect(await db.task.count({ where: { type: 'MONTH_END_BILLING', recordId: month } })).toBe(1);
     expect(await availableCredit(db, one.account)).toBe(100000 - one.b.totalPence); // still owed until paid
 

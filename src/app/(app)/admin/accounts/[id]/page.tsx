@@ -115,7 +115,7 @@ export default async function AccountRecord({ params, searchParams }: { params: 
           <section className={card} aria-labelledby="co-h">
             <h2 id="co-h" className="mb-3 text-lg font-extrabold text-ink">Company</h2>
             <dl className="flex flex-col gap-2 text-sm">
-              {[['VAT number', a.vatNumber ?? 'Not given'], ['Registered address', a.registeredAddress], ['Invoice address', a.invoiceAddress ?? 'Same as registered'], ['Accounts contact', `${a.accountsName}, ${a.accountsEmail}`], ['Website', a.website ?? '-']].map(([k, v]) => (
+              {[['VAT number', a.vatNumber ?? 'Not given'], ['Registered address', a.registeredAddress], ['Invoice address', a.invoiceAddress ?? 'Same as registered'], ['Accounts contact', `${a.accountsName}, ${a.accountsEmail}`], ['Website', a.website ?? '-'], ['Accounts phone', a.accountsPhone ?? '-'], ['Xero contact', a.xeroContactId ? 'Linked' : 'Not sent to Xero yet']].map(([k, v]) => (
                 <div key={k} className="border-b border-hairline pb-2 last:border-0"><dt className="text-xs">{k}</dt><dd className="font-semibold text-ink">{v}</dd></div>
               ))}
             </dl>

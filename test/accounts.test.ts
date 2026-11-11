@@ -9,7 +9,7 @@ describe('credit accounts', async () => {
   const apply = (credit = 1000000) => {
     const id = uid();
     return submitApplication({
-      company: `Acme ${id} Ltd`, companyNumber: `9${id.replace(/\D/g, '').padEnd(7, '1').slice(0, 7)}`, registeredAddress: '1 High St, Reading RG1 1AA', industry: 'Contractor',
+      company: `Acme ${id} Ltd`, companyNumber: `9${id.replace(/\D/g, '').padEnd(7, '1').slice(0, 7)}`, registered: { line1: '1 High St', town: 'Reading', postcode: 'RG1 1AA' }, industry: 'Contractor',
       main: { firstName: 'Priya', lastName: 'Shah', email: `priya.${id}@example.com`, phone: '01234 567890', jobTitle: 'Training manager' },
       others: [{ name: 'Tom Brown', email: `tom.${id}@example.com` }],
       accountsName: 'Accounts', accountsEmail: `accounts.${id}@example.com`, creditRequestedPence: credit, poRule: 'PER_BOOKING',

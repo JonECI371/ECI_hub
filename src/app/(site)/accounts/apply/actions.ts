@@ -20,7 +20,17 @@ export async function applyForAccount(_prev: ApplyState, form: FormData): Promis
   if (!get('company')) f.company = 'Enter the company name';
   const number = normaliseCompanyNumber(get('companyNumber'));
   if (!number) f.companyNumber = 'Enter the 8-character Companies House number, like 09147227 or SC123456';
-  if (!get('registeredAddress')) f.registeredAddress = 'Enter the registered address';
+  const POSTCODE = /^[A-Z]{1,2}\d[A-Z\d]?\s*\d[A-Z]{2}$/i;
+  if (!get('reg_line1')) f.reg_line1 = 'Enter the first line of the registered address';
+  if (!get('reg_town')) f.reg_town = 'Enter the town or city';
+  if (!POSTCODE.test(get('reg_postcode'))) f.reg_postcode = 'Enter a UK postcode, like TW16 5DA';
+  const invoiceGiven = !!(get('inv_line1') || get('inv_town') || get('inv_postcode'));
+  if (invoiceGiven) {
+    if (!get('inv_line1')) f.inv_line1 = 'Enter the first line of the invoice address';
+    if (!get('inv_town')) f.inv_town = 'Enter the town or city';
+    if (!POSTCODE.test(get('inv_postcode'))) f.inv_postcode = 'Enter a UK postcode';
+  }
+  if (get('accountsPhone') && !/^[0-9 +()-]{7,20}$/.test(get('accountsPhone'))) f.accountsPhone = 'Enter a phone number, like 01932 963463';
   if (get('website') && !/^(https?:\/\/)?[\w.-]+\.[a-z]{2,}(\/\S*)?$/i.test(get('website'))) f.website = 'Enter a web address, like www.company.co.uk';
   if (!INDUSTRIES.includes(get('industry'))) f.industry = 'Choose an industry';
   if (!get('firstName')) f.firstName = 'Enter your first name';
@@ -58,9 +68,9 @@ export async function applyForAccount(_prev: ApplyState, form: FormData): Promis
   if (recent >= 3) return { error: 'You have sent several applications in the last hour. Please call us on +44 (0) 1932 963463.', values, others };
 
   await submitApplication({
-    company: get('company'), companyNumber: number!, vatNumber: get('vatNumber'), registeredAddress: get('registeredAddress'), website: get('website'), industry: get('industry'),
+    company: get('company'), companyNumber: number!, vatNumber: get('vatNumber'), registered: { line1: get('reg_line1'), line2: get('reg_line2'), town: get('reg_town'), county: get('reg_county'), postcode: get('reg_postcode').toUpperCase().replace(/\s+/g, ' ') }, invoice: invoiceGiven ? { line1: get('inv_line1'), line2: get('inv_line2'), town: get('inv_town'), county: get('inv_county'), postcode: get('inv_postcode').toUpperCase().replace(/\s+/g, ' ') } : undefined, accountsPhone: get('accountsPhone') || undefined, website: get('website'), industry: get('industry'),
     main: { firstName: get('firstName'), lastName: get('lastName'), email: get('email'), phone: get('phone'), jobTitle: get('jobTitle') },
-    others: bookers, accountsName: get('accountsName'), accountsEmail: get('accountsEmail'), invoiceAddress: get('invoiceAddress'),
+    others: bookers, accountsName: get('accountsName'), accountsEmail: get('accountsEmail'), 
     creditRequestedPence: credit!, poRule: get('poRule') as PoRule, expectedDelegates: delegates,
   });
   return { ok: true, firstName: get('firstName') };

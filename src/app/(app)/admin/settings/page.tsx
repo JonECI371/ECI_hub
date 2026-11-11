@@ -6,7 +6,9 @@ import { teamsConfigured } from '@/lib/integrations/teams';
 import { publishableKey, stripeEnabled } from '@/lib/integrations/payments';
 import { emailLive } from '@/lib/integrations/email';
 import { Chip } from '@/components/ui';
-import { saveBilling, saveCancellationPolicy, saveSubjects } from './actions';
+import { disconnectXeroAction, retryXeroAction, saveBilling, saveCancellationPolicy, saveSubjects } from './actions';
+import { xeroStatus } from '@/lib/integrations/xero';
+import { xeroQueueCounts } from '@/lib/xero-sync';
 import { loadPolicy, policyLines } from '@/lib/cancellation-policy';
 import { creditDefaults } from '@/lib/accounts';
 import { xeroSettings } from '@/lib/billing';
@@ -26,13 +28,13 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     db.task.count({ where: { type: 'INTEGRATION_FAILURE', status: 'OPEN' } }),
     db.person.count({ where: { roles: { hasSome: ['ADMIN', 'SUPER_ADMIN'] } } }),
   ]);
-  const [credit, xero, policy] = await Promise.all([creditDefaults(), xeroSettings(), loadPolicy()]);
+  const [credit, xero, policy, xs, xq] = await Promise.all([creditDefaults(), xeroSettings(), loadPolicy(), xeroStatus(), xeroQueueCounts()]);
   const sandbox = publishableKey().startsWith('pk_test_');
   const integrations: [string, string, 'soft' | 'warn' | 'grey' | 'bad', string][] = [
     ['Microsoft Teams', teamsConfigured() ? 'Connected' : 'Not connected', teamsConfigured() ? 'soft' : 'warn', `One meeting per virtual session, invites to delegates, booker and trainer. Host: ${process.env.MS_MEETING_HOST || 'not set'}.${process.env.MS_INVITE_ALLOWLIST ? ` Test safety: invites only to ${process.env.MS_INVITE_ALLOWLIST}.` : ''}`],
     ['Stripe', stripeEnabled() ? (sandbox ? 'Sandbox' : 'Live') : 'Test buttons', stripeEnabled() ? (sandbox ? 'warn' : 'soft') : 'grey', stripeEnabled() ? (sandbox ? 'Card payments through the Stripe sandbox. No real money moves.' : 'Taking real card payments.') : 'Stand-in payment buttons. Connect Stripe to take cards.'],
     ['Email sending', emailLive() ? 'Sending' : 'Test mode', emailLive() ? 'soft' : 'warn', emailLive() ? `From ${process.env.EMAIL_FROM}.` : 'Emails are logged, not sent. Log-in codes show on screen. Needs the eci-hub.co.uk domain set up in Amazon SES.'],
-    ['Xero', 'CSV (Phase 2)', 'grey', 'Month-end statements export as a Xero import file. The API connection comes in Phase 3.'],
+    ['Xero', xs.connected ? 'Connected' : xs.configured ? 'Not connected' : 'Not set up', xs.connected ? 'soft' : 'warn', xs.connected ? `Connected to ${xs.tenantName}. Card bookings go to Xero as paid invoices straight away; account statements become draft invoices each month.` : 'Card bookings and account statements go to Xero automatically once it is connected. Until then the month-end Xero import file still works.'],
     ['Zoom', 'Phase 3', 'grey', 'Same as Teams, for courses set to Zoom.'],
     ['Learning platform (SCORM)', 'Phase 3', 'grey', 'Host eLearning on ECI-Hub, or enrol learners on provider platforms by API.'],
   ];
@@ -41,6 +43,11 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     <>
       <div><p className="mb-1.5 text-xs">Admin › Settings</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Settings</h1></div>
       {(msg === 'saved' || msg === 'billingsaved') && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">{msg === 'saved' ? 'Subjects saved.' : 'Credit and Xero settings saved.'}</p>}
+      {msg === 'xeroconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero connected{detail ? `: ${detail}` : ''}. Anything waiting in the queue will now be sent.</p>}
+      {msg === 'xerodisconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero disconnected. Work keeps queuing and is sent when you reconnect.</p>}
+      {msg === 'xeroretried' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Retried: {detail}.</p>}
+      {msg === 'xeronotset' && <p role="alert" className="rounded-control bg-warn-bg px-4 py-3 text-sm font-semibold text-warn-fg">The Xero client ID and secret have not been added to the server yet. See docs/xero-setup.md.</p>}
+      {msg === 'xeroerror' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Xero did not connect: {detail ?? 'unknown reason'}</p>}
       {msg === 'policysaved' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Cancellation policy saved. The public terms and checkout wording now match it.</p>}
       {msg === 'policyinvalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">{detail ?? 'Check the cancellation policy.'}</p>}
       {msg === 'billinginvalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Check the credit and Xero values: amounts in pounds, terms up to 120 days, account code and tax rate filled in.</p>}
@@ -95,6 +102,25 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Link href="/admin/people?show=staff" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage staff in People</Link>
       </section>
 
+      <section id="xero" className={card} aria-labelledby="xero-h">
+        <h2 id="xero-h" className="mb-1 text-lg font-extrabold text-ink">Xero</h2>
+        <p className="mb-3 text-sm">Card bookings are sent to Xero the moment they are paid, as an invoice already paid into your Stripe clearing account. Refunds become credit notes. At month end each company account becomes one draft invoice with a line per booking, ready for you to review, approve and send in Xero. When you mark it paid in Xero, the company&apos;s credit comes back here by itself.</p>
+        <dl className="mb-4 grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+          <div className="flex justify-between gap-4 border-b border-hairline py-1"><dt>Connection</dt><dd className="font-semibold text-ink">{xs.connected ? `Connected to ${xs.tenantName}` : xs.configured ? 'Not connected' : 'Not set up on the server'}</dd></div>
+          <div className="flex justify-between gap-4 border-b border-hairline py-1"><dt>Waiting to send</dt><dd className="font-semibold text-ink">{xq.pending}</dd></div>
+          <div className="flex justify-between gap-4 border-b border-hairline py-1"><dt>Sent so far</dt><dd className="font-semibold text-ink">{xq.done}</dd></div>
+          <div className="flex justify-between gap-4 border-b border-hairline py-1"><dt>Needs attention</dt><dd className={`font-semibold ${xq.failed ? 'text-bad-fg' : 'text-ink'}`}>{xq.failed}</dd></div>
+        </dl>
+        {xq.lastError && <p className="mb-3 rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">Last problem: {xq.lastError}</p>}
+        {isSuper ? (
+          <div className="flex flex-wrap gap-2">
+            {!xs.connected && <a href="/admin/xero/connect" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink no-underline">Connect Xero</a>}
+            {xs.connected && <form action={retryXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Send now and retry failed</button></form>}
+            {xs.connected && <form action={disconnectXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Disconnect</button></form>}
+          </div>
+        ) : <p className="text-sm">Only a Super Admin can connect Xero.</p>}
+      </section>
+
       <section id="cancellation" className={card} aria-labelledby="canc-h">
         <h2 id="canc-h" className="mb-1 text-lg font-extrabold text-ink">Cancellation policy</h2>
         <p className="mb-4 text-sm">One place for the policy. Admins see it as a steer on every cancellation, checkout shows it, and the public Terms page prints it, so they can never disagree.{!isSuper && ' Only a Super Admin can change it.'}</p>
@@ -128,6 +154,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Payment terms (days)<input name="termsDays" type="number" min={0} max={120} defaultValue={credit.termsDays} disabled={!isSuper} className={input} /></label>
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero sales account code<input name="accountCode" defaultValue={xero.accountCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Xero&apos;s default is 200 (Sales).</span></label>
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero tax rate<input name="taxType" defaultValue={xero.taxType} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Exactly as named in Xero, e.g. 20% (VAT on Income).</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero tax code (live connection)<input name="taxCode" defaultValue={xero.taxCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">The code, not the name: OUTPUT2 is 20% (VAT on Income) in UK organisations.</span></label>
+          <label className="flex flex-col gap-1 text-sm font-bold text-ink">Stripe clearing account code<input name="stripeClearingCode" defaultValue={xero.stripeClearingCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">The Xero account that card payments are recorded against. Needed before card bookings can be sent.</span></label>
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Invoice number prefix<input name="invoicePrefix" defaultValue={xero.invoicePrefix} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Used until you enter Xero&apos;s own invoice number.</span></label>
           {isSuper && <div className="sm:col-span-3"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save credit and Xero settings</button></div>}
         </form>

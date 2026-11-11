@@ -1,9 +1,14 @@
 import 'server-only';
 import { db } from '@/lib/db';
 import { statementMonth, applyOverdueHolds } from '@/lib/credit';
+import { enqueueXero } from '@/lib/xero-queue';
 
-export type XeroSettings = { accountCode: string; taxType: string; invoicePrefix: string };
-const XERO_DEFAULTS: XeroSettings = { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-' };
+/** Last day of a statement month (YYYY-MM): the date on the invoice, so "invoiced on 30 November" is true. */
+export function monthEnd(ym: string): Date { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0, 12)); }
+
+export type XeroSettings = { accountCode: string; taxType: string; invoicePrefix: string; taxCode: string; stripeClearingCode: string };
+/** accountCode and taxType feed the CSV; taxCode (a Xero tax code such as OUTPUT2) and the Stripe clearing account feed the live connection. */
+const XERO_DEFAULTS: XeroSettings = { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: '' };
 
 /** Xero import settings from Settings (key "xero"). Defaults are Xero's standard Sales account and UK VAT rate. */
 export async function xeroSettings(): Promise<XeroSettings> {
@@ -28,7 +33,8 @@ export async function closeStatements(now = new Date()) {
       await db.statement.update({ where: { id: st.id }, data: { status: 'PAID', issuedAt: now, paidAt: now } });
       continue;
     }
-    await db.statement.update({ where: { id: st.id }, data: { status: 'ISSUED', issuedAt: now, dueAt: new Date(now.getTime() + st.account.paymentTermsDays * 86400000) } });
+    await db.statement.update({ where: { id: st.id }, data: { status: 'ISSUED', issuedAt: now, dueAt: new Date(monthEnd(st.month).getTime() + st.account.paymentTermsDays * 86400000) } });
+    await enqueueXero(db, 'ACCOUNT_DRAFT', 'Statement', st.id, `ACCOUNT_DRAFT:${st.id}`);
     await db.auditLog.create({ data: { action: 'STATEMENT_ISSUED', recordType: 'Statement', recordId: st.id, after: { month: st.month, accountId: st.accountId, totalPence: total } } });
     months.add(st.month);
   }

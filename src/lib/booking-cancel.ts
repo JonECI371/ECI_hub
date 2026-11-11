@@ -8,6 +8,8 @@ import { refundBooking, stripeEnabled } from '@/lib/integrations/payments';
 import { offerFreedPlaces, placesOnOffer } from '@/lib/waitlist';
 import { creditCancelledAccountBooking, reduceAccountCharge } from '@/lib/credit';
 import { loadPolicy, steer } from '@/lib/cancellation-policy';
+import { enqueueXero } from '@/lib/xero-queue';
+import { kickXero } from '@/lib/xero-sync';
 import { placesTakenWhere } from '@/lib/sessions';
 
 export class CancellationError extends Error {}
@@ -47,6 +49,7 @@ export async function cancelConfirmedBooking(bookingId: string, actorId: string,
   });
   if (!done) return false;
   if (!opts.review && opts.refund && b.method === 'CARD' && stripeEnabled()) await refundBooking(b.id);
+  kickXero();
   if (b.sessionId) await offerFreedPlaces(b.sessionId);
   if (b.sessionId) await syncSessionMeeting(b.sessionId);
   await tellAll(b, `Cancelled: ${b.course.title} (${b.reference})`, (name, isBooker) => [
@@ -63,6 +66,7 @@ export async function cancelConfirmedBooking(bookingId: string, actorId: string,
 /** Money for a decided cancellation: charge `chargePence` (gross) and give back the rest. Card in test mode records the refund only. */
 async function settleMoney(tx: Prisma.TransactionClient, b: Loaded, chargePence: number) {
   const refundPence = Math.max(0, b.totalPence - chargePence);
+  if (b.method === 'CARD' && refundPence > 0) await enqueueXero(tx, 'CREDIT_NOTE', 'Booking', b.id, `CREDIT_NOTE:${b.id}:${refundPence}`, { amountPence: refundPence }); // the refund is a credit note in Xero
   if (b.method === 'ACCOUNT') {
     if (chargePence === 0) await creditCancelledAccountBooking(tx, b.id);
     else if (chargePence < b.totalPence) await reduceAccountCharge(tx, b.id, chargePence);
@@ -99,6 +103,7 @@ export async function decideCancellation(bookingId: string, actorId: string, d: 
     await tx.auditLog.create({ data: { actorId, action: 'CANCELLATION_DECIDED', recordType: 'Booking', recordId: b.id, after: { decision, chargePence, note } } });
   });
   if (b.method === 'CARD' && stripeEnabled() && chargePence < b.totalPence) await refundBooking(b.id, b.totalPence - chargePence);
+  kickXero();
   const refund = b.totalPence - chargePence;
   const card = b.method === 'CARD';
   await sendEmail({

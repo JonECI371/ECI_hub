@@ -6,6 +6,8 @@ import { db } from '@/lib/db';
 import { audit, requireAdmin } from '@/lib/admin';
 import { markStatementPaid } from '@/lib/billing';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
+import { enqueueXero } from '@/lib/xero-queue';
+import { kickXero } from '@/lib/xero-sync';
 
 const back = (id: string, msg: string): never => redirect(`/admin/accounts/${id}?msg=${msg}`);
 
@@ -37,6 +39,8 @@ export async function updateTerms(form: FormData) {
   const d = await creditDefaults();
   if (limit > d.defaultLimitPence && limit !== a.creditLimitPence && !me.roles.includes('SUPER_ADMIN')) back(a.id, 'needsuper');
   await db.account.update({ where: { id: a.id }, data: { creditLimitPence: limit, paymentTermsDays: terms, poRule } });
+  await enqueueXero(db, 'CONTACT', 'Account', a.id, `CONTACT:${a.id}:terms:${Date.now()}`);
+  kickXero();
   await audit(me.id, 'ACCOUNT_TERMS_CHANGED', 'Account', a.id, { creditLimitPence: a.creditLimitPence, paymentTermsDays: a.paymentTermsDays, poRule: a.poRule }, { creditLimitPence: limit, paymentTermsDays: terms, poRule });
   back(a.id, 'saved');
 }

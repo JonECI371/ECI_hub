@@ -59,7 +59,14 @@ export function AccountApplicationForm({ industries }: { industries: string[] })
         <label className={`${label} sm:col-span-2`}>Company name<input name="company" autoComplete="organization" defaultValue={v.company} className={input} {...err('company')} /><E k="company" /></label>
         <label className={label}>Companies House number<input name="companyNumber" defaultValue={v.companyNumber} className={input} {...err('companyNumber')} /><span className={hint}>We check this automatically.</span><E k="companyNumber" /></label>
         <label className={label}>VAT number <span className="font-normal">(optional)</span><input name="vatNumber" defaultValue={v.vatNumber} className={input} /></label>
-        <label className={`${label} sm:col-span-2`}>Registered address<textarea name="registeredAddress" autoComplete="street-address" defaultValue={v.registeredAddress} className={area} {...err('registeredAddress')} /><E k="registeredAddress" /></label>
+        <fieldset className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+          <legend className="mb-2 text-sm font-bold text-ink">Registered address</legend>
+          <label className={`${label} sm:col-span-2`}>Address line 1<input name="reg_line1" autoComplete="address-line1" defaultValue={v.reg_line1} className={input} {...err('reg_line1')} /><E k="reg_line1" /></label>
+          <label className={`${label} sm:col-span-2`}>Address line 2 <span className="font-normal">(optional)</span><input name="reg_line2" autoComplete="address-line2" defaultValue={v.reg_line2} className={input} /></label>
+          <label className={label}>Town or city<input name="reg_town" autoComplete="address-level2" defaultValue={v.reg_town} className={input} {...err('reg_town')} /><E k="reg_town" /></label>
+          <label className={label}>County <span className="font-normal">(optional)</span><input name="reg_county" defaultValue={v.reg_county} className={input} /></label>
+          <label className={label}>Postcode<input name="reg_postcode" autoComplete="postal-code" defaultValue={v.reg_postcode} className={`${input} sm:max-w-[200px]`} {...err('reg_postcode')} /><E k="reg_postcode" /></label>
+        </fieldset>
         <label className={label}>Website <span className="font-normal">(optional)</span><input name="website" type="url" inputMode="url" defaultValue={v.website} className={input} {...err('website')} /><E k="website" /></label>
         <label className={label}>Industry<select name="industry" defaultValue={v.industry ?? ''} className={input} {...err('industry')}><option value="" disabled>Choose…</option>{industries.map((i) => <option key={i}>{i}</option>)}</select><E k="industry" /></label>
       </Step>
@@ -86,7 +93,15 @@ export function AccountApplicationForm({ industries }: { industries: string[] })
       <Step n={4} title="Billing and credit" sub="We bill once a month for everything booked that month, on 30-day terms.">
         <label className={label}>Accounts contact name<input name="accountsName" defaultValue={v.accountsName} className={input} {...err('accountsName')} /><E k="accountsName" /></label>
         <label className={label}>Accounts email<input name="accountsEmail" type="email" defaultValue={v.accountsEmail} className={input} {...err('accountsEmail')} /><span className={hint}>Monthly invoices are sent here.</span><E k="accountsEmail" /></label>
-        <label className={`${label} sm:col-span-2`}>Invoice address <span className="font-normal">(if different)</span><textarea name="invoiceAddress" defaultValue={v.invoiceAddress} className={area} /></label>
+        <fieldset className="grid gap-4 sm:col-span-2 sm:grid-cols-2">
+          <legend className="mb-2 text-sm font-bold text-ink">Invoice address <span className="font-normal">(only if different from the registered address)</span></legend>
+          <label className={`${label} sm:col-span-2`}>Address line 1<input name="inv_line1" defaultValue={v.inv_line1} className={input} /></label>
+          <label className={`${label} sm:col-span-2`}>Address line 2 <span className="font-normal">(optional)</span><input name="inv_line2" defaultValue={v.inv_line2} className={input} /></label>
+          <label className={label}>Town or city<input name="inv_town" defaultValue={v.inv_town} className={input} {...err('inv_town')} /><E k="inv_town" /></label>
+          <label className={label}>County <span className="font-normal">(optional)</span><input name="inv_county" defaultValue={v.inv_county} className={input} /></label>
+          <label className={label}>Postcode<input name="inv_postcode" defaultValue={v.inv_postcode} className={`${input} sm:max-w-[200px]`} {...err('inv_postcode')} /><E k="inv_postcode" /></label>
+        </fieldset>
+        <label className={label}>Accounts phone <span className="font-normal">(optional)</span><input name="accountsPhone" type="tel" defaultValue={v.accountsPhone} className={input} {...err('accountsPhone')} /><E k="accountsPhone" /></label>
         <label className={label}>Credit limit requested
           <select name="creditLimit" value={creditValue} onChange={(e) => setCredit(e.target.value)} className={input} {...err('creditLimit')}>
             <option value="" disabled>Choose…</option><option value="2500">£2,500</option><option value="5000">£5,000</option><option value="10000">£10,000</option><option value="25000">£25,000</option><option value="other">Other</option>

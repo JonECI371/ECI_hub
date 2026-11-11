@@ -34,8 +34,8 @@ export async function saveBilling(form: FormData) {
   const me = await requirePerson(['SUPER_ADMIN'], '/admin/settings');
   const pence = (k: string) => Math.round(Number(String(form.get(k) ?? '').replace(/[£,\s]/g, '')) * 100);
   const credit = { defaultLimitPence: pence('defaultLimit'), lowCreditWarnPence: pence('lowCredit'), termsDays: Number(form.get('termsDays')) };
-  const xero = { accountCode: String(form.get('accountCode') ?? '').trim().slice(0, 20), taxType: String(form.get('taxType') ?? '').trim().slice(0, 60), invoicePrefix: String(form.get('invoicePrefix') ?? '').trim().slice(0, 10) };
-  const ok = Object.values(credit).every((n) => Number.isFinite(n) && n >= 0) && credit.termsDays <= 120 && Number.isInteger(credit.termsDays) && xero.accountCode && xero.taxType;
+  const xero = { accountCode: String(form.get('accountCode') ?? '').trim().slice(0, 20), taxType: String(form.get('taxType') ?? '').trim().slice(0, 60), invoicePrefix: String(form.get('invoicePrefix') ?? '').trim().slice(0, 10), taxCode: String(form.get('taxCode') ?? '').trim().slice(0, 30), stripeClearingCode: String(form.get('stripeClearingCode') ?? '').trim().slice(0, 20) };
+  const ok = Object.values(credit).every((n) => Number.isFinite(n) && n >= 0) && credit.termsDays <= 120 && Number.isInteger(credit.termsDays) && xero.accountCode && xero.taxType && xero.taxCode;
   if (!ok) redirect('/admin/settings?msg=billinginvalid#billing');
   const before = await db.setting.findMany({ where: { key: { in: ['credit', 'xero'] } } });
   await db.setting.upsert({ where: { key: 'credit' }, create: { key: 'credit', value: credit }, update: { value: credit } });
@@ -63,4 +63,23 @@ export async function saveCancellationPolicy(form: FormData) {
   await audit(me.id, 'SETTINGS_CANCELLATION_POLICY_SAVED', 'Setting', 'cancellation', before?.value as never, policy);
   revalidatePath('/', 'layout');
   redirect('/admin/settings?msg=policysaved#cancellation');
+}
+
+/** Super Admin: disconnect Xero (the queue keeps its work and sends it when you reconnect). */
+export async function disconnectXeroAction() {
+  const me = await requirePerson(['SUPER_ADMIN'], '/admin/settings');
+  const { disconnectXero } = await import('@/lib/integrations/xero');
+  await disconnectXero();
+  await audit(me.id, 'XERO_DISCONNECTED', 'Setting', 'xero_connection');
+  redirect('/admin/settings?msg=xerodisconnected#xero');
+}
+
+/** Super Admin: put failed Xero work back on the queue and try it now. */
+export async function retryXeroAction() {
+  const me = await requirePerson(['SUPER_ADMIN'], '/admin/settings');
+  const { retryFailedXeroJobs, processXeroJobs } = await import('@/lib/xero-sync');
+  const n = await retryFailedXeroJobs();
+  const r = await processXeroJobs(50);
+  await audit(me.id, 'XERO_RETRY', 'Setting', 'xero_connection', undefined, { retried: n, done: r.done });
+  redirect(`/admin/settings?msg=xeroretried&detail=${encodeURIComponent(`${n} retried, ${r.done} sent`)}#xero`);
 }

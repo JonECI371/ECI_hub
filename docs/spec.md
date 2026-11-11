@@ -169,8 +169,8 @@ There are two ways to pay: card at checkout, or on account for approved companie
 2. Admin approves and sets the credit limit, payment terms and PO rule. Limits above the default need a Super Admin.
 3. Main booker and listed bookers get sign-in links; new bookers invited later need ECI approval.
 4. Each on-account booking is confirmed at once if it fits within available credit, and adds a line to that month's statement.
-5. On the statement date, every account's lines close into a statement. Admin downloads one Xero import CSV from Tasks and uploads it to Xero, which issues the invoices.
-6. Admin records payment from Xero (CSV or manual in Phase 1). Available credit is restored when the statement is marked paid.
+5. At month end, every account's lines close into a statement. With Xero connected, one DRAFT invoice per account (dated the last day of the month, one line per booking, cancellations as negative lines) is created in Xero for Admin to review and approve; without it, Admin downloads the Xero import CSV from Tasks.
+6. When the invoice is paid in Xero the statement is marked paid automatically (or manually). Available credit is restored when the statement is marked paid.
 7. An invoice 14 or more days overdue puts the account on hold: new on-account bookings are blocked, card still works.
 
 **Rules**
@@ -190,7 +190,7 @@ Each integration is connected once in Admin Settings and then used automatically
 | Stripe | Card, Apple Pay, Google Pay, refunds | 1 | Payment Element plus webhooks for success, failure and refund |
 | Email sending (AWS SES) | All system emails from bookings@eci-hub.co.uk | 1 | SPF, DKIM and DMARC on the domain; bounce and complaint handling feeds the Tasks inbox |
 | Companies House API | Check company number on account applications | 2 | Show status and incorporation date on the approval task |
-| Xero | Monthly statements | 2 (CSV), 3 (API) | Phase 2: CSV in Xero's sales invoice import format; Phase 3: create invoices and read payment status by API |
+| Xero | Card payments, refunds, monthly statements, credit account contacts | 2 (CSV and API) | Card booking: invoice plus payment into the Stripe clearing account; refund: credit note; account approval: Xero contact with every application field; month end: one draft invoice per account; paid status read back. Built against a simulated Xero; real connection needs the secure domain, tested on the Xero demo company first |
 | Zoom | Same as Teams for courses set to Zoom | 3 | Server-to-server OAuth app; meeting registrants per attendee |
 | Learning platforms | Enrol eLearning learners without admin copying | 3 | SCORM player hosted on ECI-Hub, or provider APIs (EUSR QuartzWeb, Trainor) where available |
 | Analytics | Traffic and booking funnel | 1 | Privacy-friendly analytics behind the cookie banner |
@@ -308,7 +308,7 @@ Phase 1: Replace SimplyBook (courses, course page, checkout, outcome, registrati
 
 Phase 2: Accounts and CompEx (credit accounts and statements, Xero CSV, Companies House, in person with venues and approvals, eLearning enrolment packs, trainer phone screens). Gate: first statement in Xero and a CompEx session delivered.
 
-Phase 3: Replace Zoho and automate (pipelines and reports, Zoom and Xero API, SCORM and provider APIs, free tools templates, email block editor). Gate: Zoho switched off with pipelines live here.
+Phase 3: Replace Zoho and automate (pipelines and reports, Zoom, SCORM and provider APIs, free tools templates, email block editor). Gate: Zoho switched off with pipelines live here.
 
 Phase 1 goes live only when a real Thames Water cohort is booked and run with every invite sent automatically.
 

@@ -2,6 +2,7 @@ import 'server-only';
 import { randomBytes } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
+import { enqueueXero } from '@/lib/xero-queue';
 import { placesTakenWhere } from '@/lib/sessions';
 import { placesOnOffer } from '@/lib/waitlist';
 
@@ -118,6 +119,7 @@ export async function confirmCardBooking(bookingId: string, paymentRef: string) 
     // A claimed waitlist offer is used up once paid.
     if (b.sessionId) await tx.waitlistEntry.deleteMany({ where: { sessionId: b.sessionId, personId: b.bookerId } });
     await tx.auditLog.create({ data: { actorId: b.bookerId, action: 'BOOKING_CONFIRMED', recordType: 'Booking', recordId: b.id, before: { status: b.status }, after: { status: 'CONFIRMED', paymentRef } } });
+    await enqueueXero(tx, 'CARD_INVOICE', 'Booking', b.id, `CARD_INVOICE:${b.id}`); // an invoice, marked paid, goes to Xero straight away
     return { booking, already: false };
   });
 }

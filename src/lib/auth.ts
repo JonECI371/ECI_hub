@@ -69,11 +69,14 @@ export const newCode = () => String(randomInt(0, 1_000_000)).padStart(6, '0');
 
 // ---------- Sessions ----------
 
-type SessionPayload = { pid: string; exp: number; v: 1 };
+type SessionPayload = { pid: string; exp: number; v: 1; iat?: number };
+
+/** A session is valid unless the person revoked sessions after it started. Sessions from before this existed count as started at 0. */
+export const sessionRevoked = (iat: number | undefined, validFrom: Date | null) => !!validFrom && (iat ?? 0) < validFrom.getTime();
 
 export async function startSession(personId: string, trusted: boolean) {
   const exp = Date.now() + (trusted ? TRUSTED_DAYS * 86400000 : 12 * 3600000);
-  (await cookies()).set(SESSION_COOKIE, sign({ pid: personId, exp, v: 1 }), {
+  (await cookies()).set(SESSION_COOKIE, sign({ pid: personId, exp, v: 1, iat: Date.now() }), {
     httpOnly: true,
     sameSite: 'lax',
     secure: secure(),
@@ -91,7 +94,8 @@ export async function endSession() {
 export async function currentPerson(): Promise<Person | null> {
   const s = verify<SessionPayload>((await cookies()).get(SESSION_COOKIE)?.value);
   if (!s) return null;
-  return db.person.findUnique({ where: { id: s.pid } });
+  const p = await db.person.findUnique({ where: { id: s.pid } });
+  return p && !sessionRevoked(s.iat, p.sessionsValidFrom) ? p : null;
 }
 
 /** Require a signed-in person (optionally with one of the given roles); otherwise send them to log in. */

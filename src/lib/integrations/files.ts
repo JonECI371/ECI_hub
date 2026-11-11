@@ -16,14 +16,27 @@ const localRoot = () => process.env.LOCAL_UPLOAD_DIR ?? path.join(process.cwd(),
 
 export const EXT: Record<string, string> = { 'application/pdf': 'pdf', 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
 
+export class UploadError extends Error {}
+
+/** The real type from the file's first bytes. The type the browser reports is never trusted. */
+export function sniffType(b: Uint8Array): string | null {
+  const at = (i: number, ...v: number[]) => v.every((x, k) => b[i + k] === x);
+  if (at(0, 0x25, 0x50, 0x44, 0x46)) return 'application/pdf'; // %PDF
+  if (at(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return 'image/png';
+  if (at(0, 0xff, 0xd8, 0xff)) return 'image/jpeg';
+  if (at(0, 0x52, 0x49, 0x46, 0x46) && at(8, 0x57, 0x45, 0x42, 0x50)) return 'image/webp'; // RIFF....WEBP
+  return null;
+}
+
 export async function storeFile(area: Area, prefix: string, file: File): Promise<string> {
-  const ext = EXT[file.type] ?? 'bin';
-  const rel = `${area}/${prefix}/${randomUUID()}.${ext}`;
   const body = Buffer.from(await file.arrayBuffer());
+  const type = sniffType(body);
+  if (!type || type !== file.type) throw new UploadError('The file is not a PDF, JPEG, PNG or WebP.');
+  const rel = `${area}/${prefix}/${randomUUID()}.${EXT[type]}`;
   const bucket = bucketFor(area);
   if (bucket) {
     const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-    await new S3Client({ region: process.env.AWS_REGION }).send(new PutObjectCommand({ Bucket: bucket, Key: rel, Body: body, ContentType: file.type, ServerSideEncryption: 'AES256' }));
+    await new S3Client({ region: process.env.AWS_REGION }).send(new PutObjectCommand({ Bucket: bucket, Key: rel, Body: body, ContentType: type, ServerSideEncryption: 'AES256' }));
     return `s3:${rel}`;
   }
   const full = path.join(localRoot(), rel);

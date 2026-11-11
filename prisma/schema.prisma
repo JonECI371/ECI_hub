@@ -228,6 +228,7 @@ model Person {
   dateOfBirth     DateTime?
   employer        String?
   jobTitle        String?
+  sessionsValidFrom DateTime? // sessions started before this are no longer valid (sign out everywhere, role change)
   schemeIds       Json      @default("{}") // { skillguard, compex, eusr }
   roles           Role[]    @default([DELEGATE])
   marketingOptIn  Boolean   @default(false)

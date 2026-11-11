@@ -47,7 +47,7 @@ export async function setRoles(form: FormData) {
     const supers = await db.person.count({ where: { roles: { has: 'SUPER_ADMIN' } } });
     if (supers <= 1) go(id, 'lastsuper');
   }
-  await db.person.update({ where: { id }, data: { roles: next } });
+  await db.person.update({ where: { id }, data: { roles: next, sessionsValidFrom: new Date() } }); // role change signs them out everywhere
   if (next.includes('TRAINER')) await db.trainerProfile.upsert({ where: { personId: id }, update: {}, create: { personId: id, status: 'PENDING' } });
   await audit(me.id, 'ROLES_CHANGED', 'Person', id, { roles: p.roles }, { roles: next });
   revalidatePath('/admin', 'layout');
@@ -58,7 +58,7 @@ export async function setRoles(form: FormData) {
 export async function resetAuthenticator(form: FormData) {
   const me = await requireSuper();
   const id = String(form.get('personId'));
-  await db.person.update({ where: { id }, data: { totpSecret: null } });
+  await db.person.update({ where: { id }, data: { totpSecret: null, sessionsValidFrom: new Date() } }); // a lost authenticator may mean a lost device
   await audit(me.id, 'AUTHENTICATOR_RESET', 'Person', id);
   go(id, 'reset');
 }

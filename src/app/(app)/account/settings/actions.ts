@@ -19,3 +19,11 @@ export async function saveMyDetails(form: FormData) {
   await db.auditLog.create({ data: { actorId: me.id, action: 'PERSON_UPDATED', recordType: 'Person', recordId: me.id, before: { firstName: me.firstName, lastName: me.lastName, mobile: me.mobile, employer: me.employer, marketingOptIn: me.marketingOptIn }, after: data } });
   redirect('/account/settings?msg=saved');
 }
+
+/** Sign out of every device: all sessions started before now stop working, including this one. */
+export async function signOutEverywhere() {
+  const me = await requirePerson();
+  await db.person.update({ where: { id: me.id }, data: { sessionsValidFrom: new Date() } });
+  await db.auditLog.create({ data: { actorId: me.id, action: 'SIGNED_OUT_EVERYWHERE', recordType: 'Person', recordId: me.id } });
+  redirect('/login?next=/account/settings');
+}

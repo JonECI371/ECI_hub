@@ -2,10 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { LEGAL } from '@/lib/legal';
+import { loadPolicy, policyLines } from '@/lib/cancellation-policy';
 
-export function generateStaticParams() {
-  return Object.keys(LEGAL).map((doc) => ({ doc }));
-}
+// Rendered on each request: the cancellation section comes from the policy in Settings, and the page carries the security nonce.
+export const dynamic = 'force-dynamic';
 export async function generateMetadata({ params }: { params: Promise<{ doc: string }> }): Promise<Metadata> {
   const d = LEGAL[(await params).doc];
   return d ? { title: d.title, alternates: { canonical: `/legal/${d.slug}` } } : {};
@@ -14,6 +14,7 @@ export async function generateMetadata({ params }: { params: Promise<{ doc: stri
 export default async function Legal({ params }: { params: Promise<{ doc: string }> }) {
   const d = LEGAL[(await params).doc];
   if (!d) notFound();
+  const policy = d.slug === 'terms' ? await loadPolicy() : null;
   const id = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">
@@ -29,7 +30,13 @@ export default async function Legal({ params }: { params: Promise<{ doc: string 
         {d.sections.map((s, i) => (
           <section key={s.heading} id={id(s.heading)} className="mb-8 scroll-mt-6">
             <h2 className="mb-3 text-[22px] font-extrabold text-ink">{i + 1}. {s.heading}</h2>
-            {s.body && <p className="leading-[1.7]">{s.body}</p>}
+            {policy && s.heading === 'Cancellations and refunds' ? (
+              <>
+                <p className="mb-3 leading-[1.7]">{policy.intro}</p>
+                <ul className="mb-3 list-disc pl-5 leading-[1.7]">{policyLines(policy).map((l) => <li key={l}>{l}</li>)}</ul>
+                <p className="leading-[1.7]">Where a charge applies, our team may waive it in extenuating circumstances, and will always talk to you about moving to another date. We confirm every cancellation outcome by email.</p>
+              </>
+            ) : s.body && <p className="leading-[1.7]">{s.body}</p>}
             {s.table && (
               <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[520px] text-left text-sm">

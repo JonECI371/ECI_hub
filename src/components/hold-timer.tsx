@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-/** Counts down the 15-minute place hold. */
+/** Counts down the place hold. */
 export function HoldTimer({ expiresAt }: { expiresAt: string }) {
   const end = new Date(expiresAt).getTime();
   const [left, setLeft] = useState(() => Math.max(0, end - Date.now()));

@@ -156,3 +156,20 @@ export async function uploadCertificate(form: FormData) {
   revalidatePath('/admin', 'layout');
   back(form, 'certified');
 }
+
+/** An Admin decides a customer's cancellation: refund, charge, part charge, waive, or move to another date. */
+export async function decideCancellationTask(form: FormData) {
+  const { me, t } = await openTask(form);
+  const { CancellationError, decideCancellation, moveCancelledBooking } = await import('@/lib/booking-cancel');
+  const kind = String(form.get('kind'));
+  try {
+    if (kind === 'MOVE') await moveCancelledBooking(t.recordId, me.id, String(form.get('sessionId') ?? ''), String(form.get('note') ?? ''));
+    else if (['REFUND', 'CHARGE', 'PARTIAL', 'WAIVE'].includes(kind)) await decideCancellation(t.recordId, me.id, { kind: kind as 'REFUND' | 'CHARGE' | 'PARTIAL' | 'WAIVE', percent: Number(form.get('percent')), note: String(form.get('note') ?? '') });
+    else back(form, 'gone');
+  } catch (err) {
+    if (err instanceof CancellationError) redirect(`/admin/tasks?msg=rule&detail=${encodeURIComponent(err.message)}`);
+    throw err;
+  }
+  revalidatePath('/admin', 'layout');
+  back(form, kind === 'MOVE' ? 'cancelmoved' : 'canceldecided');
+}

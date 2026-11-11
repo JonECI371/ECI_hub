@@ -16,7 +16,8 @@ describe('checkout and capacity', () => {
     const { course: c, session } = await course({ capacity: 5 });
     const b = await createPendingBooking({ courseId: c.id, sessionId: session!.id, places: 3, booker: booker(), bookerAttends: true, others: null });
     expect(b.status).toBe('PAYMENT_PENDING');
-    expect(b.holdExpiresAt!.getTime()).toBeGreaterThan(Date.now() + 14 * 60000);
+    expect(b.holdExpiresAt!.getTime()).toBeGreaterThan(Date.now() + 4 * 60000); // held for 5 minutes
+    expect(b.holdExpiresAt!.getTime()).toBeLessThan(Date.now() + 6 * 60000);
     expect(await db.attendee.count({ where: { bookingId: b.id } })).toBe(3);
     expect((await placesLeft([session!])).get(session!.id)).toBe(2);
   });

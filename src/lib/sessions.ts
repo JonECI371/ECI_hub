@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 
-/** Bookings that use up places: confirmed or completed, or still inside their 15-minute checkout hold. */
+/** Bookings that use up places: confirmed or completed, or still inside their checkout hold. */
 export function placesTakenWhere(now = new Date()): Prisma.BookingWhereInput {
   return {
     OR: [

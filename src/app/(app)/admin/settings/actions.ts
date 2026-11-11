@@ -44,3 +44,23 @@ export async function saveBilling(form: FormData) {
   revalidatePath('/admin/settings');
   redirect('/admin/settings?msg=billingsaved#billing');
 }
+
+/** Super Admin: the cancellation policy, in one place. It drives the Admin steer, checkout wording and the public terms. */
+export async function saveCancellationPolicy(form: FormData) {
+  const me = await requirePerson(['SUPER_ADMIN'], '/admin/settings');
+  const { policyProblem, sortTiers } = await import('@/lib/cancellation-policy');
+  const tiers: { daysBefore: number; chargePercent: number }[] = [];
+  for (let i = 0; i < 5; i++) {
+    const d = String(form.get(`days_${i}`) ?? '').trim(), c = String(form.get(`pct_${i}`) ?? '').trim();
+    if (d === '' && c === '') continue;
+    tiers.push({ daysBefore: Number(d), chargePercent: Number(c) });
+  }
+  const policy = { tiers: sortTiers(tiers), lateHours: Number(form.get('lateHours')), intro: String(form.get('intro') ?? '').trim().slice(0, 600) };
+  const problem = policyProblem(policy);
+  if (problem) redirect(`/admin/settings?msg=policyinvalid&detail=${encodeURIComponent(problem)}#cancellation`);
+  const before = await db.setting.findUnique({ where: { key: 'cancellation' } });
+  await db.setting.upsert({ where: { key: 'cancellation' }, create: { key: 'cancellation', value: policy }, update: { value: policy } });
+  await audit(me.id, 'SETTINGS_CANCELLATION_POLICY_SAVED', 'Setting', 'cancellation', before?.value as never, policy);
+  revalidatePath('/', 'layout');
+  redirect('/admin/settings?msg=policysaved#cancellation');
+}

@@ -21,6 +21,7 @@ export const TASK_LABEL: Record<string, string> = {
   EMAIL_BOUNCE: 'Bounced email',
   INTEGRATION_FAILURE: 'Integration failure',
   TRAINER_CONFLICT: 'Trainer conflict',
+  CANCELLATION_REVIEW: 'Cancellation to review',
 };
 
 export const ACCOUNT_STATUS: Record<AccountStatus, ['soft' | 'warn' | 'grey' | 'bad', string]> = { APPLIED: ['warn', 'Applied'], ACTIVE: ['soft', 'Active'], ON_HOLD: ['bad', 'On hold'], CLOSED: ['grey', 'Closed'], DECLINED: ['grey', 'Declined'] };

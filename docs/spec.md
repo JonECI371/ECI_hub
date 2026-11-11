@@ -2,7 +2,7 @@
 
 | Version | Date | Status | Owner |
 | --- | --- | --- | --- |
-| 2026-11-11 | 11 November 2026 | Adds the security standard and the Admin session rule to the 2026-11-10 baseline | Jon Wallis |
+| 2026-11-11b | 11 November 2026 | Adds the cancellation policy and review, a 5-minute checkout hold, and Add places to the 2026-11-11 version | Jon Wallis |
 
 This file in GitHub (`docs/spec.md`) is the master. The shared Claude Doc and the Word copy in SharePoint are readable copies of it, updated each time a version is approved. Every change is listed in the Change log at the end, and the full line-by-line history is in GitHub. How to propose and approve a change: `docs/spec-change-process.md`.
 
@@ -125,7 +125,7 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | PUB-01 | Public | Home (Main) | Two calls to action (Book a course, Open a credit account); next dates pulled live; course search returns results as you type |
 | PUB-02 | Public | Courses (Courses) | Filter by delivery type and subject; Courses, Dates and Calendar views; filters kept in the URL; eLearning shown in Courses view only |
 | PUB-03 | Public | Course page (Course) | Dates near the top; booking panel stays on screen; full dates offer the waitlist; structured data present |
-| PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with optional PO; no password or email verification step; places held 15 minutes |
+| PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with optional PO; no password or email verification step; places held 5 minutes with a countdown, and no more than two open checkouts per person |
 | PUB-05 | Public | Outcome (Outcome) | One template for confirmed by card, confirmed on account, eLearning, waitlist and payment failed; "Complete registration now" shown when needed |
 | PUB-06 | Public | Registration (Registration) | Questions from the subject's set; known answers prefilled; file uploads for photo and ID; saves on submit; approval routed to Tasks where on |
 | PUB-07 | Public | Log in (Login) | Email code or magic link; 30-day trusted device; staff and trainers also need an authenticator code |
@@ -135,10 +135,10 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | PUB-11 | Public | Free tools (Hook) | Admin-editable template for a quiz, tool or gated guide; captures name, email and opt-in into the CRM |
 | PUB-12 | Public | Legal, System pages | Versioned legal documents; 404, maintenance, no access and expired link states |
 | POR-01 | Portal | Dashboard (Dashboard) | Delegate view: action banner, upcoming by delivery type with Join, Directions or Continue, certificates. Booker view: credit tiles, needs attention, upcoming, team expiries |
-| POR-02 | Portal | Booking detail (BookingDetail) | Attendees and their registration status; add or swap attendees; change date or cancel within cut-off; documents |
+| POR-02 | Portal | Booking detail (BookingDetail) | Attendees and their registration status; add or swap attendees; add places (a linked booking for the same date); change date within the cut-off; cancel any time before the start under the cancellation policy, with the refund or charge shown; documents |
 | POR-03 | Portal | Settings (AccountProfile) | My details, Account and billing (limit, statements, company details), Bookers (invite, remove) |
 | ADM-01 | Admin | Home (AdminHome) | Next 14 days, counts that link into Tasks, upcoming sessions |
-| ADM-02 | Admin | Tasks (AdminTasks) | Filter by type; each task done in place (copy fields, approve, upload, export); done tasks leave the list |
+| ADM-02 | Admin | Tasks (AdminTasks) | Filter by type, with a visible filter banner and clear-all; each task done in place (copy fields, approve, upload, export, decide a cancellation); done tasks move to a searchable Done tab |
 | ADM-03 | Admin | Bookings, Accounts (AdminList) | Search, filter, bulk email, CSV export, pagination |
 | ADM-04 | Admin | Person record (AdminPerson) | Tabs for details, bookings, certificates, documents, emails, audit history |
 | ADM-05 | Admin | Course record (AdminCourse) | Sessions, attendees with status, waitlist, workflow, edit and cancel |
@@ -146,7 +146,7 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | ADM-07 | Admin | Calendar (AdminSchedule) | Month, week and day; trainer filter; conflicts flagged; create a session from a slot |
 | ADM-08 | Admin | Pipelines (AdminPipeline) | Drag deals between stages; owner and value; one board per pipeline |
 | ADM-09 | Admin | Reports (AdminReport) | Bookings and revenue, attendance, expiries, waitlists; date and subject filters; CSV |
-| ADM-10 | Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults, emails, legal documents, admin users |
+| ADM-10 | Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults, cancellation policy, emails, legal documents, admin users |
 | ADM-11 | Admin | Email template (EmailTemplate) | Block editor: heading, text, booking summary, code, button, footer; preview per trigger |
 | TRN-01 | Trainer | Sessions, Attendance, Availability, Profile | Phone first; today's session at the top; attendance saved in one tap per delegate; days then times; qualification expiry warnings |
 
@@ -157,9 +157,11 @@ There are two ways to pay: card at checkout, or on account for approved companie
 **Card (Stripe)**
 
 - Stripe Payment Element with card, Apple Pay and Google Pay; 3D Secure handled by Stripe.
-- Places are held for 15 minutes from the start of checkout; the hold is released on timeout or failure.
+- Places are held for 5 minutes from the start of checkout, with a countdown; the hold is released on timeout or failure. Each person can have two open checkouts at a time, so places cannot be held without paying.
 - VAT shown per line and in total; receipts emailed by the platform.
 - Refunds raised from the booking record by an Admin; partial refunds supported.
+- **Cancellations:** a customer can cancel any time before the start. The places are released at once and an Admin gets a Cancellation to review task. The Admin decides: refund in full, charge in full, part charge, waive the charge for extenuating circumstances (with a reason), or move the booking to another date. The task shows a steer from the cancellation policy, for example a late cancellation inside 24 hours suggests charging in full. This applies to card and on-account bookings (a charge stays on the statement; a refund removes or credits the line).
+- **Cancellation policy:** one editable place in Settings (tiers of days before the start and the share charged, a late-cancellation window, and opening wording). It drives the Admin steer, the checkout wording and the Cancellations section of the public Terms page, so they cannot disagree. Defaults: 28 or more days before, full refund; 7 to 27 days, 50% charged; under 7 days, no refund; within 24 hours, no refund unless extenuating circumstances.
 
 **Credit accounts**
 
@@ -370,5 +372,6 @@ Newest first. Each change is approved by Jon before it is built. "Tests" lists t
 
 | Version | Date | Change | Reason | Approved by | Tests |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-11b | 11 Nov 2026 | Cancellation policy in Settings and Admin cancellation review (refund, charge, part charge, waive, move); checkout hold 15 to 5 minutes with two open checkouts per person; Add places as a linked booking; Tasks filter banner and Done tab; courses have a duration with number and unit and usual times. | Test Log 1 sign-off and Jon's answers | Jon Wallis | PUB-04, POR-02, ADM-02, ADM-10, ADM-05 |
 | 2026-11-11 | 11 Nov 2026 | Security standard: built to OWASP ASVS Level 2 with a penetration test before go-live. Admin and Super Admin sessions limited to 12 hours with no trusted device. | ISO 27001 readiness and penetration testing | Jon Wallis | PUB-07, ADM-04 (sign-in and sessions) |
 | 2026-11-10 | 10 Nov 2026 | Baseline. Added version table, requirement IDs on the acceptance criteria and this change log. No requirement changed. | Version control and test traceability | Jon Wallis | None |

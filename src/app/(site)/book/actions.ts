@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/format';
 import { sign, verify } from '@/lib/auth';
-import { CheckoutError, MAX_PLACES, createPendingBooking, holdLive } from '@/lib/booking';
+import { CheckoutError, MAX_PLACES, addToBookingId, createPendingBooking, holdLive } from '@/lib/booking';
 import { completePaidBooking } from '@/lib/booking-complete';
 import { stripeEnabled } from '@/lib/integrations/payments';
 import { currentPerson } from '@/lib/auth';
@@ -56,9 +56,16 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   if (get('needsWaiver') === '1' && get('waiver') !== 'on') fields.waiver = 'Tick this box so the course can go ahead within your cancellation period';
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
 
+  let addedToId: string | undefined;
+  if (get('addTo')) {
+    const me = await currentPerson();
+    addedToId = (me && (await addToBookingId(me.id, get('addTo'), sessionId))) || undefined;
+    if (!addedToId) return { error: 'You can only add places to a booking you manage, on the same date. Open the booking and try again.', values };
+  }
   let bookingId: string;
   try {
     const b = await createPendingBooking({
+      addedToId,
       courseId,
       sessionId,
       places,
@@ -97,7 +104,9 @@ async function bookOnAccount(form: FormData, values: Record<string, string>, o: 
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
   let reference: string;
   try {
-    const b = await createAccountBooking({ personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber') });
+    const addedToId = get('addTo') ? (await addToBookingId(me.id, get('addTo'), o.sessionId)) ?? undefined : undefined;
+    if (get('addTo') && !addedToId) return { error: 'You can only add places to a booking you manage, on the same date.', values };
+    const b = await createAccountBooking({ addedToId, personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber') });
     reference = b.reference;
     await sendBookingConfirmation(b.id);
     if (b.sessionId) await syncSessionMeeting(b.sessionId);

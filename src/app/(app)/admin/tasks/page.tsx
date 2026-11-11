@@ -6,8 +6,9 @@ import { requireAdmin, TASK_LABEL } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { CopyButton } from '@/components/copy-button';
-import { uploadCertificate, decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
+import { decideCancellationTask, uploadCertificate, decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
+import { loadPolicy, steer } from '@/lib/cancellation-policy';
 import { money } from '@/lib/format';
 import { companiesHouseConfigured, companiesHouseLink, type CompanyCheck } from '@/lib/integrations/companies-house';
 
@@ -19,6 +20,7 @@ const MSG: Record<string, [string, boolean]> = {
   returned: ['Registration returned. The delegate has been asked to update it.', true], moved: ['Booking moved. The booker has been emailed.', true], declined: ['Request declined. The booker has been emailed.', true],
   note: ['Say what needs changing before returning a registration.', false],
   accountapproved: ['Account approved. The bookers have been emailed a sign-in link.', true], accountdeclined: ['Application declined. The main booker has been emailed.', true],
+  canceldecided: ['Decision recorded. The customer has been emailed.', true], cancelmoved: ['Booking moved to the new date. Everyone has been emailed.', true],
   certified: ['Certificate issued. The delegate and their booker have been emailed.', true], badcert: ['Attach a PDF, JPEG, PNG or WebP of 10MB or less, and the issue date.', false],
   bookerapproved: ['Booker approved. They and the main booker have been emailed.', true], bookerdeclined: ['Booker declined. The main booker has been emailed.', true],
   badlimit: ['Enter a credit limit in pounds.', false], reason: ['Give a reason before declining an application.', false], nodate: ['That date no longer has enough places.', false], gone: ['That task has already been dealt with.', false],
@@ -95,6 +97,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
   const memberIds = tasks.filter((t) => t.recordType === 'AccountMember').map((t) => t.recordId);
   const members = new Map((await db.accountMember.findMany({ where: { id: { in: memberIds } }, include: { person: true, account: { include: { members: { where: { role: 'MAIN_BOOKER' }, include: { person: true } } } } } })).map((x) => [x.id, x]));
   const isSuper = me.roles.includes('SUPER_ADMIN');
+  const policy = await loadPolicy();
   const aById = new Map(attendees.map((a) => [a.id, a]));
   const bById = new Map(bookings.map((b) => [b.id, b]));
   const altSessions = await db.session.findMany({ where: { courseId: { in: bookings.map((b) => b.courseId) }, status: 'PUBLISHED', startsAt: { gt: new Date() } }, orderBy: { startsAt: 'asc' } });
@@ -315,6 +318,36 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
               </>
             );
             actions = <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-white text-ink`}>Done without uploading</button></form>;
+          }
+
+          if (t.type === 'CANCELLATION_REVIEW' && b) {
+            const sg = steer(policy, b.session?.startsAt ?? null, b.totalPence, b.cancelledAt ?? t.createdAt);
+            const options = altSessions.filter((x) => x.courseId === b.courseId && x.id !== b.sessionId && (left.get(x.id) ?? 0) >= b.places);
+            const pct = sg.chargePercent > 0 && sg.chargePercent < 100 ? sg.chargePercent : 50;
+            const pick = (k: string) => (sg.suggested === 'REFUND' ? k === 'REFUND' : sg.suggested === 'PART_CHARGED' ? k === 'PARTIAL' : k === 'CHARGE');
+            const strong = `${btn} bg-cyan text-ink`;
+            const plain = `${btn} border border-field bg-white text-ink`;
+            body = (
+              <>
+                <dl className="grid gap-x-6 gap-y-2 rounded-control bg-page p-4 text-sm sm:grid-cols-2">
+                  {[['Booking', b.reference], ['Course', b.course.title], ['Was booked for', b.session ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)}, ${fmtTime(b.session.startsAt)}` : 'Any time'], ['Cancelled by', `${b.booker.firstName} ${b.booker.lastName}`], ['Places', String(b.places)], ['Total', `${money(b.totalPence)} (${b.method === 'CARD' ? 'paid by card' : 'on account'})`], ['Reason given', b.cancellationReason ?? 'None']].map(([k, v]) => (
+                    <div key={k} className="flex justify-between gap-4 border-b border-hairline py-1"><dt>{k}</dt><dd className="text-right font-semibold text-ink">{v}</dd></div>
+                  ))}
+                </dl>
+                <p className={`mt-3 rounded-control px-4 py-3 text-sm font-semibold ${sg.late || sg.chargePercent > 0 ? 'bg-warn-bg text-warn-fg' : 'bg-cyan-soft text-ink'}`}><strong>Policy steer: </strong>{sg.text}</p>
+              </>
+            );
+            actions = (
+              <div className="flex w-full flex-col gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <form action={decideCancellationTask}>{hidden}<input type="hidden" name="kind" value="REFUND" /><button type="submit" className={pick('REFUND') ? strong : plain}>Refund in full{pick('REFUND') ? ' (suggested)' : ''}</button></form>
+                  <form action={decideCancellationTask}>{hidden}<input type="hidden" name="kind" value="CHARGE" /><button type="submit" className={pick('CHARGE') ? strong : plain}>Charge in full{pick('CHARGE') ? ' (suggested)' : ''}</button></form>
+                  <form action={decideCancellationTask} className="flex items-center gap-2">{hidden}<input type="hidden" name="kind" value="PARTIAL" /><label className="sr-only" htmlFor={`pc-${t.id}`}>Charge percent</label><input id={`pc-${t.id}`} name="percent" type="number" min={1} max={99} defaultValue={pct} className="h-11 w-20 rounded-control border border-field bg-white px-3 text-sm" /><span className="text-sm">%</span><button type="submit" className={pick('PARTIAL') ? strong : plain}>Part charge{pick('PARTIAL') ? ' (suggested)' : ''}</button></form>
+                </div>
+                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="WAIVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Waive the charge: what were the extenuating circumstances?<input name="note" required maxLength={300} className="h-11 rounded-control border border-field bg-white px-3 text-sm font-normal" /></label><button type="submit" className={plain}>Waive and refund in full</button></form>
+                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="MOVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Or move them to another date instead<select name="sessionId" required disabled={!options.length} className="h-11 rounded-control border border-field bg-white px-3 text-sm font-normal">{options.length ? options.map((x) => <option key={x.id} value={x.id}>{fmtSessionDates(x.startsAt, x.endsAt)}, {fmtTime(x.startsAt)} ({left.get(x.id)} left)</option>) : <option>No other dates with room</option>}</select></label><button type="submit" disabled={!options.length} className={`${plain} disabled:opacity-50`}>Move booking</button></form>
+              </div>
+            );
           }
 
           if (t.type === 'DATE_CHANGE' && b) {

@@ -116,12 +116,13 @@ export async function changeDate(form: FormData) {
   back(ref, 'changed');
 }
 
-/** Cancel before the cut-off. Card bookings are refunded in full (test mode records the refund only). */
+/** Customer cancels: the places are released now and an Admin decides any refund or charge under the cancellation policy. */
 export async function cancelBooking(form: FormData) {
   const ref = String(form.get('ref'));
   const { me, b } = await myBooking(ref);
   const enrolled = b.attendees.some((a) => a.enrolment?.enrolledAt);
-  if (b.status !== 'CONFIRMED' || !withinCutoff(b.session, b.course.subject, enrolled)) back(ref, 'cutoff');
-  await cancelConfirmedBooking(b.id, me.id, { reason: String(form.get('reason') ?? ''), refund: true });
+  const open = b.course.deliveryType === 'ELEARNING' ? !enrolled : !!b.session && b.session.startsAt > new Date();
+  if (b.status !== 'CONFIRMED' || !open) back(ref, 'cutoff');
+  await cancelConfirmedBooking(b.id, me.id, { reason: String(form.get('reason') ?? ''), refund: false, review: true });
   back(ref, 'cancelled');
 }

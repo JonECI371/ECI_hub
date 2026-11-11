@@ -7,6 +7,7 @@ import { gbp } from '@/lib/format';
 import { STATUS_LABEL } from '@/lib/admin-bookings';
 import { Chip, DeliveryChip } from '@/components/ui';
 import { adminCancelBooking } from '../actions';
+import { cancellationOutcome } from '@/lib/cancellation-text';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Booking', robots: { index: false } };
@@ -56,6 +57,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
               <dt>Places</dt><dd className="font-bold text-ink">{b.places}</dd>
               <dt>Total</dt><dd className="font-bold text-ink">{gbp(b.totalPence)} <span className="font-normal">({b.method === 'CARD' ? 'card' : 'on account'}{b.poNumber ? `, PO ${b.poNumber}` : ''})</span></dd>
               <dt>Booked</dt><dd className="font-bold text-ink">{dt.format(b.createdAt)}</dd>
+              {b.status === 'CANCELLED' && <><dt>Cancellation</dt><dd className="font-bold text-ink">{cancellationOutcome(b) ?? 'Cancelled'}{b.cancellationReason ? <span className="block font-normal">Reason: {b.cancellationReason}</span> : null}{b.cancellationNote ? <span className="block font-normal">Note: {b.cancellationNote}</span> : null}{b.cancellationDecision === 'PENDING' && <span className="block font-normal"><Link href="/admin/tasks?type=CANCELLATION_REVIEW">Decide it in Tasks</Link></span>}</dd></>}
             </dl>
           </section>
 

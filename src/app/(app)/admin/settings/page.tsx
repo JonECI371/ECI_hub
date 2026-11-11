@@ -6,7 +6,8 @@ import { teamsConfigured } from '@/lib/integrations/teams';
 import { publishableKey, stripeEnabled } from '@/lib/integrations/payments';
 import { emailLive } from '@/lib/integrations/email';
 import { Chip } from '@/components/ui';
-import { saveBilling, saveSubjects } from './actions';
+import { saveBilling, saveCancellationPolicy, saveSubjects } from './actions';
+import { loadPolicy, policyLines } from '@/lib/cancellation-policy';
 import { creditDefaults } from '@/lib/accounts';
 import { xeroSettings } from '@/lib/billing';
 
@@ -16,16 +17,16 @@ export const metadata: Metadata = { title: 'Settings', robots: { index: false } 
 const card = 'rounded-card bg-white p-6 shadow-card';
 const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink disabled:bg-page';
 
-export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string }> }) {
+export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; detail?: string }> }) {
   const me = await requireAdmin('/admin/settings');
   const isSuper = me.roles.includes('SUPER_ADMIN');
-  const { msg } = await searchParams;
+  const { msg, detail } = await searchParams;
   const [subjects, teamsFails, staff] = await Promise.all([
     db.subject.findMany({ orderBy: { name: 'asc' } }),
     db.task.count({ where: { type: 'INTEGRATION_FAILURE', status: 'OPEN' } }),
     db.person.count({ where: { roles: { hasSome: ['ADMIN', 'SUPER_ADMIN'] } } }),
   ]);
-  const [credit, xero] = await Promise.all([creditDefaults(), xeroSettings()]);
+  const [credit, xero, policy] = await Promise.all([creditDefaults(), xeroSettings(), loadPolicy()]);
   const sandbox = publishableKey().startsWith('pk_test_');
   const integrations: [string, string, 'soft' | 'warn' | 'grey' | 'bad', string][] = [
     ['Microsoft Teams', teamsConfigured() ? 'Connected' : 'Not connected', teamsConfigured() ? 'soft' : 'warn', `One meeting per virtual session, invites to delegates, booker and trainer. Host: ${process.env.MS_MEETING_HOST || 'not set'}.${process.env.MS_INVITE_ALLOWLIST ? ` Test safety: invites only to ${process.env.MS_INVITE_ALLOWLIST}.` : ''}`],
@@ -40,6 +41,8 @@ export default async function Settings({ searchParams }: { searchParams: Promise
     <>
       <div><p className="mb-1.5 text-xs">Admin › Settings</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Settings</h1></div>
       {(msg === 'saved' || msg === 'billingsaved') && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">{msg === 'saved' ? 'Subjects saved.' : 'Credit and Xero settings saved.'}</p>}
+      {msg === 'policysaved' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Cancellation policy saved. The public terms and checkout wording now match it.</p>}
+      {msg === 'policyinvalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">{detail ?? 'Check the cancellation policy.'}</p>}
       {msg === 'billinginvalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Check the credit and Xero values: amounts in pounds, terms up to 120 days, account code and tax rate filled in.</p>}
       {teamsFails > 0 && <Link href="/admin/tasks?type=INTEGRATION_FAILURE" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg no-underline">{teamsFails} integration {teamsFails === 1 ? 'problem needs' : 'problems need'} attention in Tasks →</Link>}
 
@@ -90,6 +93,30 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <h2 id="users-h" className="mb-1 text-lg font-extrabold text-ink">Admin users</h2>
         <p className="mb-3 text-sm">{staff} staff {staff === 1 ? 'account' : 'accounts'}. Add staff, change roles and reset authenticators in People.</p>
         <Link href="/admin/people?show=staff" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage staff in People</Link>
+      </section>
+
+      <section id="cancellation" className={card} aria-labelledby="canc-h">
+        <h2 id="canc-h" className="mb-1 text-lg font-extrabold text-ink">Cancellation policy</h2>
+        <p className="mb-4 text-sm">One place for the policy. Admins see it as a steer on every cancellation, checkout shows it, and the public Terms page prints it, so they can never disagree.{!isSuper && ' Only a Super Admin can change it.'}</p>
+        <form action={saveCancellationPolicy} className="flex flex-col gap-4">
+          <fieldset disabled={!isSuper} className="flex flex-col gap-3">
+            <legend className="mb-1 text-sm font-bold text-ink">Tiers: cancelled at least this many days before the start, charge this share of the price</legend>
+            {Array.from({ length: 5 }, (_, i) => {
+              const t = policy.tiers[i];
+              return (
+                <div key={i} className="flex flex-wrap items-center gap-2 text-sm">
+                  <label className="flex items-center gap-2"><span className="w-12">Days</span><input name={`days_${i}`} type="number" min={0} max={365} defaultValue={t?.daysBefore ?? ''} className={`${input} w-24`} /></label>
+                  <label className="flex items-center gap-2"><span className="w-16">Charge %</span><input name={`pct_${i}`} type="number" min={0} max={100} defaultValue={t?.chargePercent ?? ''} className={`${input} w-24`} /></label>
+                </div>
+              );
+            })}
+            <p className="text-xs">Leave a row blank to skip it. The last tier must be 0 days (anything later than the other tiers).</p>
+            <label className="flex items-center gap-2 text-sm font-bold text-ink">Late cancellation window (hours before the start)<input name="lateHours" type="number" min={0} max={168} defaultValue={policy.lateHours} className={`${input} w-24`} /></label>
+            <label className="flex flex-col gap-1 text-sm font-bold text-ink">Opening wording on the public terms<textarea name="intro" rows={3} defaultValue={policy.intro} className="rounded-control border border-field bg-white px-3 py-2 text-sm font-normal" /></label>
+          </fieldset>
+          <div className="rounded-control bg-page p-4 text-sm"><p className="mb-1 font-bold text-ink">What customers will read</p><ul className="list-disc pl-5">{policyLines(policy).map((l) => <li key={l}>{l}</li>)}</ul></div>
+          {isSuper && <div><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save cancellation policy</button></div>}
+        </form>
       </section>
 
       <section id="billing" className={card} aria-labelledby="bill-h">

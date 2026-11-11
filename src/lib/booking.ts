@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { placesTakenWhere } from '@/lib/sessions';
 import { placesOnOffer } from '@/lib/waitlist';
 
-export const HOLD_MINUTES = 15;
+export const HOLD_MINUTES = 5;
 export const MAX_PLACES = 20;
 
 export function pricing(pricePence: number, vatRatePercent: number, places: number) {
@@ -42,13 +42,14 @@ export type CheckoutInput = {
   booker: { firstName: string; lastName: string; email: string; mobile?: string; marketingOptIn: boolean };
   bookerAttends: boolean;
   others: { name: string; email: string }[] | null; // null = add later
+  addedToId?: string; // adding places to an earlier booking
   waitlistEntryId?: string; // claiming a waitlist offer: that entry's held places count as free
 };
 
 export class CheckoutError extends Error {}
 
 /**
- * Creates a payment-pending booking that holds its places for 15 minutes.
+ * Creates a payment-pending booking that holds its places for 5 minutes.
  * The capacity check and the insert run under a per-session lock, so two people cannot take the last place.
  */
 export async function createPendingBooking(input: CheckoutInput) {
@@ -77,6 +78,7 @@ export async function createPendingBooking(input: CheckoutInput) {
         bookerId: booker.id,
         courseId: course.id,
         sessionId: input.sessionId,
+        addedToId: input.addedToId ?? null,
         places: input.places,
         method: 'CARD',
         ...money,
@@ -122,3 +124,11 @@ export async function confirmCardBooking(bookingId: string, paymentRef: string) 
 
 export const holdLive = (b: { status: string; holdExpiresAt: Date | null }) =>
   b.status === 'PAYMENT_PENDING' && !!b.holdExpiresAt && b.holdExpiresAt > new Date();
+
+/** The booking these extra places are added to: only a person who manages it, for the same live date. */
+export async function addToBookingId(personId: string, reference: string, sessionId: string | null): Promise<string | null> {
+  const { managesBooking } = await import('@/lib/booker');
+  const b = await db.booking.findUnique({ where: { reference } });
+  if (!b || b.status !== 'CONFIRMED' || !b.sessionId || b.sessionId !== sessionId || !(await managesBooking(personId, b))) return null;
+  return b.addedToId ?? b.id; // adding to an add-on adds to the original
+}

@@ -124,6 +124,7 @@ enum TaskType {
   EMAIL_BOUNCE
   INTEGRATION_FAILURE
   TRAINER_CONFLICT
+  CANCELLATION_REVIEW
 }
 
 enum TaskStatus {
@@ -313,6 +314,16 @@ model Booking {
   totalPence    Int
   status        BookingStatus @default(PAYMENT_PENDING)
   holdExpiresAt DateTime?
+  addedToId     String?        // places added to an earlier booking are a linked booking
+  addedTo       Booking?       @relation("AddedPlaces", fields: [addedToId], references: [id])
+  addedPlaces   Booking[]      @relation("AddedPlaces")
+  cancelledAt   DateTime?
+  cancellationReason String?
+  cancellationDecision String? // PENDING | REFUNDED | CHARGED | PART_CHARGED | WAIVED | MOVED
+  cancellationChargePence Int  @default(0)
+  cancellationNote String?
+  cancellationDecidedAt DateTime?
+  cancellationDecidedById String?
   attendees     Attendee[]
   payments      Payment[]
   statementLines StatementLine[]

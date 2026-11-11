@@ -77,7 +77,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
     return (
       <>
         <Message eyebrow="Booking" title={state === 'expired' ? 'Your hold has ended' : 'We could not find that booking'} tone="bad">
-          <p>{state === 'expired' ? 'Places are held for 15 minutes. Nothing has been charged. Start again to check what is still available.' : 'Log in to see your bookings.'}</p>
+          <p>{state === 'expired' ? 'Places are held for 5 minutes. Nothing has been charged. Start again to check what is still available.' : 'Log in to see your bookings.'}</p>
         </Message>
         <div className="flex flex-wrap gap-3 px-4 py-10 md:px-20">
           <Link href="/courses" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 font-bold text-ink no-underline">Choose a course</Link>

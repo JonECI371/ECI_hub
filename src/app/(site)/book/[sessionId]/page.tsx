@@ -6,13 +6,16 @@ import { currentPerson } from '@/lib/auth';
 import { placesLeft } from '@/lib/sessions';
 import { checkoutProps } from '@/lib/checkout-props';
 import { bookingAccount } from '@/lib/credit';
+import { loadPolicy } from '@/lib/cancellation-policy';
+import { addToBookingId } from '@/lib/booking';
 import { CheckoutForm } from '@/components/checkout-form';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Book your places', robots: { index: false } };
 
-export default async function BookSession({ params }: { params: Promise<{ sessionId: string }> }) {
+export default async function BookSession({ params, searchParams }: { params: Promise<{ sessionId: string }>; searchParams: Promise<{ add?: string }> }) {
   const { sessionId } = await params;
+  const { add } = await searchParams;
   const session = await db.session.findUnique({ where: { id: sessionId }, include: { venue: true, course: { include: { subject: true } } } });
   if (!session || session.course.status !== 'PUBLISHED' || session.course.deliveryType === 'ELEARNING') notFound();
   const left = (await placesLeft([session])).get(session.id) ?? 0;
@@ -29,5 +32,5 @@ export default async function BookSession({ params }: { params: Promise<{ sessio
     );
   }
   const me = await currentPerson();
-  return <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null)} />;
+  return <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null, await loadPolicy(), me && add && (await addToBookingId(me.id, add, sessionId)) ? add : null)} />;
 }

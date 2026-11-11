@@ -20,6 +20,7 @@ export type CheckoutProps = {
   cutoffText: string;
   prefill: { firstName: string; lastName: string; email: string; mobile: string } | null;
   backHref: string;
+  addTo: string | null;
   account: { company: string; role: string; available: number; onHold: boolean; poRequired: boolean; lastPo: string; statementText: string; bookerName: string; bookerEmail: string } | null;
 };
 
@@ -35,7 +36,7 @@ function FieldError({ id, msg }: { id: string; msg?: string }) {
 export function CheckoutForm(p: CheckoutProps) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, {});
   const [places, setPlaces] = useState(1);
-  const [bookerAttends, setBookerAttends] = useState(true);
+  const [bookerAttends, setBookerAttends] = useState(!p.addTo);
   const [mode, setMode] = useState<'now' | 'later'>('now');
   const [pay, setPay] = useState<'account' | 'card'>(p.account && !p.account.onHold ? 'account' : 'card');
   const onAccount = pay === 'account' && !!p.account;
@@ -66,11 +67,13 @@ export function CheckoutForm(p: CheckoutProps) {
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="needsWaiver" value={p.needsWaiver ? '1' : '0'} />
       <input type="hidden" name="method" value={onAccount ? 'account' : 'card'} />
+      {p.addTo && <input type="hidden" name="addTo" value={p.addTo} />}
 
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
           <Link href={p.backHref} className="text-sm">← Back to course</Link>
-          <h1 className="mt-3 text-[32px] font-extrabold tracking-tight text-ink">Book your places</h1>
+          <h1 className="mt-3 text-[32px] font-extrabold tracking-tight text-ink">{p.addTo ? 'Add places' : 'Book your places'}</h1>
+          {p.addTo && <p className="mt-1 text-sm">These places are added to booking {p.addTo}, on the same date. They are paid for separately and appear under it.</p>}
         </div>
 
         {state.error && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 font-semibold text-bad-fg">{state.error}</p>}
@@ -139,7 +142,7 @@ export function CheckoutForm(p: CheckoutProps) {
         )}
         <section className={card} aria-labelledby="terms-h">
           <h2 id="terms-h" className="mb-2 text-[22px] font-extrabold text-ink">Terms</h2>
-          <p className="mb-4 text-sm">{p.cutoffText} Full details in our <Link href="/legal/terms">cancellation terms</Link>.</p>
+          <p className="mb-4 text-sm">{p.cutoffText} Full details in our <Link href="/legal/terms#cancellations-and-refunds">cancellation terms</Link>.</p>
           <div className="flex flex-col gap-3.5">
             <label className="flex cursor-pointer items-start gap-3 text-[15px] text-ink">
               <input type="checkbox" name="terms" defaultChecked={chk("terms")} className="mt-0.5 size-[22px] shrink-0 accent-ink" {...err('terms')} />
@@ -208,7 +211,7 @@ export function CheckoutForm(p: CheckoutProps) {
             <div className="flex justify-between"><dt>VAT ({p.vatRate}%)</dt><dd>{money(vat)}</dd></div>
             <div className="flex justify-between border-t border-hairline pt-3 text-base font-extrabold text-ink"><dt>Total</dt><dd>{money(sub + vat)}</dd></div>
           </dl>
-          {p.sessionId && !onAccount && <p className="text-[13px]">Places held for you for 15 minutes once you continue to payment.</p>}
+          {p.sessionId && !onAccount && <p className="text-[13px]">Places held for you for 5 minutes once you continue to payment.</p>}
         </div>
       </aside>
     </form>

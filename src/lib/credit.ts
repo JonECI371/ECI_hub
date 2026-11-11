@@ -55,6 +55,7 @@ export type AccountBookingInput = {
   others: { name: string; email: string }[] | null;
   poNumber?: string;
   waitlistEntryId?: string;
+  addedToId?: string;
 };
 
 /**
@@ -91,7 +92,7 @@ export async function createAccountBooking(input: AccountBookingInput) {
     if (price.totalPence > before) throw new CheckoutError(`This booking is ${money(price.totalPence)} and your available credit is ${money(Math.max(0, before))}. Pay by card, or contact us to raise your limit.`);
 
     const booking = await tx.booking.create({
-      data: { reference: newReference(), bookerId: m.personId, accountId: account.id, courseId: course.id, sessionId: input.sessionId, places: input.places, method: 'ACCOUNT', poNumber: po || null, ...price, status: 'CONFIRMED' },
+      data: { reference: newReference(), bookerId: m.personId, accountId: account.id, courseId: course.id, sessionId: input.sessionId, addedToId: input.addedToId ?? null, places: input.places, method: 'ACCOUNT', poNumber: po || null, ...price, status: 'CONFIRMED' },
     });
     const people: (string | null)[] = [];
     if (input.bookerAttends) people.push(m.personId);
@@ -150,5 +151,21 @@ export async function applyOverdueHolds(now = new Date()) {
   for (const a of held) {
     await db.account.update({ where: { id: a.id }, data: { status: 'ACTIVE' } });
     await db.auditLog.create({ data: { action: 'ACCOUNT_OFF_HOLD', recordType: 'Account', recordId: a.id } });
+  }
+}
+
+/**
+ * A cancelled on-account booking is charged only in part: keep `chargePence` (gross) of it on the statement.
+ * On the open statement the line shrinks; once invoiced, a credit line takes off the difference.
+ */
+export async function reduceAccountCharge(tx: Tx, bookingId: string, chargePence: number) {
+  const lines = await tx.statementLine.findMany({ where: { bookingId, netPence: { gt: 0 } }, include: { statement: true } });
+  for (const l of lines) {
+    const total = l.netPence + l.vatPence;
+    if (chargePence >= total) continue;
+    const net = Math.round((l.netPence * chargePence) / total);
+    const vat = chargePence - net;
+    if (l.statement.status === 'OPEN') await tx.statementLine.update({ where: { id: l.id }, data: { netPence: net, vatPence: vat, description: `Cancellation charge: ${l.description}`.slice(0, 300) } });
+    else await addStatementLine(tx, l.statement.accountId, bookingId, `Credit: part cancellation, ${l.description}`, -(l.netPence - net), -(l.vatPence - vat));
   }
 }

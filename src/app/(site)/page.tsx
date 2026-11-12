@@ -4,17 +4,18 @@ import { fmtSessionDates, priceExVat } from '@/lib/format';
 import { placesLeft, placesLabel } from '@/lib/sessions';
 import { DeliveryChip, Chip, Eyebrow } from '@/components/ui';
 import { CourseSearch } from '@/components/course-search';
+import { DisciplineGlyph, type DisciplineIcon } from '@/components/discipline-icons';
 
 // Next dates and courses come from the database on every request.
 export const dynamic = 'force-dynamic';
 
 const DISCIPLINES = [
-  ['Hazardous area', 'CompEx ExA, ExF, Ex12 and Ex14. Awareness through to design and duty holder responsibilities.', '/courses?subject=compex'],
-  ['DSEAR compliance', 'Awareness training, risk assessment and verification against DSEAR and the ATEX directives.', '/courses?subject=dsear'],
-  ['Process safety', 'Cogent accredited awareness, foundation, operations and leadership programmes.', '/courses?subject=process-safety'],
-  ['Functional safety', 'Foundation through to SIL determination and verification under IEC 61511.', '/contact'],
-  ['Water and utilities', 'EUSR National Water Hygiene, CAT and Genny, safety passports and SHEA Water.', '/courses?subject=eusr'],
-] as const;
+  ['Hazardous area', 'CompEx ExA, ExF, Ex12 and Ex14. Awareness through to design and duty holder responsibilities.', '/courses?subject=compex', 'flame'],
+  ['DSEAR compliance', 'Awareness training, risk assessment and verification against DSEAR and the ATEX directives.', '/courses?subject=dsear', 'ex'],
+  ['Process safety', 'Cogent accredited awareness, foundation, operations and leadership programmes.', '/courses?subject=process-safety', 'factory'],
+  ['Functional safety', 'Foundation through to SIL determination and verification under IEC 61511.', '/contact', 'sis'],
+  ['Water and utilities', 'EUSR National Water Hygiene, CAT and Genny, safety passports and SHEA Water.', '/courses?subject=eusr', 'water'],
+] as const satisfies readonly (readonly [string, string, string, DisciplineIcon])[];
 
 const CONSULTANCY = [
   ['Hazardous area classification', 'Zone drawings, area classification reports and equipment schedules to BS EN 60079-10.'],
@@ -138,9 +139,12 @@ export default async function Home() {
         <h2 className={`mb-3 ${H2}`}>Five disciplines, one competence framework</h2>
         <p className="mb-10 max-w-[620px] text-base leading-[1.7]">From awareness through to assessed competence and duty holder level, mapped so your team can see where they are and what comes next.</p>
         <div className="grid gap-px border border-hairline bg-hairline sm:grid-cols-2 lg:grid-cols-3">
-          {DISCIPLINES.map(([title, text, href], i) => (
+          {DISCIPLINES.map(([title, text, href, icon], i) => (
             <div key={title} className="bg-white px-[30px] py-8">
-              <p className="mb-[18px] text-[28px] font-bold text-cyan">{String(i + 1).padStart(2, '0')}</p>
+              <div className="mb-[18px] flex items-center justify-between">
+                <p className="text-[28px] font-bold text-cyan">{String(i + 1).padStart(2, '0')}</p>
+                <span className="text-cyan"><DisciplineGlyph name={icon} /></span>
+              </div>
               <h3 className="mb-2.5 text-xl font-bold text-ink">{title}</h3>
               <p className="mb-5 text-sm leading-[1.7]">{text}</p>
               <Link href={href} className="text-[13px] font-semibold">Explore training →</Link>

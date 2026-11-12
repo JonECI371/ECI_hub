@@ -40,7 +40,10 @@ if [ -n "$MS_SECRET_ID" ]; then
 fi
 docker pull "$REG/eci-hub:app"
 docker rm -f app >/dev/null 2>&1 || true
-docker run -d --name app --network eci --restart always -p 80:3000 \
+# An https address is served by Caddy (free certificate, renews itself); an http address publishes the app on port 80 directly.
+case "$SITE" in https://*) PUBLISH=""; HOST="${SITE#https://}" ;; *) PUBLISH="-p 80:3000"; HOST="" ;; esac
+docker rm -f caddy >/dev/null 2>&1 || true
+docker run -d --name app --network eci --restart always $PUBLISH \
   -e DATABASE_URL="$DBURL" -e SITE_URL="$SITE" -e AUTH_SECRET="$AUTH_SECRET" -e NODE_ENV=production \
   -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
   -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads -e RUN_JOBS=1 \
@@ -48,6 +51,9 @@ docker run -d --name app --network eci --restart always -p 80:3000 \
   -e MS_MEETING_HOST="$MS_MEETING_HOST" -e MS_INVITE_ALLOWLIST="$MS_INVITE_ALLOWLIST" \
   -e PAYMENTS_MODE="$PAYMENTS_MODE" -e STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" -e STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" -e STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET" -e XERO_CLIENT_ID="$XERO_CLIENT_ID" -e XERO_CLIENT_SECRET="$XERO_CLIENT_SECRET" \
   "$REG/eci-hub:app"
+if [ -n "$HOST" ]; then
+  docker run -d --name caddy --network eci --restart always -p 80:80 -p 443:443 -v caddy-data:/data -v caddy-config:/config caddy:2 caddy reverse-proxy --from "$HOST" --to app:3000
+fi
 if [ "$SEED" = "seed" ]; then
   sleep 10   # let the app apply migrations first
   docker pull "$REG/eci-hub:tools"

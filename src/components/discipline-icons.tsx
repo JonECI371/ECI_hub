@@ -1,5 +1,5 @@
 /** Simple outline icons for the five disciplines on the homepage. Decorative: the card title carries the meaning. */
-const base = { width: 32, height: 32, viewBox: '0 0 32 32', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false } as const;
+const base = { width: 48, height: 48, viewBox: '0 0 32 32', fill: 'none', stroke: 'currentColor', strokeWidth: 1.75, strokeLinecap: 'round', strokeLinejoin: 'round', 'aria-hidden': true, focusable: false } as const;
 
 const ICONS = {
   flame: <svg {...base}><path d="M16 2.5C16 2.5 24.5 9 24.5 18.5a8.5 8.5 0 0 1-17 0c0-4 2.5-6.5 4-8 .5 2.5 1.5 3.5 3 4C14 9 14.5 5.5 16 2.5Z" /><path d="M16 25a3 3 0 0 1-3-3c0-2.2 3-4.5 3-4.5s3 2.3 3 4.5a3 3 0 0 1-3 3Z" /></svg>,

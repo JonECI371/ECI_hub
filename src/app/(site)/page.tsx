@@ -141,7 +141,7 @@ export default async function Home() {
         <div className="grid gap-px border border-hairline bg-hairline sm:grid-cols-2 lg:grid-cols-3">
           {DISCIPLINES.map(([title, text, href, icon], i) => (
             <div key={title} className="bg-white px-[30px] py-8">
-              <div className="mb-[18px] flex items-center justify-between">
+              <div className="mb-3 flex items-center justify-between">
                 <p className="text-[28px] font-bold text-cyan">{String(i + 1).padStart(2, '0')}</p>
                 <span className="text-cyan"><DisciplineGlyph name={icon} /></span>
               </div>

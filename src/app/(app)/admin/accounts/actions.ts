@@ -37,7 +37,7 @@ export async function updateTerms(form: FormData) {
   const poRule = String(form.get('poRule'));
   if (!Number.isFinite(limit) || limit < 0 || !Number.isInteger(terms) || terms < 0 || terms > 120 || !(poRule in PO_RULES)) back(a.id, 'invalid');
   const d = await creditDefaults();
-  if (limit > d.defaultLimitPence && limit !== a.creditLimitPence && !me.roles.includes('SUPER_ADMIN')) back(a.id, 'needsuper');
+  if (limit > d.adminLimitPence && limit !== a.creditLimitPence && !me.roles.includes('SUPER_ADMIN')) back(a.id, 'needsuper');
   await db.account.update({ where: { id: a.id }, data: { creditLimitPence: limit, paymentTermsDays: terms, poRule } });
   await enqueueXero(db, 'CONTACT', 'Account', a.id, `CONTACT:${a.id}:terms:${Date.now()}`);
   kickXero();

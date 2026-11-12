@@ -202,7 +202,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             const main = acc.members.find((m) => m.role === 'MAIN_BOOKER')?.person;
             const nameMatch = 'name' in ch && ch.name.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/(limited|ltd|plc)$/, '') === acc.company.toLowerCase().replace(/[^a-z0-9]/g, '').replace(/(limited|ltd|plc)$/, '');
             const requested = acc.creditRequestedPence ?? credit.defaultLimitPence;
-            const suggested = isSuper ? requested : Math.min(requested, credit.defaultLimitPence);
+            const suggested = isSuper ? requested : Math.min(requested, credit.adminLimitPence);
             body = (
               <>
                 <div className={`mb-3 rounded-control px-4 py-3 text-sm ${'status' in ch && ch.status === 'found' && ch.companyStatus === 'active' && nameMatch ? 'bg-cyan-soft text-ink' : 'bg-warn-bg text-warn-fg'}`}>
@@ -222,7 +222,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                     <div key={k} className="flex justify-between gap-4 border-b border-hairline py-1"><dt>{k}</dt><dd className="text-right font-semibold text-ink">{v}</dd></div>
                   ))}
                 </dl>
-                {!isSuper && requested > credit.defaultLimitPence && <p className="mt-3 text-sm font-semibold text-warn-fg">They asked for more than the {money(credit.defaultLimitPence)} default. You can approve up to {money(credit.defaultLimitPence)}; a Super Admin can approve more.</p>}
+                {!isSuper && requested > credit.adminLimitPence && <p className="mt-3 text-sm font-semibold text-warn-fg">They asked for more than the {money(credit.adminLimitPence)} an Admin can approve. You can approve up to {money(credit.adminLimitPence)}; a Super Admin can approve more.</p>}
               </>
             );
             actions = (

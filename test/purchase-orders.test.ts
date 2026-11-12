@@ -28,7 +28,7 @@ describe('purchase orders', async () => {
 
   it('shows value, billed and left per PO, with files kept against the PO', async () => {
     const id = uid();
-    const acc = await submitApplication({ company: `PO Co ${id}`, companyNumber: `4${id.replace(/\D/g, '').padEnd(7, '2').slice(0, 7)}`, registered: { line1: '1 High St', town: 'Reading', postcode: 'RG1 1AA' }, main: { firstName: 'Pat', lastName: 'Po', email: `pat.${id}@example.com`, phone: '01234 567890', jobTitle: 'Buyer' }, others: [], accountsName: 'Acc', accountsEmail: `acc.${id}@example.com`, creditRequestedPence: 500000, poRule: 'PER_BOOKING' });
+    const acc = await submitApplication({ company: `PO Co ${id}`, companyNumber: `4${id.replace(/\D/g, '').padEnd(7, '2').slice(0, 7)}`, registered: { line1: '1 High St', town: 'Reading', postcode: 'RG1 1AA' }, industry: 'Contractor', main: { firstName: 'Pat', lastName: 'Po', email: `pat.${id}@example.com`, phone: '01234 567890', jobTitle: 'Buyer' }, others: [], accountsName: 'Acc', accountsEmail: `acc.${id}@example.com`, creditRequestedPence: 500000, poRule: 'PER_BOOKING' });
     await approveAccount(acc.id, { id: 'super', roles: ['SUPER_ADMIN'] }, { creditLimitPence: 500000, paymentTermsDays: 30, poRule: 'PER_BOOKING' });
     const member = await db.accountMember.findFirstOrThrow({ where: { accountId: acc.id } });
     const mk = async (po: string, value: number | null) => { const { course: c, session } = await course({ capacity: 5 }); return createAccountBooking({ personId: member.personId, courseId: c.id, sessionId: session!.id, places: 1, bookerAttends: true, others: null, poNumber: po, poValuePence: value }); };

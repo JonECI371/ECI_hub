@@ -33,7 +33,7 @@ export async function saveSubjects(form: FormData) {
 export async function saveBilling(form: FormData) {
   const me = await requirePerson(['SUPER_ADMIN'], '/admin/settings');
   const pence = (k: string) => Math.round(Number(String(form.get(k) ?? '').replace(/[£,\s]/g, '')) * 100);
-  const credit = { defaultLimitPence: pence('defaultLimit'), lowCreditWarnPence: pence('lowCredit'), termsDays: Number(form.get('termsDays')) };
+  const credit = { defaultLimitPence: pence('defaultLimit'), adminLimitPence: pence('adminLimit'), lowCreditWarnPence: pence('lowCredit'), termsDays: Number(form.get('termsDays')) };
   const xero = { accountCode: String(form.get('accountCode') ?? '').trim().slice(0, 20), taxType: String(form.get('taxType') ?? '').trim().slice(0, 60), invoicePrefix: String(form.get('invoicePrefix') ?? '').trim().slice(0, 10), taxCode: String(form.get('taxCode') ?? '').trim().slice(0, 30), stripeClearingCode: String(form.get('stripeClearingCode') ?? '').trim().slice(0, 20) };
   const ok = Object.values(credit).every((n) => Number.isFinite(n) && n >= 0) && credit.termsDays <= 120 && Number.isInteger(credit.termsDays) && xero.accountCode && xero.taxType && xero.taxCode;
   if (!ok) redirect('/admin/settings?msg=billinginvalid#billing');

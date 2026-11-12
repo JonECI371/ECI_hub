@@ -8,10 +8,11 @@ import { checkCompany } from '@/lib/integrations/companies-house';
 import { enqueueXero } from '@/lib/xero-queue';
 import { kickXero } from '@/lib/xero-sync';
 
-export type CreditDefaults = { defaultLimitPence: number; lowCreditWarnPence: number; termsDays: number };
-const DEFAULTS: CreditDefaults = { defaultLimitPence: 100000, lowCreditWarnPence: 50000, termsDays: 30 };
+/** defaultLimitPence is the starting limit; adminLimitPence is the most an Admin can approve (above it needs a Super Admin). */
+export type CreditDefaults = { defaultLimitPence: number; adminLimitPence: number; lowCreditWarnPence: number; termsDays: number };
+const DEFAULTS: CreditDefaults = { defaultLimitPence: 100000, adminLimitPence: 500000, lowCreditWarnPence: 50000, termsDays: 30 };
 
-/** Credit account defaults from Settings (key "credit"), falling back to £5,000 limit, £500 warning, 30 days. */
+/** Credit account defaults from Settings (key "credit"), falling back to £1,000 limit, £5,000 Admin ceiling, £500 warning, 30 days. */
 export async function creditDefaults(): Promise<CreditDefaults> {
   const s = await db.setting.findUnique({ where: { key: 'credit' } });
   return { ...DEFAULTS, ...((s?.value ?? {}) as Partial<CreditDefaults>) };
@@ -75,7 +76,7 @@ export class AccountRuleError extends Error {}
 /** Approve an application. Limits above the default need a Super Admin. Activates the bookers and sends sign-in links. */
 export async function approveAccount(accountId: string, actor: { id: string; roles: string[] }, terms: { creditLimitPence: number; paymentTermsDays: number; poRule: PoRule }) {
   const d = await creditDefaults();
-  if (terms.creditLimitPence > d.defaultLimitPence && !actor.roles.includes('SUPER_ADMIN')) throw new AccountRuleError(`Limits above ${gbp(d.defaultLimitPence)} need a Super Admin.`);
+  if (terms.creditLimitPence > d.adminLimitPence && !actor.roles.includes('SUPER_ADMIN')) throw new AccountRuleError(`Limits above ${gbp(d.adminLimitPence)} need a Super Admin.`);
   if (terms.creditLimitPence < 0 || terms.paymentTermsDays < 0 || terms.paymentTermsDays > 120) throw new AccountRuleError('Check the limit and terms.');
   const acc = await db.$transaction(async (tx) => {
     const r = await tx.account.updateMany({ where: { id: accountId, status: 'APPLIED' }, data: { status: 'ACTIVE', creditLimitPence: terms.creditLimitPence, paymentTermsDays: terms.paymentTermsDays, poRule: terms.poRule, approvedAt: new Date(), approvedById: actor.id } });

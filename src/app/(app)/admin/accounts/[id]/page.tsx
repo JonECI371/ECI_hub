@@ -41,7 +41,7 @@ export default async function AccountRecord({ params, searchParams }: { params: 
     db.booking.findMany({ where: { accountId: a.id }, include: { course: true, session: true }, orderBy: { createdAt: 'desc' }, take: 15 }),
     poSummary(a.id),
   ]);
-  const notice: [string, boolean] | null = msg === 'needsuper' ? [`Limits above ${money(defaults.defaultLimitPence)} need a Super Admin.`, false] : msg ? MSG[msg] ?? null : null;
+  const notice: [string, boolean] | null = msg === 'needsuper' ? [`Limits above ${money(defaults.adminLimitPence)} need a Super Admin.`, false] : msg ? MSG[msg] ?? null : null;
   const [tone, label] = ACCOUNT_STATUS[a.status];
   const total = (s: (typeof a.statements)[number]) => s.lines.reduce((n, l) => n + l.netPence + l.vatPence, 0);
 
@@ -113,7 +113,7 @@ export default async function AccountRecord({ params, searchParams }: { params: 
               <form action={updateTerms} className="flex flex-col gap-3">
                 <input type="hidden" name="accountId" value={a.id} />
                 <label className="flex flex-col gap-1 text-sm font-bold text-ink">Credit limit (£)<input name="limit" inputMode="numeric" defaultValue={a.creditLimitPence / 100} className={input} /></label>
-                {!me.roles.includes('SUPER_ADMIN') && <p className="-mt-2 text-xs">Up to {money(defaults.defaultLimitPence)}; a Super Admin can set more.</p>}
+                {!me.roles.includes('SUPER_ADMIN') && <p className="-mt-2 text-xs">Up to {money(defaults.adminLimitPence)}; a Super Admin can set more.</p>}
                 <label className="flex flex-col gap-1 text-sm font-bold text-ink">Payment terms (days)<input name="terms" type="number" min={0} max={120} defaultValue={a.paymentTermsDays} className={input} /></label>
                 <label className="flex flex-col gap-1 text-sm font-bold text-ink">PO numbers<select name="poRule" defaultValue={a.poRule} className={input}>{Object.entries(PO_RULES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
                 <button type="submit" className={`${btn} bg-cyan text-ink`}>Save terms</button>

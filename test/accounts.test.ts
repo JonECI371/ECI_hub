@@ -44,9 +44,9 @@ describe('credit accounts', async () => {
     await expect(approveAccount(acc.id, { id: 'super', roles: ['SUPER_ADMIN'] }, { creditLimitPence: 1, paymentTermsDays: 30, poRule: 'NONE' })).rejects.toBeInstanceOf(AccountRuleError);
   });
 
-  it('an Admin can approve within the default, and decline closes the task', async () => {
-    const ok = await apply(100000);
-    await approveAccount(ok.id, { id: 'admin', roles: ['ADMIN'] }, { creditLimitPence: 100000, paymentTermsDays: 30, poRule: 'NONE' });
+  it('an Admin can approve any amount up to the Admin ceiling, and decline closes the task', async () => {
+    const ok = await apply(437500);
+    await approveAccount(ok.id, { id: 'admin', roles: ['ADMIN'] }, { creditLimitPence: 437500, paymentTermsDays: 30, poRule: 'NONE' });
     expect((await db.account.findUniqueOrThrow({ where: { id: ok.id } })).status).toBe('ACTIVE');
     const no = await apply();
     await declineAccount(no.id, 'admin', 'Company dissolved');

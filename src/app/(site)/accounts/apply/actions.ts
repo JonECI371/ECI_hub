@@ -7,7 +7,6 @@ import { normaliseCompanyNumber } from '@/lib/integrations/companies-house';
 
 export type ApplyState = { ok?: boolean; firstName?: string; error?: string; fields?: Record<string, string>; values?: Record<string, string>; others?: number };
 
-const LIMITS: Record<string, number> = { '2500': 250000, '5000': 500000, '10000': 1000000, '25000': 2500000 };
 const email = (v: string) => z.string().email().safeParse(v).success;
 
 export async function applyForAccount(_prev: ApplyState, form: FormData): Promise<ApplyState> {
@@ -49,12 +48,11 @@ export async function applyForAccount(_prev: ApplyState, form: FormData): Promis
   }
   if (!get('accountsName')) f.accountsName = 'Enter the accounts contact name';
   if (!email(get('accountsEmail'))) f.accountsEmail = 'Enter the email monthly invoices go to';
-  let credit = LIMITS[get('creditLimit')];
-  if (get('creditLimit') === 'other') {
-    const pounds = Number(get('creditOther').replace(/[£,\s]/g, ''));
-    if (!Number.isFinite(pounds) || pounds < 500 || pounds > 250000) f.creditOther = 'Enter an amount between £500 and £250,000';
-    else credit = Math.round(pounds) * 100;
-  } else if (!credit) f.creditLimit = 'Choose a credit limit';
+  const pounds = Number(get('creditLimit').replace(/[£,\s]/g, ''));
+  let credit = 0;
+  if (!get('creditLimit')) f.creditLimit = 'Enter the credit limit you need';
+  else if (!Number.isFinite(pounds) || pounds < 100 || pounds > 250000) f.creditLimit = 'Enter an amount between £100 and £250,000';
+  else credit = Math.round(pounds * 100);
   if (!(get('poRule') in PO_RULES)) f.poRule = 'Choose whether invoices need a PO number';
   const delegates = get('expectedDelegates') ? Number(get('expectedDelegates')) : undefined;
   if (delegates !== undefined && (!Number.isInteger(delegates) || delegates < 0 || delegates > 100000)) f.expectedDelegates = 'Enter a whole number';

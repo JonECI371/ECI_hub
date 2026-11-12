@@ -26,13 +26,11 @@ function Step({ n, title, sub, children }: { n: number; title: string; sub?: str
 export function AccountApplicationForm({ industries }: { industries: string[] }) {
   const [state, action, pending] = useActionState<ApplyState, FormData>(applyForAccount, {});
   const [others, setOthers] = useState(1);
-  const [credit, setCredit] = useState('');
   const shown = Math.max(others, state.others ?? 1);
   const v = state.values ?? {};
   const f = state.fields ?? {};
   const err = (k: string) => (f[k] ? { 'aria-invalid': true, 'aria-describedby': `${k}-err` } : {});
   const E = ({ k }: { k: string }) => (f[k] ? <span id={`${k}-err`} className="text-[13px] font-semibold text-bad-fg">{f[k]}</span> : null);
-  const creditValue = credit || v.creditLimit || '';
 
   if (state.ok) {
     return (
@@ -105,14 +103,8 @@ export function AccountApplicationForm({ industries }: { industries: string[] })
           <label className={label}>Postcode<input name="inv_postcode" defaultValue={v.inv_postcode} className={`${input} sm:max-w-[200px]`} {...err('inv_postcode')} /><E k="inv_postcode" /></label>
         </fieldset>
         <label className={label}>Accounts phone <span className="font-normal">(optional)</span><input name="accountsPhone" type="tel" defaultValue={v.accountsPhone} className={input} {...err('accountsPhone')} /><E k="accountsPhone" /></label>
-        <label className={label}><span>Credit limit requested<Req /></span>
-          <select name="creditLimit" value={creditValue} onChange={(e) => setCredit(e.target.value)} className={input} {...err('creditLimit')}>
-            <option value="" disabled>Choose…</option><option value="2500">£2,500</option><option value="5000">£5,000</option><option value="10000">£10,000</option><option value="25000">£25,000</option><option value="other">Other</option>
-          </select><E k="creditLimit" />
-        </label>
-        {creditValue === 'other' ? (
-          <label className={label}><span>Amount (£)<Req /></span><input name="creditOther" inputMode="numeric" defaultValue={v.creditOther} className={input} {...err('creditOther')} /><E k="creditOther" /></label>
-        ) : <span className="hidden sm:block" />}
+        <label className={label}><span>Credit limit requested (£)<Req /></span><input name="creditLimit" inputMode="numeric" placeholder="1,000" defaultValue={v.creditLimit} className={input} {...err('creditLimit')} /><span className={hint}>Any amount you need, for example to cover a PO. We confirm the limit when we approve.</span><E k="creditLimit" /></label>
+        <span className="hidden sm:block" />
         <label className={label}><span>Do invoices need a PO number?<Req /></span>
           <select name="poRule" defaultValue={v.poRule ?? 'NONE'} className={input} {...err('poRule')}><option value="NONE">No</option><option value="PER_BOOKING">Yes, one PO per booking</option><option value="PER_ACCOUNT">Yes, one PO for the account</option></select><E k="poRule" />
         </label>

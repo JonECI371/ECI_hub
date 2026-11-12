@@ -10,6 +10,14 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-12: P1 to P5 approved, Kirsty's first Phase 2 results
+
+- Jon approved P1 to P5. P3 changed: default credit limit is now £1,000 (was £5,000). Admins can approve up to the default; Super Admin above. Spec is version 2026-11-12 (GitHub master, Claude Doc, Word copy in `docs/spec-versions`).
+- Kirsty's results so far: A1 to A3, B3, B4, C1 to C3 pass; B1 and B2 marked Fail with no note. Both test accounts were approved with PO numbers set to "No", which explains B1 (no PO message). B2 unknown; ask Kirsty what she saw.
+- Kirsty's comment: mark mandatory fields with an asterisk. Done on the credit account application form.
+- Xero jobs from her tests are queued and waiting (Xero not connected).
+- Not yet deployed: asterisks and the £1,000 default. Deploy after Kirsty finishes this round so her checklist (written for £5,000 and £2,500) stays valid.
+
 ## 2026-11-11 (evening): Xero sync built
 
 - Paid card bookings go to Xero straight away: authorised invoice plus a payment into the Stripe clearing account. Refunds become credit notes.

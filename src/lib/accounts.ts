@@ -9,7 +9,7 @@ import { enqueueXero } from '@/lib/xero-queue';
 import { kickXero } from '@/lib/xero-sync';
 
 export type CreditDefaults = { defaultLimitPence: number; lowCreditWarnPence: number; termsDays: number };
-const DEFAULTS: CreditDefaults = { defaultLimitPence: 500000, lowCreditWarnPence: 50000, termsDays: 30 };
+const DEFAULTS: CreditDefaults = { defaultLimitPence: 100000, lowCreditWarnPence: 50000, termsDays: 30 };
 
 /** Credit account defaults from Settings (key "credit"), falling back to £5,000 limit, £500 warning, 30 days. */
 export async function creditDefaults(): Promise<CreditDefaults> {

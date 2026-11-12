@@ -2,6 +2,7 @@
 
 | Version | Date | Status | Owner |
 | --- | --- | --- | --- |
+| 2026-11-12 | 12 Nov 2026 | Xero API moved from Phase 3 to Phase 2: paid card bookings create an authorised Xero invoice and a payment into the Stripe clearing account, refunds create credit notes, account approval creates the Xero contact from the application (structured registered and invoice addresses, accounts phone), month end creates one draft invoice per account dated the last day of the month, and a payment in Xero marks the statement paid. Pending decisions P1 to P5 approved: Teams host support@ecfio.co.uk; statements dated the last day of the month and due after the payment terms; default credit limit changed to £1,000 (was £5,000), payment terms 30 days, low-credit warning £500; Companies House check automatic once a key is added; test site in AWS Stockholm until London is allowed. Mandatory fields on the credit account application are marked with an asterisk. | Jon's instruction on Xero; sign-off of P1 to P5; Kirsty's test comment | Jon Wallis | POR-04, ADM-10, PUB-10 |
 | 2026-11-11b | 11 November 2026 | Adds the cancellation policy and review, a 5-minute checkout hold, and Add places to the 2026-11-11 version | Jon Wallis |
 
 This file in GitHub (`docs/spec.md`) is the master. The shared Claude Doc and the Word copy in SharePoint are readable copies of it, updated each time a version is approved. Every change is listed in the Change log at the end, and the full line-by-line history is in GitHub. How to propose and approve a change: `docs/spec-change-process.md`.
@@ -351,9 +352,9 @@ These need an answer before the developer quotes; each assumption stands unless 
 
 - [x] Course prices for every course shown as a placeholder on the canvas
 - [ ] Developer and commercial model: fixed price per phase, or time and materials with a cap
-- [ ] Statement date: last working day of the month, or the 1st
-- [ ] Default credit limit and payment terms (canvas shows £5,000 and 30 days)
-- [ ] Which Microsoft 365 mailbox hosts Teams meetings
+- [x] Statement date: invoice dated the last day of the month; due after the account's payment terms from that date
+- [x] Default credit limit £1,000 (Jon, 12 Nov), payment terms 30 days, low-credit warning £500; all editable in Settings by a Super Admin
+- [x] Which Microsoft 365 mailbox hosts Teams meetings: support@ecfio.co.uk
 - [ ] Card cancellation policy wording, and the credit account terms, reviewed by a solicitor
 - [ ] Photography: shoot date and locations
 - [ ] Remove the Ex11 and Ex05 to Ex06 sample rows, or keep them as future courses

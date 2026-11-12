@@ -45,8 +45,8 @@ describe('credit accounts', async () => {
   });
 
   it('an Admin can approve within the default, and decline closes the task', async () => {
-    const ok = await apply(250000);
-    await approveAccount(ok.id, { id: 'admin', roles: ['ADMIN'] }, { creditLimitPence: 250000, paymentTermsDays: 30, poRule: 'NONE' });
+    const ok = await apply(100000);
+    await approveAccount(ok.id, { id: 'admin', roles: ['ADMIN'] }, { creditLimitPence: 100000, paymentTermsDays: 30, poRule: 'NONE' });
     expect((await db.account.findUniqueOrThrow({ where: { id: ok.id } })).status).toBe('ACTIVE');
     const no = await apply();
     await declineAccount(no.id, 'admin', 'Company dissolved');

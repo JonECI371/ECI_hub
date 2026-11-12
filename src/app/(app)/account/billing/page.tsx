@@ -6,6 +6,8 @@ import { accountSummary, myMembership } from '@/lib/booker';
 import { money } from '@/lib/format';
 import { PO_RULES } from '@/lib/accounts';
 import { Chip } from '@/components/ui';
+import { PoTable } from '@/components/po-table';
+import { poSummary } from '@/lib/purchase-orders';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Account and billing', robots: { index: false } };
@@ -19,7 +21,7 @@ export default async function Billing() {
   const m = await myMembership(me.id);
   if (!m) redirect('/account');
   const a = m.account;
-  const s = await accountSummary(a);
+  const [s, pos] = await Promise.all([accountSummary(a), poSummary(a.id)]);
   const lastDay = (() => { const d = new Date(); return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)); })();
 
   return (
@@ -41,6 +43,7 @@ export default async function Billing() {
       </section>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
+        <div className="flex min-w-0 flex-col gap-6">
         <section aria-labelledby="st-h" className="overflow-hidden rounded-card bg-white shadow-card">
           <h2 id="st-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Statements</h2>
           {s.statements.length === 0 ? <p className="px-6 py-6 text-sm">Your first statement appears here once you book on account.</p> : (
@@ -66,6 +69,15 @@ export default async function Billing() {
           )}
           <p className="border-t border-hairline px-6 py-3 text-[13px]">Invoices are emailed to {a.accountsEmail} at the end of each month. See what is on this month&apos;s statement in <Link href="/account/bookings">Bookings</Link>.</p>
         </section>
+
+        {pos.length > 0 && (
+          <section aria-labelledby="po-h" className="overflow-hidden rounded-card bg-white shadow-card">
+            <h2 id="po-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Purchase orders</h2>
+            <PoTable rows={pos} />
+            <p className="border-t border-hairline px-6 py-3 text-[13px]">Billed is what is on your statements for each PO. Add the PO amount when you book to see how much is left.</p>
+          </section>
+        )}
+        </div>
 
         <aside className="flex flex-col gap-6">
           <section aria-labelledby="co-h" className="rounded-card bg-white p-6 shadow-card">

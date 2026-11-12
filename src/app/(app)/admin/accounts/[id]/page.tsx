@@ -8,6 +8,8 @@ import { availableCredit } from '@/lib/credit';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { monthLabel } from '@/lib/billing';
 import { Chip } from '@/components/ui';
+import { PoTable } from '@/components/po-table';
+import { poSummary } from '@/lib/purchase-orders';
 import { setAccountStatus, setInvoiceNo, statementPaid, updateTerms } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -33,10 +35,11 @@ export default async function AccountRecord({ params, searchParams }: { params: 
     include: { members: { where: { status: { not: 'REMOVED' } }, include: { person: true }, orderBy: { role: 'asc' } }, statements: { include: { lines: true }, orderBy: { month: 'desc' }, take: 24 } },
   });
   if (!a) notFound();
-  const [available, defaults, bookings] = await Promise.all([
+  const [available, defaults, bookings, pos] = await Promise.all([
     availableCredit(db, a),
     creditDefaults(),
     db.booking.findMany({ where: { accountId: a.id }, include: { course: true, session: true }, orderBy: { createdAt: 'desc' }, take: 15 }),
+    poSummary(a.id),
   ]);
   const notice: [string, boolean] | null = msg === 'needsuper' ? [`Limits above ${money(defaults.defaultLimitPence)} need a Super Admin.`, false] : msg ? MSG[msg] ?? null : null;
   const [tone, label] = ACCOUNT_STATUS[a.status];
@@ -83,6 +86,11 @@ export default async function AccountRecord({ params, searchParams }: { params: 
                 ))}
               </ul>
             )}
+          </section>
+
+          <section aria-labelledby="po-h" className="overflow-hidden rounded-card bg-white shadow-card">
+            <h2 id="po-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Purchase orders</h2>
+            <PoTable rows={pos} />
           </section>
 
           <section aria-labelledby="bk-h" className="overflow-hidden rounded-card bg-white shadow-card">

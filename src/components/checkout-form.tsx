@@ -186,6 +186,18 @@ export function CheckoutForm(p: CheckoutProps) {
                   <span className="text-[13px] font-normal">{p.account.poRequired ? 'Your company needs a PO number on every booking. ' : ''}Shown on the invoice line.</span>
                   <FieldError id="poNumber-err" msg={f.poNumber} />
                 </label>
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <label className={labelCls}>PO amount (£) <span className="font-normal">(optional)</span>
+                    <input name="poValue" inputMode="decimal" defaultValue={val('poValue', '')} placeholder="1,250" className={input} {...err('poValue')} />
+                    <span className="text-[13px] font-normal">So your account can show how much of the PO is used.</span>
+                    <FieldError id="poValue-err" msg={f.poValue} />
+                  </label>
+                  <label className={labelCls}>Attach the PO or quotation <span className="font-normal">(optional)</span>
+                    <input name="poFiles" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" className={`${input} h-auto py-2`} {...err('poFiles')} />
+                    <span className="text-[13px] font-normal">PDF, JPEG, PNG or WebP, up to 5 files of 10 MB. We pass them to our accounts team.</span>
+                    <FieldError id="poFiles-err" msg={f.poFiles} />
+                  </label>
+                </div>
               </>
             )}
           </section>

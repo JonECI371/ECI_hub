@@ -7,6 +7,7 @@ import { placesTakenWhere } from '@/lib/sessions';
 import { placesOnOffer } from '@/lib/waitlist';
 import { creditDefaults, type PoRule } from '@/lib/accounts';
 import { sendEmail } from '@/lib/integrations/email';
+import { upsertPurchaseOrder } from '@/lib/purchase-orders';
 
 type Tx = Prisma.TransactionClient;
 
@@ -54,6 +55,7 @@ export type AccountBookingInput = {
   bookerAttends: boolean;
   others: { name: string; email: string }[] | null;
   poNumber?: string;
+  poValuePence?: number | null;
   waitlistEntryId?: string;
   addedToId?: string;
 };
@@ -76,6 +78,7 @@ export async function createAccountBooking(input: AccountBookingInput) {
     const course = await tx.course.findUniqueOrThrow({ where: { id: input.courseId } });
     if (course.status !== 'PUBLISHED') throw new CheckoutError('This course is not open for booking.');
     if (!course.pricePence) throw new CheckoutError('This course has no online price yet. Contact us to book.');
+    if (po) await upsertPurchaseOrder(tx, account.id, po, input.poValuePence ?? null);
     let when = 'eLearning';
     if (input.sessionId) {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${input.sessionId}))`;

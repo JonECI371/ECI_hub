@@ -13,6 +13,7 @@ import { currentPerson } from '@/lib/auth';
 import { createAccountBooking } from '@/lib/credit';
 import { sendBookingConfirmation } from '@/lib/notifications';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { attachPoFiles, checkPoFiles, parsePoValue } from '@/lib/purchase-orders';
 
 export type CheckoutState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 type CheckoutCookie = { bid: string; exp: number };
@@ -101,12 +102,18 @@ async function bookOnAccount(form: FormData, values: Record<string, string>, o: 
   }
   if (get('terms') !== 'on') fields.terms = 'Accept the Terms & Conditions to continue';
   if (get('needsWaiver') === '1' && get('waiver') !== 'on') fields.waiver = 'Tick this box so the course can go ahead within your cancellation period';
+  const poFiles = (form.getAll('poFiles') as unknown[]).filter((f): f is File => typeof f !== 'string' && (f as File).size > 0);
+  const poValue = parsePoValue(get('poValue'));
+  if (poValue === 'bad') fields.poValue = 'Enter the PO amount in pounds, like 1,250';
+  const fileError = poFiles.length ? await checkPoFiles(poFiles) : null;
+  if (fileError) fields.poFiles = fileError;
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
   let reference: string;
   try {
     const addedToId = get('addTo') ? (await addToBookingId(me.id, get('addTo'), o.sessionId)) ?? undefined : undefined;
     if (get('addTo') && !addedToId) return { error: 'You can only add places to a booking you manage, on the same date.', values };
-    const b = await createAccountBooking({ addedToId, personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber') });
+    const b = await createAccountBooking({ addedToId, personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber'), poValuePence: typeof poValue === 'number' ? poValue : null });
+    if (get('poNumber') && poFiles.length) await attachPoFiles(b.accountId!, get('poNumber'), poFiles, me.id);
     reference = b.reference;
     await sendBookingConfirmation(b.id);
     if (b.sessionId) await syncSessionMeeting(b.sessionId);

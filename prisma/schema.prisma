@@ -286,6 +286,7 @@ model Account {
   bookings        Booking[]
   statements      Statement[]
   createdAt       DateTime        @default(now())
+  purchaseOrders  PurchaseOrder[]
 }
 
 model AccountMember {
@@ -406,6 +407,34 @@ model Statement {
   paidAt        DateTime?
   lines         StatementLine[]
   @@unique([accountId, month])
+}
+
+/// A customer purchase order on a credit account. Bookings reference it by number (Booking.poNumber, matched on key).
+model PurchaseOrder {
+  id         String   @id @default(cuid())
+  accountId  String
+  account    Account  @relation(fields: [accountId], references: [id])
+  number     String
+  key        String   // upper case, spaces and punctuation removed, so "po 4500-221" and "PO4500221" match
+  valuePence Int?     // optional: what the PO authorises, so Admin can see billed against it
+  files      PoFile[]
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@unique([accountId, key])
+}
+
+/// A file the booker attached to a purchase order (the PO itself, a quotation, and so on).
+model PoFile {
+  id              String        @id @default(cuid())
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id])
+  fileKey         String
+  fileName        String
+  contentType     String
+  sizeBytes       Int
+  uploadedById    String
+  xeroAttachedTo  String[]      @default([]) // Xero invoice ids this file has been attached to
+  createdAt       DateTime      @default(now())
 }
 
 model StatementLine {

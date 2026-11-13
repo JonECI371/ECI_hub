@@ -14,7 +14,7 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 
 - **Prompt Jon to get Kirsty testing:** Phase 2 checklist (rounds 1 and 2), then "Round 3 checklist for Kirsty: new items" (N1 to N12). Her first results are in; B1 and B2 need the retest on the ready-made account kirsty+po@ecfio.co.uk.
 - Jon is connecting Xero (Demo Company) and still needs the Stripe clearing account code entered in Settings.
-- Open: malware scanning on uploads (decision), wording edits across the site (method agreed with Jon), spec version 2026-11-13.
+- Decided: malware scanning on uploads via GuardDuty Malware Protection for S3 for production (docs/security.md item 8); build before go-live. Open: wording edits across the site (method agreed with Jon), spec version 2026-11-13.
 
 ## 2026-11-12: P1 to P5 approved, Kirsty's first Phase 2 results
 

@@ -31,7 +31,7 @@ Version 2026-11-11 (matches specification 2026-11-11). Owner: Jon Wallis. Build 
 | 5 | **Logging and alerts:** central log retention, CloudWatch alarms for failed sign-ins, errors and failed integrations; append-only audit log database role | A.8.15 and A.8.16 | Claude |
 | 6 | ~~Staff sessions~~ Done: Admin and Super Admin sessions last 12 hours with no trusted device (approved 11 Nov 2026) | Shorter exposure if a laptop is stolen | Done |
 | 7 | **Authenticator hardening:** one-time use of each code, backup codes | Stops replay | Claude |
-| 8 | **Malware scanning of uploads** (for example S3 malware protection) | Uploaded files are opened by staff | Claude |
+| 8 | **Malware scanning of uploads.** Decided 13 Nov 2026 (Jon): use Amazon GuardDuty Malware Protection for S3 on the production files bucket. Files are served, attached to Xero or opened by staff only once tagged clean; infected files raise an Integration failure task. Cost target: inside the AWS free tier (1,000 files and 1 GB a month), otherwise about $0.0004 per 2 MB file. Test server (local disk) can use ClamAV. PO files, certificates and photo ID all go through it. | Uploaded files are opened by staff and sent to Xero | Claude (build); Jon (turn on in AWS at production setup) |
 | 9 | **Backups and restore test**, KMS encryption at rest, S3 block public access, IAM least privilege, MFA on AWS and Microsoft admin accounts | A.8.13, A.8.24 | Jon and Claude |
 | 10 | **Secret rotation calendar** (Microsoft client secret has an expiry date, Stripe keys) | Expired secrets break bookings; old ones are a risk | Jon |
 | 11 | **Independent penetration test** by a CREST-accredited tester against staging once 1 to 5 are done, then a re-test of fixes | The actual pass | Jon to commission |

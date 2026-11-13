@@ -2,7 +2,7 @@
 
 | Version | Date | Status | Owner |
 | --- | --- | --- | --- |
-| 2026-11-12 | 12 Nov 2026 | Xero API moved from Phase 3 to Phase 2: paid card bookings create an authorised Xero invoice and a payment into the Stripe clearing account, refunds create credit notes, account approval creates the Xero contact from the application (structured registered and invoice addresses, accounts phone), month end creates one draft invoice per account dated the last day of the month, and a payment in Xero marks the statement paid. Pending decisions P1 to P5 approved: Teams host support@ecfio.co.uk; statements dated the last day of the month and due after the payment terms; default credit limit changed to £1,000 (was £5,000), payment terms 30 days, low-credit warning £500; Companies House check automatic once a key is added; test site in AWS Stockholm until London is allowed. Mandatory fields on the credit account application are marked with an asterisk. | Jon's instruction on Xero; sign-off of P1 to P5; Kirsty's test comment | Jon Wallis | POR-04, ADM-10, PUB-10 |
+| 2026-11-13 | 13 November 2026 | Adds Xero sync, PO files and PO tracking, the Admin approval ceiling, free-amount credit limit and the https test address to the 2026-11-11b version | Jon Wallis |
 | 2026-11-11b | 11 November 2026 | Adds the cancellation policy and review, a 5-minute checkout hold, and Add places to the 2026-11-11 version | Jon Wallis |
 
 This file in GitHub (`docs/spec.md`) is the master. The shared Claude Doc and the Word copy in SharePoint are readable copies of it, updated each time a version is approved. Every change is listed in the Change log at the end, and the full line-by-line history is in GitHub. How to propose and approve a change: `docs/spec-change-process.md`.
@@ -94,6 +94,7 @@ Twenty entities cover the whole platform; the developer may refine fields but no
 | Person | name, email, mobile, date of birth, employer, scheme IDs (SkillGuard, CompEx, EUSR), marketing opt-in | One per email address |
 | Account | company, company number, VAT number, addresses, credit limit, payment terms, PO rule, status | Credit account customer |
 | Account member | account, person, role (main booker or booker), status | ECI approves new bookers |
+| Purchase order | account, number, value (optional), files | A customer PO; bookings reference it by number |
 | Booking | reference, booker, course, session, places, payment method, totals, PO, status | Card or on account |
 | Attendee | booking, person (nullable until named), status, attendance | One per place |
 | Registration | attendee, answers, files, approval status | Files deleted one month after submission to the awarding body |
@@ -126,13 +127,13 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | PUB-01 | Public | Home (Main) | Two calls to action (Book a course, Open a credit account); next dates pulled live; course search returns results as you type |
 | PUB-02 | Public | Courses (Courses) | Filter by delivery type and subject; Courses, Dates and Calendar views; filters kept in the URL; eLearning shown in Courses view only |
 | PUB-03 | Public | Course page (Course) | Dates near the top; booking panel stays on screen; full dates offer the waitlist; structured data present |
-| PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with optional PO; no password or email verification step; places held 5 minutes with a countdown, and no more than two open checkouts per person |
+| PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; signed-in bookers pay on account with a PO number (required if the account's PO rule says so), an optional PO amount and optional PO files (PDF or image, up to 5, 10 MB each); no password or email verification step; places held 5 minutes with a countdown, and no more than two open checkouts per person |
 | PUB-05 | Public | Outcome (Outcome) | One template for confirmed by card, confirmed on account, eLearning, waitlist and payment failed; "Complete registration now" shown when needed |
 | PUB-06 | Public | Registration (Registration) | Questions from the subject's set; known answers prefilled; file uploads for photo and ID; saves on submit; approval routed to Tasks where on |
 | PUB-07 | Public | Log in (Login) | Email code or magic link; 30-day trusted device; staff and trainers also need an authenticator code |
 | PUB-08 | Public | Waitlist claim (WaitlistClaim) | Opens from the email link with no code; pay and confirm in one step; expired state offers other dates |
 | PUB-09 | Public | Contact (Enquiry) | One form; topic changes the extra fields; creates a Deal in the right pipeline |
-| PUB-10 | Public | Credit account application (CorporateRequest) | Company, booker, other bookers, billing, credit requested, terms; creates an approval task with a Companies House check |
+| PUB-10 | Public | Credit account application (CorporateRequest) | Company (registered and invoice addresses), booker, other bookers, billing, credit requested (any amount), terms; required fields marked with an asterisk; creates an approval task with a Companies House check |
 | PUB-11 | Public | Free tools (Hook) | Admin-editable template for a quiz, tool or gated guide; captures name, email and opt-in into the CRM |
 | PUB-12 | Public | Legal, System pages | Versioned legal documents; 404, maintenance, no access and expired link states |
 | POR-01 | Portal | Dashboard (Dashboard) | Delegate view: action banner, upcoming by delivery type with Join, Directions or Continue, certificates. Booker view: credit tiles, needs attention, upcoming, team expiries |
@@ -147,7 +148,7 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | ADM-07 | Admin | Calendar (AdminSchedule) | Month, week and day; trainer filter; conflicts flagged; create a session from a slot |
 | ADM-08 | Admin | Pipelines (AdminPipeline) | Drag deals between stages; owner and value; one board per pipeline |
 | ADM-09 | Admin | Reports (AdminReport) | Bookings and revenue, attendance, expiries, waitlists; date and subject filters; CSV |
-| ADM-10 | Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults, cancellation policy, emails, legal documents, admin users |
+| ADM-10 | Admin | Settings (AdminSettings) | Integrations, subjects, credit account defaults (default limit, Admin approval ceiling), cancellation policy, emails, legal documents, admin users |
 | ADM-11 | Admin | Email template (EmailTemplate) | Block editor: heading, text, booking summary, code, button, footer; preview per trigger |
 | TRN-01 | Trainer | Sessions, Attendance, Availability, Profile | Phone first; today's session at the top; attendance saved in one tap per delegate; days then times; qualification expiry warnings |
 
@@ -167,7 +168,7 @@ There are two ways to pay: card at checkout, or on account for approved companie
 **Credit accounts**
 
 1. Company applies (CorporateRequest). The application creates an approval task with an automatic Companies House lookup.
-2. Admin approves and sets the credit limit, payment terms and PO rule. Limits above the default need a Super Admin.
+2. Admin approves and sets the credit limit, payment terms and PO rule. The default limit is £1,000. An Admin can approve any amount up to the Admin approval ceiling (a Super Admin setting); above it needs a Super Admin.
 3. Main booker and listed bookers get sign-in links; new bookers invited later need ECI approval.
 4. Each on-account booking is confirmed at once if it fits within available credit, and adds a line to that month's statement.
 5. At month end, every account's lines close into a statement. With Xero connected, one DRAFT invoice per account (dated the last day of the month, one line per booking, cancellations as negative lines) is created in Xero for Admin to review and approve; without it, Admin downloads the Xero import CSV from Tasks.
@@ -373,6 +374,8 @@ Newest first. Each change is approved by Jon before it is built. "Tests" lists t
 
 | Version | Date | Change | Reason | Approved by | Tests |
 | --- | --- | --- | --- | --- | --- |
+| 2026-11-13 | 13 Nov 2026 | Purchase orders: a booker can add a PO amount and attach several PDF or image files (PO, quotation) when booking on account; the account shows each PO with value, billed and left (billed from statement lines, nothing blocks a booking); PO files are attached to the month's draft invoice in Xero (up to 10). Credit limit requested on the application is a free amount (£100 to £250,000), not fixed steps. The default credit limit stays £1,000 and a separate Admin approval ceiling (a Super Admin setting, £5,000 to start) sets what an Admin can approve; above it needs a Super Admin. Failed Xero tasks show Xero's real reason, with Retry now and a link to Xero settings; a worked retry closes its task. Duplicate Xero contact names get the company number added. Test site served on https (test.eci-hub.co.uk). Malware scanning of uploads decided (GuardDuty for S3 in production, before go-live). | Jon's decisions of 12 and 13 Nov; Kirsty's Round 1 comment (asterisks) | Jon Wallis | PUB-04, PUB-10, POR-03, ADM-10 |
+| 2026-11-12 | 12 Nov 2026 | Xero API moved from Phase 3 to Phase 2: paid card bookings create an authorised Xero invoice and a payment into the Stripe clearing account, refunds create credit notes, account approval creates the Xero contact from the application (structured registered and invoice addresses, accounts phone), month end creates one draft invoice per account dated the last day of the month, and a payment in Xero marks the statement paid. Pending decisions P1 to P5 approved: Teams host support@ecfio.co.uk; statements dated the last day of the month and due after the payment terms; default credit limit changed to £1,000 (was £5,000), payment terms 30 days, low-credit warning £500; Companies House check automatic once a key is added; test site in AWS Stockholm until London is allowed. Mandatory fields on the credit account application are marked with an asterisk. | Jon's instruction on Xero; sign-off of P1 to P5; Kirsty's test comment | Jon Wallis | POR-04, ADM-10, PUB-10 |
 | 2026-11-11b | 11 Nov 2026 | Cancellation policy in Settings and Admin cancellation review (refund, charge, part charge, waive, move); checkout hold 15 to 5 minutes with two open checkouts per person; Add places as a linked booking; Tasks filter banner and Done tab; courses have a duration with number and unit and usual times. | Test Log 1 sign-off and Jon's answers | Jon Wallis | PUB-04, POR-02, ADM-02, ADM-10, ADM-05 |
 | 2026-11-11 | 11 Nov 2026 | Security standard: built to OWASP ASVS Level 2 with a penetration test before go-live. Admin and Super Admin sessions limited to 12 hours with no trusted device. | ISO 27001 readiness and penetration testing | Jon Wallis | PUB-07, ADM-04 (sign-in and sessions) |
 | 2026-11-10 | 10 Nov 2026 | Baseline. Added version table, requirement IDs on the acceptance criteria and this change log. No requirement changed. | Version control and test traceability | Jon Wallis | None |

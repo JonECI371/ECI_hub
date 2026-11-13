@@ -30,7 +30,7 @@ async function createContact(body: Record<string, unknown>, idem: string): Promi
   } catch (e) {
     // Names are unique in Xero. If another contact has this name, add something to tell them apart.
     if (e instanceof XeroError && /already assigned|already exists|unique/i.test(e.message)) {
-      const alt = `${body.Name} (${body.EmailAddress ?? body.AccountNumber ?? 'ECI-Hub'})`;
+      const alt = `${body.Name} (${body.CompanyNumber ?? body.EmailAddress ?? body.AccountNumber ?? 'ECI-Hub'})`;
       return (await xero<ContactResult>('PUT', '/Contacts', { Contacts: [{ ...body, Name: alt }] }, `${idem}:alt`)).Contacts[0].ContactID;
     }
     throw e;

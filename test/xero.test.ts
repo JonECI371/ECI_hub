@@ -28,6 +28,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const ok = (j: unknown) => new Response(JSON.stringify(j), { status: 200 });
     if (failWith && method !== 'GET') return new Response(JSON.stringify({ Message: failWith.message }), { status: failWith.status });
     if (path.startsWith('/Contacts?where')) return ok({ Contacts: [] });
+    if (path === '/Contacts' && body?.Contacts?.[0]?.Name === 'Twin Co') return new Response(JSON.stringify({ Message: 'A validation exception occurred', Elements: [{ ValidationErrors: [{ Message: 'The contact name Twin Co is already assigned to another contact. The contact name must be unique.' }] }] }), { status: 400 });
     if (path === '/Contacts') return ok({ Contacts: [{ ContactID: `c-${++n}` }] });
     if (path.startsWith('/Contacts/')) return ok({ Contacts: [{ ContactID: path.split('/')[2] }] });
     if (path === '/Invoices') return ok({ Invoices: [{ InvoiceID: `inv-${++n}`, InvoiceNumber: body.Invoices[0].Status === 'DRAFT' ? undefined : `INV-${n}`, Status: body.Invoices[0].Status }] });
@@ -51,6 +52,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     await db.setting.upsert({ where: { key: 'xero_connection' }, create: { key: 'xero_connection', value: { tenantId: 't1', tenantName: 'Demo Company (UK)', refresh: seal('r'), access: seal('a'), expiresAt: Date.now() + 3600000, connectedAt: new Date().toISOString() } }, update: { value: { tenantId: 't1', tenantName: 'Demo Company (UK)', refresh: seal('r'), access: seal('a'), expiresAt: Date.now() + 3600000, connectedAt: new Date().toISOString() } } });
     await db.setting.upsert({ where: { key: 'xero' }, create: { key: 'xero', value: { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: '' } }, update: { value: { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: '' } } });
     await db.xeroJob.deleteMany({});
+    await db.statement.updateMany({ where: { xeroInvoiceId: { not: null } }, data: { xeroInvoiceId: null } }); // statements left by earlier runs share the fake's invoice ids
   });
   afterAll(async () => { vi.unstubAllGlobals(); await db.setting.deleteMany({ where: { key: 'xero_connection' } }); });
 
@@ -129,6 +131,18 @@ describe('Xero sync (against a simulated Xero)', async () => {
     expect(c.ContactPersons[0]).toMatchObject({ EmailAddress: expect.stringContaining('accounts.'), IncludeInEmails: true });
     expect(c.ContactPersons.length).toBe(3); // accounts contact, main booker, other booker
     expect(full.xeroContactId).toMatch(/^c-/);
+  });
+
+  it('a company whose name Xero already has is created with its company number added, not failed', async () => {
+    const acc = await apply();
+    await settle(); // let approval's own contact job finish first, so it cannot race this one
+    await db.account.update({ where: { id: acc.id }, data: { company: 'Twin Co', xeroContactId: null } });
+    await db.xeroJob.deleteMany({ where: { recordId: acc.id } });
+    await db.xeroJob.create({ data: { key: `CONTACT:${acc.id}:twin`, kind: 'CONTACT', recordType: 'Account', recordId: acc.id, payload: {}, nextAttemptAt: new Date() } });
+    await settle();
+    const names = sent('/Contacts').map((c) => c.body.Contacts[0].Name).filter((x: string) => x.startsWith('Twin Co'));
+    expect(names).toEqual(['Twin Co', `Twin Co (${acc.companyNumber})`]);
+    expect((await db.xeroJob.findFirstOrThrow({ where: { key: `CONTACT:${acc.id}:twin` } })).status).toBe('DONE');
   });
 
   it('month end sends one DRAFT invoice per account with a line per booking, and a payment in Xero restores the credit', async () => {

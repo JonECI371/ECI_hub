@@ -99,7 +99,9 @@ export async function xero<T = Record<string, unknown>>(method: 'GET' | 'POST' |
     const text = await res.text();
     const j = text ? (JSON.parse(text) as Record<string, unknown>) : {};
     if (!res.ok) {
-      const detail = (j.Message as string) ?? ((j.Elements as { ValidationErrors?: { Message: string }[] }[] | undefined)?.[0]?.ValidationErrors?.map((e) => e.Message).join('; ')) ?? text.slice(0, 200);
+      // Xero's own message is often generic ("A validation exception occurred"); the real reason is in Elements[].ValidationErrors.
+      const reasons = ((j.Elements as { ValidationErrors?: { Message: string }[] }[] | undefined) ?? []).flatMap((el) => el.ValidationErrors?.map((e) => e.Message) ?? []);
+      const detail = [j.Message as string | undefined, ...reasons].filter(Boolean).join(': ') || text.slice(0, 200);
       throw new XeroError(`Xero ${res.status}: ${detail}`.slice(0, 400), res.status, res.status >= 500 || res.status === 429);
     }
     return j as T;

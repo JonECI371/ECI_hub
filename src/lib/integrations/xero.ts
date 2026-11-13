@@ -86,13 +86,13 @@ async function accessToken(): Promise<{ token: string; tenantId: string }> {
 }
 
 /** One Xero API call. Writes pass an idempotency key so a retry never creates a second invoice. */
-export async function xero<T = Record<string, unknown>>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, idempotencyKey?: string): Promise<T> {
+export async function xero<T = Record<string, unknown>>(method: 'GET' | 'POST' | 'PUT', path: string, body?: unknown, idempotencyKey?: string, raw?: { data: Buffer; contentType: string }): Promise<T> {
   for (let attempt = 1; attempt <= 3; attempt++) {
     const { token, tenantId } = await accessToken();
     const res = await fetch(`${API}${path}`, {
       method,
-      headers: { Authorization: `Bearer ${token}`, 'xero-tenant-id': tenantId, Accept: 'application/json', ...(body ? { 'Content-Type': 'application/json' } : {}), ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey.slice(0, 128) } : {}) },
-      body: body ? JSON.stringify(body) : undefined,
+      headers: { Authorization: `Bearer ${token}`, 'xero-tenant-id': tenantId, Accept: 'application/json', ...(raw ? { 'Content-Type': raw.contentType } : body ? { 'Content-Type': 'application/json' } : {}), ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey.slice(0, 128) } : {}) },
+      body: raw ? new Uint8Array(raw.data) : body ? JSON.stringify(body) : undefined,
       signal: AbortSignal.timeout(20000),
     });
     if (res.status === 429 && attempt < 3) { await new Promise((r) => setTimeout(r, Math.min(30, Number(res.headers.get('retry-after')) || 5) * 1000)); continue; }

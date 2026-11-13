@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
-type Call = { method: string; path: string; body: any; key?: string };
+type Call = { method: string; path: string; body: any; key?: string; raw?: number; contentType?: string };
 
 describe('Xero sync (against a simulated Xero)', async () => {
   process.env.XERO_CLIENT_ID = 'test-client'; process.env.XERO_CLIENT_SECRET = 'test-secret';
@@ -22,9 +22,10 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const u = new URL(String(url));
     const method = init?.method ?? 'GET';
     const path = u.pathname.replace('/api.xro/2.0', '') + u.search;
-    const body = init?.body ? JSON.parse(String(init.body)) : undefined;
+    const isRaw = init?.body instanceof Uint8Array;
+    const body = init?.body && !isRaw ? JSON.parse(String(init.body)) : undefined;
     const headers = (init?.headers ?? {}) as Record<string, string>;
-    calls.push({ method, path, body, key: headers['Idempotency-Key'] });
+    calls.push({ method, path, body, key: headers['Idempotency-Key'], ...(isRaw ? { raw: (init!.body as Uint8Array).length, contentType: headers['Content-Type'] } : {}) } as Call);
     const ok = (j: unknown) => new Response(JSON.stringify(j), { status: 200 });
     if (failWith && method !== 'GET') return new Response(JSON.stringify({ Message: failWith.message }), { status: failWith.status });
     if (path.startsWith('/Contacts?where')) return ok({ Contacts: [] });
@@ -32,6 +33,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     if (path === '/Contacts') return ok({ Contacts: [{ ContactID: `c-${++n}` }] });
     if (path.startsWith('/Contacts/')) return ok({ Contacts: [{ ContactID: path.split('/')[2] }] });
     if (path === '/Invoices') return ok({ Invoices: [{ InvoiceID: `inv-${++n}`, InvoiceNumber: body.Invoices[0].Status === 'DRAFT' ? undefined : `INV-${n}`, Status: body.Invoices[0].Status }] });
+    if (/^\/Invoices\/[^/]+\/Attachments\//.test(path)) return ok({ Attachments: [{ AttachmentID: `att-${++n}` }] });
     if (path === '/Payments') return ok({ Payments: [{ PaymentID: `pay-${++n}` }] });
     if (path === '/CreditNotes') return ok({ CreditNotes: [{ CreditNoteID: `cn-${++n}` }] });
     if (path.startsWith('/Invoices?IDs=')) return ok({ Invoices: path.split('IDs=')[1].split(',').map((id) => ({ InvoiceID: id, InvoiceNumber: 'INV-900', Status: paid.has(id) ? 'PAID' : 'DRAFT' })) });
@@ -150,6 +152,10 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const member = await db.accountMember.findFirstOrThrow({ where: { accountId: acc.id, role: 'MAIN_BOOKER' } });
     const mk = async (po: string) => { const { course: c, session } = await course({ capacity: 5 }); return createAccountBooking({ personId: member.personId, courseId: c.id, sessionId: session!.id, places: 1, bookerAttends: true, others: null, poNumber: po }); };
     const b1 = await mk('PO-1'); const b2 = await mk('PO-2');
+    const { attachPoFiles } = await import('@/lib/purchase-orders');
+    const pdf = (name: string) => new File([new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x0a])], name, { type: 'application/pdf' });
+    await attachPoFiles(acc.id, 'PO-1', [pdf('quote.pdf'), pdf('quote.pdf')], member.personId); // same name twice
+    await attachPoFiles(acc.id, 'PO-2', [pdf('po-2.pdf')], member.personId);
     await db.statement.updateMany({ where: { accountId: acc.id }, data: { month: '1999-03' } }); // as if March had ended
     await closeStatements(); await settle();
     const inv = sent('/Invoices').map((x) => x.body.Invoices[0]).find((x) => x.Reference === 'Training March 1999')!;
@@ -159,6 +165,17 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const st = await db.statement.findFirstOrThrow({ where: { accountId: acc.id } });
     expect(st.xeroInvoiceId).toMatch(/^inv-/);
     const live = () => db.account.findUniqueOrThrow({ where: { id: acc.id } });
+    const attached = sent(`/Invoices/${st.xeroInvoiceId}/Attachments/`, 'POST');
+    void attached;
+    const posts = calls.filter((c) => c.method === 'POST' && c.path.startsWith(`/Invoices/${st.xeroInvoiceId}/Attachments/`));
+    expect(posts.map((c) => decodeURIComponent(c.path.split('/Attachments/')[1])).sort()).toEqual(['2-quote.pdf', 'po-2.pdf', 'quote.pdf']);
+    expect(posts.every((c) => c.contentType === 'application/pdf' && (c.raw ?? 0) > 0)).toBe(true);
+    const fileRows = await db.poFile.findMany({ where: { purchaseOrder: { accountId: acc.id } } });
+    expect(fileRows.every((f) => f.xeroAttachedTo.includes(st.xeroInvoiceId!))).toBe(true);
+    const sentBefore = calls.length;
+    await db.xeroJob.updateMany({ where: { kind: 'ACCOUNT_DRAFT', recordId: st.id }, data: { status: 'PENDING', nextAttemptAt: new Date() } });
+    await settle();
+    expect(calls.slice(sentBefore).filter((c) => c.method === 'POST' && c.path.includes('/Attachments/'))).toHaveLength(0); // nothing is attached twice
     expect(await availableCredit(db, await live())).toBe(500000 - b1.totalPence - b2.totalPence);
     paid.add(st.xeroInvoiceId!);
     expect((await syncXeroStatements()).paid).toBeGreaterThanOrEqual(1);

@@ -2,6 +2,8 @@ import 'server-only';
 import { db } from '@/lib/db';
 import { monthEnd, monthLabel, markStatementPaid, xeroSettings } from '@/lib/billing';
 import { XeroError, xero, xeroStatus } from '@/lib/integrations/xero';
+import { readStoredFile } from '@/lib/integrations/files';
+import { poKey } from '@/lib/purchase-orders';
 
 /** Everything that goes to Xero, built from our records. The queue (XeroJob) calls these; see enqueueXero for what queues them. */
 class Wait extends Error {} // not ready yet (a setting is missing, or a document it depends on is not in Xero yet)
@@ -124,11 +126,38 @@ async function creditNote(jobId: string, bookingId: string, amountPence: number,
   return id;
 }
 
+const MAX_XERO_ATTACHMENTS = 10; // Xero allows about ten attachments on an invoice
+
+/** The PO files for the POs on this statement go onto its Xero invoice. Safe to repeat: a file already attached is skipped. */
+async function attachPoFilesToInvoice(statementId: string, invoiceId: string) {
+  const st = await db.statement.findUniqueOrThrow({ where: { id: statementId }, include: { lines: { include: { booking: { select: { poNumber: true } } } } } });
+  const keys = [...new Set(st.lines.map((l) => poKey(l.booking.poNumber ?? '')).filter(Boolean))];
+  if (!keys.length) return;
+  const files = await db.poFile.findMany({ where: { purchaseOrder: { accountId: st.accountId, key: { in: keys } } }, orderBy: { createdAt: 'asc' } });
+  const todo = files.filter((f) => !f.xeroAttachedTo.includes(invoiceId));
+  const room = Math.max(0, MAX_XERO_ATTACHMENTS - (files.length - todo.length));
+  const used = new Set<string>();
+  for (const f of todo.slice(0, room)) {
+    const stored = await readStoredFile(f.fileKey);
+    if (!stored) continue;
+    let name = f.fileName.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 120) || 'purchase-order';
+    for (let i = 2; used.has(name.toLowerCase()); i++) name = `${i}-${f.fileName.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 110)}`;
+    used.add(name.toLowerCase());
+    await xero('POST', `/Invoices/${invoiceId}/Attachments/${encodeURIComponent(name)}`, undefined, undefined, { data: stored.body, contentType: stored.type });
+    await db.poFile.update({ where: { id: f.id }, data: { xeroAttachedTo: { push: invoiceId } } });
+  }
+  if (todo.length > room) {
+    const title = `Too many PO files for the Xero invoice (${st.month})`;
+    const open = await db.task.findFirst({ where: { type: 'INTEGRATION_FAILURE', recordType: 'Statement', recordId: st.id, status: 'OPEN' } });
+    if (!open) await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title, detail: `Xero takes up to ${MAX_XERO_ATTACHMENTS} attachments on an invoice. ${todo.length - room} PO file(s) were not sent. Download them from the account page and add them in Xero by hand.`, recordType: 'Statement', recordId: st.id } });
+  }
+}
+
 /** One month's account statement as a single DRAFT invoice: a line per booking, for Kirsty to review and approve in Xero. */
 async function accountDraft(statementId: string): Promise<string> {
   const x = await xeroSettings();
   const st = await db.statement.findUniqueOrThrow({ where: { id: statementId }, include: { account: true, lines: { include: { booking: true }, orderBy: { id: 'asc' } } } });
-  if (st.xeroInvoiceId) return st.xeroInvoiceId;
+  if (st.xeroInvoiceId) { await attachPoFilesToInvoice(st.id, st.xeroInvoiceId); return st.xeroInvoiceId; }
   if (!st.lines.length || st.lines.every((l) => l.netPence <= 0)) return 'nothing-to-send';
   const contact = await ensureAccountContact(st.accountId);
   const date = monthEnd(st.month);
@@ -137,6 +166,7 @@ async function accountDraft(statementId: string): Promise<string> {
   const r = await xero<InvoiceResult>('PUT', '/Invoices', { Invoices: [{ Type: 'ACCREC', Contact: { ContactID: contact }, Date: ymd(date), DueDate: ymd(due), Reference: `Training ${monthLabel(st.month)}${st.account.poRule === 'PER_ACCOUNT' && pos.length === 1 ? `, ${pos[0]}` : ''}`.slice(0, 255), Status: 'DRAFT', LineAmountTypes: 'Exclusive', CurrencyCode: 'GBP', LineItems: st.lines.map((l) => ({ Description: l.description.slice(0, 4000), Quantity: 1, UnitAmount: pounds(l.netPence), AccountCode: x.accountCode, TaxType: x.taxCode })) }] }, `stmt:${st.id}`);
   const inv = r.Invoices[0];
   await db.statement.update({ where: { id: st.id }, data: { xeroInvoiceId: inv.InvoiceID, ...(inv.InvoiceNumber ? { xeroInvoiceNo: inv.InvoiceNumber } : {}) } });
+  await attachPoFilesToInvoice(st.id, inv.InvoiceID);
   return inv.InvoiceID;
 }
 

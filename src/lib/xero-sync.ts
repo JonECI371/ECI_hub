@@ -189,6 +189,7 @@ export async function processXeroJobs(limit = 20): Promise<{ done: number; faile
           : j.kind === 'ACCOUNT_DRAFT' ? await accountDraft(j.recordId)
           : await ensureAccountContact(j.recordId);
         await db.xeroJob.update({ where: { id: j.id }, data: { status: 'DONE', xeroId: id, doneAt: new Date(), lastError: null } });
+        await db.task.updateMany({ where: { type: 'INTEGRATION_FAILURE', recordType: 'XeroJob', recordId: j.id, status: 'OPEN' }, data: { status: 'DONE', doneAt: new Date() } }); // a retry that worked closes its own task
         out.done++;
       } catch (e) {
         const msg = ((e as Error).message ?? 'Unknown error').slice(0, 400);
@@ -202,7 +203,7 @@ export async function processXeroJobs(limit = 20): Promise<{ done: number; faile
         await db.xeroJob.update({ where: { id: j.id }, data: { attempts, lastError: msg, status: giveUp ? 'FAILED' : 'PENDING', nextAttemptAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60000) } });
         if (giveUp) {
           out.failed++;
-          await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: `Xero did not accept: ${j.kind.toLowerCase().replace('_', ' ')}`, detail: `${msg} In Settings, Credit accounts and Xero, fix the cause and press Retry failed.`, recordType: 'XeroJob', recordId: j.id } });
+          await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: `Xero did not accept: ${j.kind.toLowerCase().replace('_', ' ')}`, detail: `${msg} Fix the cause if needed, then press Retry now on this task (or Send now and retry failed in Settings, Credit accounts and Xero).`, recordType: 'XeroJob', recordId: j.id } });
         }
       }
     }

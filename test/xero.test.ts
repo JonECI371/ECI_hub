@@ -196,6 +196,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     expect(await retryFailedXeroJobs()).toBeGreaterThanOrEqual(1);
     await settle();
     expect((await db.xeroJob.findUniqueOrThrow({ where: { id: job.id } })).status).toBe('DONE');
+    expect((await db.task.findFirstOrThrow({ where: { type: 'INTEGRATION_FAILURE', recordId: job.id } })).status).toBe('DONE'); // the retry that worked closed its task
   });
 
   it('does nothing, and loses nothing, while Xero is not connected', async () => {

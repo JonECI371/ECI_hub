@@ -6,6 +6,7 @@ import { requireAdmin, TASK_LABEL } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { placesLeft } from '@/lib/sessions';
 import { CopyButton } from '@/components/copy-button';
+import { retryXeroAction } from '../settings/actions';
 import { decideCancellationTask, uploadCertificate, decideAccount, decideBookerTask, decideDateChange, decideRegistration, markDone, markEnrolled } from './actions';
 import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { loadPolicy, steer } from '@/lib/cancellation-policy';
@@ -143,6 +144,16 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
           );
           let body: React.ReactNode = <p className="text-sm">{t.detail}</p>;
           let actions: React.ReactNode = <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-ink`}>Mark done</button></form>;
+
+          if (t.type === 'INTEGRATION_FAILURE' && t.recordType === 'XeroJob') {
+            actions = (
+              <div className="flex flex-wrap items-center justify-end gap-2">
+                <Link href="/admin/settings#xero" className={`${btn} border border-field bg-white text-ink no-underline`}>Open Xero settings</Link>
+                {isSuper && <form action={retryXeroAction}><button type="submit" className={`${btn} bg-cyan text-ink`}>Retry now</button></form>}
+                <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-white text-ink`}>Mark done</button></form>
+              </div>
+            );
+          }
 
           if (t.type === 'ELEARNING_ENROLMENT' && a?.person) {
             const ans = (a.registration?.answers ?? {}) as Record<string, string>;

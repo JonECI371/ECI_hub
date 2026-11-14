@@ -34,6 +34,9 @@ describe('Xero sync (against a simulated Xero)', async () => {
     if (path.startsWith('/Contacts/')) return ok({ Contacts: [{ ContactID: path.split('/')[2] }] });
     if (path === '/Invoices') return ok({ Invoices: [{ InvoiceID: `inv-${++n}`, InvoiceNumber: body.Invoices[0].Status === 'DRAFT' ? undefined : `INV-${n}`, Status: body.Invoices[0].Status }] });
     if (/^\/Invoices\/[^/]+\/Attachments\//.test(path)) return ok({ Attachments: [{ AttachmentID: `att-${++n}` }] });
+    if (path === '/Accounts') return ok({ Accounts: [{ Code: '200', Name: 'Sales', Type: 'REVENUE', Status: 'ACTIVE' }, { Code: '090', Name: 'Stripe clearing', Type: 'CURRENT', Status: 'ACTIVE', EnablePaymentsToAccount: true }, { Code: '091', Name: 'No payments here', Type: 'CURRENT', Status: 'ACTIVE', EnablePaymentsToAccount: false }] });
+    if (path === '/TaxRates') return ok({ TaxRates: [{ TaxType: 'OUTPUT2', Name: '20% (VAT on Income)', Status: 'ACTIVE' }] });
+    if (path === '/Payments' && body?.Payments?.[0]?.Account?.Code === '999') return new Response(JSON.stringify({ Message: 'A validation exception occurred', Elements: [{ ValidationErrors: [{ Message: 'Account could not be found' }] }] }), { status: 400 });
     if (path === '/Payments') return ok({ Payments: [{ PaymentID: `pay-${++n}` }] });
     if (path === '/CreditNotes') return ok({ CreditNotes: [{ CreditNoteID: `cn-${++n}` }] });
     if (path.startsWith('/Invoices?IDs=')) return ok({ Invoices: path.split('IDs=')[1].split(',').map((id) => ({ InvoiceID: id, InvoiceNumber: 'INV-900', Status: paid.has(id) ? 'PAID' : 'DRAFT' })) });
@@ -189,6 +192,29 @@ describe('Xero sync (against a simulated Xero)', async () => {
     expect([done.status, done.xeroInvoiceNo]).toEqual(['PAID', 'INV-900']);
     expect(await availableCredit(db, await live())).toBe(500000);
     void statementMonth;
+  });
+
+  it('checks the codes in Settings against Xero, and says what is wrong', async () => {
+    const { xeroSetupCheck } = await import('@/lib/xero-sync');
+    await setClearing('090');
+    expect((await xeroSetupCheck()).every((c) => c.ok)).toBe(true);
+    await setClearing('999');
+    expect((await xeroSetupCheck()).find((c) => !c.ok)!.text).toMatch(/999 was not found/);
+    await setClearing('091');
+    expect((await xeroSetupCheck()).find((c) => !c.ok)!.text).toMatch(/Enable payments to this account/);
+    await setClearing('090');
+  });
+
+  it('a clearing account Xero cannot pay into fails with a message that says what to check', async () => {
+    await setClearing('999');
+    const b = await cardBooking();
+    await settle();
+    const job = await db.xeroJob.findUniqueOrThrow({ where: { key: `CARD_INVOICE:${b.id}` } });
+    expect([job.status, job.lastError]).toEqual(['FAILED', expect.stringContaining('cannot find an account with code 999')]);
+    await setClearing('090');
+    await retryFailedXeroJobs();
+    await settle();
+    expect((await db.xeroJob.findUniqueOrThrow({ where: { id: job.id } })).status).toBe('DONE'); // the invoice already in Xero is reused, only the payment is sent
   });
 
   it('a refused document is marked failed with a task, and Retry puts it back on the queue', async () => {

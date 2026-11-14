@@ -83,3 +83,12 @@ export async function retryXeroAction() {
   await audit(me.id, 'XERO_RETRY', 'Setting', 'xero_connection', undefined, { retried: n, done: r.done });
   redirect(`/admin/settings?msg=xeroretried&detail=${encodeURIComponent(`${n} retried, ${r.done} sent`)}#xero`);
 }
+
+/** Super Admin: test the Xero codes in Settings against the connected organisation. */
+export async function checkXeroSetupAction() {
+  await requirePerson(['SUPER_ADMIN'], '/admin/settings');
+  const { xeroSetupCheck } = await import('@/lib/xero-sync');
+  let lines: { ok: boolean; text: string }[];
+  try { lines = await xeroSetupCheck(); } catch (e) { lines = [{ ok: false, text: `Xero did not answer: ${(e as Error).message}` }]; }
+  redirect(`/admin/settings?msg=xerocheck&detail=${encodeURIComponent(lines.map((l) => `${l.ok ? 'OK' : 'PROBLEM'}: ${l.text}`).join('|'))}#xero`);
+}

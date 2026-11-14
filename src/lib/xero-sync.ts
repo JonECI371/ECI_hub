@@ -79,6 +79,18 @@ export async function ensureAccountContact(accountId: string): Promise<string> {
   return id;
 }
 
+/** Xero says only "Account could not be found" when the clearing account is missing or cannot take payments; say what to check. */
+async function paymentsPut(clearing: string, body: unknown, idem: string) {
+  try {
+    return await xero<{ Payments: { PaymentID: string }[] }>('PUT', '/Payments', body, idem);
+  } catch (e) {
+    if (e instanceof XeroError && /Account could not be found/i.test(e.message)) {
+      throw new XeroError(`Xero cannot find an account with code ${clearing} that accepts payments. In Xero open Chart of accounts and check the code is exactly ${clearing}, it is active, and Enable payments to this account is ticked. Make sure you are in the same organisation ECI-Hub is connected to. Use Check Xero setup in Settings to test.`, 400, false);
+    }
+    throw e;
+  }
+}
+
 async function needClearing(): Promise<{ accountCode: string; taxCode: string; clearing: string }> {
   const x = await xeroSettings();
   if (!x.stripeClearingCode) throw new Wait('Set the Stripe clearing account code in Settings, Credit accounts and Xero.');
@@ -103,7 +115,7 @@ async function cardInvoice(bookingId: string): Promise<string> {
   }
   const pay = b.payments.find((p) => p.status !== 'failed');
   if (pay && !pay.xeroPaymentId) {
-    const r = await xero<{ Payments: { PaymentID: string }[] }>('PUT', '/Payments', { Payments: [{ Invoice: { InvoiceID: invoiceId }, Account: { Code: clearing }, Date: ukDay(b.createdAt), Amount: pounds(pay.amountPence), Reference: pay.stripeIntentId.slice(0, 255) }] }, `pay:${pay.id}`);
+    const r = await paymentsPut(clearing, { Payments: [{ Invoice: { InvoiceID: invoiceId }, Account: { Code: clearing }, Date: ukDay(b.createdAt), Amount: pounds(pay.amountPence), Reference: pay.stripeIntentId.slice(0, 255) }] }, `pay:${pay.id}`);
     await db.payment.update({ where: { id: pay.id }, data: { xeroPaymentId: r.Payments[0].PaymentID } });
   }
   return invoiceId;
@@ -122,7 +134,7 @@ async function creditNote(jobId: string, bookingId: string, amountPence: number,
     id = r.CreditNotes[0].CreditNoteID;
     await db.xeroJob.update({ where: { id: jobId }, data: { payload: { ...payload, amountPence, creditNoteId: id } } }); // so a retry does not create it twice
   }
-  await xero('PUT', '/Payments', { Payments: [{ CreditNote: { CreditNoteID: id }, Account: { Code: clearing }, Date: ukDay(new Date()), Amount: pounds(amountPence), Reference: `Stripe refund ${b.reference}` }] }, `cnpay:${jobId}`);
+  await paymentsPut(clearing, { Payments: [{ CreditNote: { CreditNoteID: id }, Account: { Code: clearing }, Date: ukDay(new Date()), Amount: pounds(amountPence), Reference: `Stripe refund ${b.reference}` }] }, `cnpay:${jobId}`);
   return id;
 }
 
@@ -185,6 +197,32 @@ export async function attachLatePoFiles(limit = 25): Promise<number> {
     }
   }
   return n;
+}
+
+export type SetupCheck = { ok: boolean; text: string };
+
+/** Tests the codes in Settings against the connected Xero organisation, so a wrong code is found now and not at the first booking. */
+export async function xeroSetupCheck(): Promise<SetupCheck[]> {
+  const st = await xeroStatus();
+  if (!st.connected) return [{ ok: false, text: 'Xero is not connected.' }];
+  const x = await xeroSettings();
+  const out: SetupCheck[] = [{ ok: true, text: `Connected to ${st.tenantName ?? 'the organisation you chose'}` }];
+  const acc = await xero<{ Accounts?: { Code?: string; Name?: string; Type?: string; Status?: string; EnablePaymentsToAccount?: boolean }[] }>('GET', '/Accounts');
+  const byCode = new Map((acc.Accounts ?? []).filter((a) => a.Code).map((a) => [a.Code!.toLowerCase(), a]));
+  const sales = byCode.get(x.accountCode.toLowerCase());
+  out.push(sales ? { ok: sales.Status === 'ACTIVE', text: `Sales account ${x.accountCode}: ${sales.Name} (${sales.Type}${sales.Status === 'ACTIVE' ? '' : ', not active'})` } : { ok: false, text: `Sales account ${x.accountCode} was not found in Xero.` });
+  if (!x.stripeClearingCode) out.push({ ok: false, text: 'Stripe clearing account code is not set.' });
+  else {
+    const c = byCode.get(x.stripeClearingCode.toLowerCase());
+    if (!c) out.push({ ok: false, text: `Stripe clearing account ${x.stripeClearingCode} was not found in this Xero organisation. Check the code, and that it was created in the organisation ECI-Hub is connected to.` });
+    else if (c.Status !== 'ACTIVE') out.push({ ok: false, text: `Stripe clearing account ${x.stripeClearingCode} (${c.Name}) is not active.` });
+    else if (c.Type !== 'BANK' && !c.EnablePaymentsToAccount) out.push({ ok: false, text: `Stripe clearing account ${x.stripeClearingCode} (${c.Name}) exists but "Enable payments to this account" is not ticked. Tick it in Xero, Chart of accounts.` });
+    else out.push({ ok: true, text: `Stripe clearing account ${x.stripeClearingCode}: ${c.Name} accepts payments` });
+  }
+  const tax = await xero<{ TaxRates?: { TaxType?: string; Name?: string; Status?: string }[] }>('GET', '/TaxRates');
+  const rate = (tax.TaxRates ?? []).find((t) => t.TaxType?.toLowerCase() === x.taxCode.toLowerCase());
+  out.push(rate ? { ok: rate.Status === 'ACTIVE', text: `Tax code ${x.taxCode}: ${rate.Name}${rate.Status === 'ACTIVE' ? '' : ' (not active)'}` } : { ok: false, text: `Tax code ${x.taxCode} was not found in Xero. For UK VAT on sales it is usually OUTPUT2.` });
+  return out;
 }
 
 /** Works through the queue. Safe to call often: it does nothing unless Xero is connected, and only one runner works at a time. */

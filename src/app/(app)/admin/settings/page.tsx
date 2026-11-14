@@ -6,7 +6,7 @@ import { teamsConfigured } from '@/lib/integrations/teams';
 import { publishableKey, stripeEnabled } from '@/lib/integrations/payments';
 import { emailLive } from '@/lib/integrations/email';
 import { Chip } from '@/components/ui';
-import { disconnectXeroAction, retryXeroAction, saveBilling, saveCancellationPolicy, saveSubjects } from './actions';
+import { checkXeroSetupAction, disconnectXeroAction, retryXeroAction, saveBilling, saveCancellationPolicy, saveSubjects } from './actions';
 import { xeroStatus } from '@/lib/integrations/xero';
 import { xeroQueueCounts } from '@/lib/xero-sync';
 import { loadPolicy, policyLines } from '@/lib/cancellation-policy';
@@ -45,6 +45,11 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       {(msg === 'saved' || msg === 'billingsaved') && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">{msg === 'saved' ? 'Subjects saved.' : 'Credit and Xero settings saved.'}</p>}
       {msg === 'xeroconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero connected{detail ? `: ${detail}` : ''}. Anything waiting in the queue will now be sent.</p>}
       {msg === 'xerodisconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero disconnected. Work keeps queuing and is sent when you reconnect.</p>}
+      {msg === 'xerocheck' && (
+        <ul role="status" className="flex flex-col gap-1 rounded-control bg-white px-4 py-3 text-sm shadow-card">
+          {(detail ?? '').split('|').map((l) => <li key={l} className={l.startsWith('OK') ? 'font-semibold text-ink' : 'font-semibold text-bad-fg'}>{l.startsWith('OK') ? '\u2713 ' : '\u2717 '}{l.replace(/^(OK|PROBLEM): /, '')}</li>)}
+        </ul>
+      )}
       {msg === 'xeroretried' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Retried: {detail}.</p>}
       {msg === 'xeronotset' && <p role="alert" className="rounded-control bg-warn-bg px-4 py-3 text-sm font-semibold text-warn-fg">The Xero client ID and secret have not been added to the server yet. See docs/xero-setup.md.</p>}
       {msg === 'xeroerror' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Xero did not connect: {detail ?? 'unknown reason'}</p>}
@@ -115,6 +120,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {isSuper ? (
           <div className="flex flex-wrap gap-2">
             {!xs.connected && <a href="/admin/xero/connect" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink no-underline">Connect Xero</a>}
+            {xs.connected && <form action={checkXeroSetupAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Check Xero setup</button></form>}
             {xs.connected && <form action={retryXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Send now and retry failed</button></form>}
             {xs.connected && <form action={disconnectXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Disconnect</button></form>}
           </div>

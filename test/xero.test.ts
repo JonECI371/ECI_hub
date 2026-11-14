@@ -108,6 +108,17 @@ describe('Xero sync (against a simulated Xero)', async () => {
     expect(cn).toMatchObject({ Type: 'ACCRECCREDIT', Status: 'AUTHORISED', LineAmountTypes: 'Inclusive' });
     expect(cn.LineItems[0].UnitAmount).toBe((b.totalPence - Math.round(b.totalPence / 2)) / 100);
     expect(sent('/Payments').some((c) => c.body.Payments[0].CreditNote && c.body.Payments[0].Account.AccountID === 'acc-090')).toBe(true);
+    // a refund Stripe has not completed yet holds the credit note back
+    const w = await cardBooking(); await settle();
+    await db.xeroJob.create({ data: { key: `CREDIT_NOTE:${w.id}:5000`, kind: 'CREDIT_NOTE', recordType: 'Booking', recordId: w.id, payload: { amountPence: 5000 }, nextAttemptAt: new Date() } });
+    const wBefore = sent('/CreditNotes').length;
+    await settle();
+    expect(sent('/CreditNotes').length).toBe(wBefore);
+    expect((await db.xeroJob.findUniqueOrThrow({ where: { key: `CREDIT_NOTE:${w.id}:5000` } })).lastError).toMatch(/card refund to complete/);
+    await db.payment.updateMany({ where: { bookingId: w.id }, data: { refundedPence: 5000, status: 'partially_refunded' } });
+    await db.xeroJob.update({ where: { key: `CREDIT_NOTE:${w.id}:5000` }, data: { nextAttemptAt: new Date() } });
+    await settle();
+    expect(sent('/CreditNotes').length).toBe(wBefore + 1);
     const c2 = await cardBooking(); await settle();
     await cancelConfirmedBooking(c2.id, c2.bookerId, { refund: false, review: true });
     await decideCancellation(c2.id, 'admin', { kind: 'CHARGE' });

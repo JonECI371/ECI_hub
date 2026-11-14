@@ -135,6 +135,9 @@ async function creditNote(jobId: string, bookingId: string, amountPence: number,
   const { accountCode, taxCode, clearing } = await needClearing();
   const b = await db.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { course: true } });
   if (!b.xeroInvoiceId) throw new Wait('Waiting for the invoice for this booking to reach Xero first.');
+  // The credit note records money that has really gone back, so it waits until the card refund is done.
+  const refunded = (await db.payment.findMany({ where: { bookingId: b.id }, select: { refundedPence: true } })).reduce((n, p) => n + p.refundedPence, 0);
+  if (!payload.creditNoteId && refunded < amountPence) throw new Wait('Waiting for the card refund to complete before the credit note goes to Xero.');
   let id = payload.creditNoteId;
   if (!id) {
     const contact = await ensurePersonContact(b.bookerId);

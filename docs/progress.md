@@ -19,6 +19,7 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Phase 3 order: pipelines and reports first, then SCORM, then Zoom.
 - Production setup (London region, real domain, web firewall, malware scanning) planned after testing.
 - Test data (the two ECFIO accounts and others) is wiped before the real Xero connection and go-live.
+- Go-live checklist started: `docs/go-live-checklist.md` (includes a small real refund test once the real Xero and Stripe accounts are set up).
 
 ## Reminder for the next session with Jon (13 Nov 2026)
 

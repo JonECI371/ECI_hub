@@ -10,6 +10,16 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-14: Jon's decisions
+
+- Admin approval ceiling stays at £5,000 (Settings, Super Admin can change it).
+- Late PO files are attached to the Xero draft invoice automatically on the next scheduled run. PO uploads stay PDF or image only; the checkout says "PDF preferred, photo also works".
+- Wording edits: Jon and Kirsty list them in the shared Doc "Website wording changes"; Claude applies them in one batch and deploys once on request ("apply the wording changes").
+- After testing: build admin-editable pages with an editable template for each page type (homepage, content pages, and so on).
+- Phase 3 order: pipelines and reports first, then SCORM, then Zoom.
+- Production setup (London region, real domain, web firewall, malware scanning) planned after testing.
+- Test data (the two ECFIO accounts and others) is wiped before the real Xero connection and go-live.
+
 ## Reminder for the next session with Jon (13 Nov 2026)
 
 - **Prompt Jon to get Kirsty testing:** Phase 2 checklist (rounds 1 and 2), then "Round 3 checklist for Kirsty: new items" (N1 to N12). Her first results are in; B1 and B2 need the retest on the ready-made account kirsty+po@ecfio.co.uk.

@@ -192,9 +192,9 @@ export function CheckoutForm(p: CheckoutProps) {
                     <span className="text-[13px] font-normal">So your account can show how much of the PO is used.</span>
                     <FieldError id="poValue-err" msg={f.poValue} />
                   </label>
-                  <label className={labelCls}>Attach the PO or quotation <span className="font-normal">(optional)</span>
+                  <label className={labelCls}>Attach your purchase order <span className="font-normal">(optional)</span>
                     <input name="poFiles" type="file" multiple accept="application/pdf,image/png,image/jpeg,image/webp" className={`${input} h-auto py-2`} {...err('poFiles')} />
-                    <span className="text-[13px] font-normal">PDF, JPEG, PNG or WebP, up to 5 files of 10 MB. We pass them to our accounts team.</span>
+                    <span className="text-[13px] font-normal">Please upload your purchase order as a <strong className="text-ink">PDF</strong>. A clear photo (JPEG or PNG) also works. You can add your quotation too: up to 5 files of 10 MB. We pass them to our accounts team.</span>
                     <FieldError id="poFiles-err" msg={f.poFiles} />
                   </label>
                 </div>

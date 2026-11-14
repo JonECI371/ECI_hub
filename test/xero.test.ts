@@ -176,6 +176,12 @@ describe('Xero sync (against a simulated Xero)', async () => {
     await db.xeroJob.updateMany({ where: { kind: 'ACCOUNT_DRAFT', recordId: st.id }, data: { status: 'PENDING', nextAttemptAt: new Date() } });
     await settle();
     expect(calls.slice(sentBefore).filter((c) => c.method === 'POST' && c.path.includes('/Attachments/'))).toHaveLength(0); // nothing is attached twice
+    // a PO file added after the invoice reached Xero is picked up on the next run
+    const { attachLatePoFiles } = await import('@/lib/xero-sync');
+    await attachPoFiles(acc.id, 'PO-2', [pdf('late-addition.pdf')], member.personId);
+    expect(await attachLatePoFiles()).toBe(1);
+    expect(calls.filter((c) => c.method === 'POST' && c.path.includes('/Attachments/late-addition.pdf'))).toHaveLength(1);
+    expect(await attachLatePoFiles()).toBe(0);
     expect(await availableCredit(db, await live())).toBe(500000 - b1.totalPence - b2.totalPence);
     paid.add(st.xeroInvoiceId!);
     expect((await syncXeroStatements()).paid).toBeGreaterThanOrEqual(1);

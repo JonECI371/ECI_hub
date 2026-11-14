@@ -33,9 +33,10 @@ export async function runJobs(): Promise<Record<string, number>> {
     const { sendExpiryReminders } = await import('@/lib/certificates');
     done.expiry = await sendExpiryReminders();
     // Xero: send what is queued, and pick up payments made against the account invoices.
-    const { processXeroJobs, syncXeroStatements } = await import('@/lib/xero-sync');
+    const { processXeroJobs, syncXeroStatements, attachLatePoFiles } = await import('@/lib/xero-sync');
     done.xero = (await processXeroJobs(30)).done;
     done.xeroPaid = (await syncXeroStatements()).paid;
+    done.poFilesAttached = await attachLatePoFiles();
   } catch (err) {
     console.error('[jobs] failed', err);
     await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: 'Scheduled reminders failed', detail: String((err as Error).message).slice(0, 500), recordType: 'System', recordId: 'jobs' } });

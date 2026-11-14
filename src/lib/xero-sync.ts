@@ -170,6 +170,23 @@ async function accountDraft(statementId: string): Promise<string> {
   return inv.InvoiceID;
 }
 
+/** PO files added after a statement's invoice went to Xero are attached on the next run. One bad invoice never stops the others. */
+export async function attachLatePoFiles(limit = 25): Promise<number> {
+  if (!(await xeroStatus()).connected) return 0;
+  const sts = await db.statement.findMany({ where: { xeroInvoiceId: { not: null }, status: { in: ['ISSUED', 'OVERDUE'] } }, orderBy: { month: 'desc' }, take: limit });
+  let n = 0;
+  for (const st of sts) {
+    try {
+      const before = await db.poFile.count({ where: { xeroAttachedTo: { has: st.xeroInvoiceId! } } });
+      await attachPoFilesToInvoice(st.id, st.xeroInvoiceId!);
+      n += (await db.poFile.count({ where: { xeroAttachedTo: { has: st.xeroInvoiceId! } } })) - before;
+    } catch (e) {
+      console.error('[xero] late PO files', st.id, (e as Error).message);
+    }
+  }
+  return n;
+}
+
 /** Works through the queue. Safe to call often: it does nothing unless Xero is connected, and only one runner works at a time. */
 export async function processXeroJobs(limit = 20): Promise<{ done: number; failed: number; waiting: number; skipped?: number }> {
   const out = { done: 0, failed: 0, waiting: 0 };

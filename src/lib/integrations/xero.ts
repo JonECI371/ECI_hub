@@ -10,7 +10,7 @@ import { db } from '@/lib/db';
 const AUTH = 'https://login.xero.com/identity/connect/authorize';
 const TOKEN = 'https://identity.xero.com/connect/token';
 const API = 'https://api.xero.com/api.xro/2.0';
-export const XERO_SCOPES = process.env.XERO_SCOPES ?? 'offline_access accounting.invoices accounting.payments accounting.contacts accounting.settings.read';
+export const XERO_SCOPES = process.env.XERO_SCOPES ?? 'offline_access accounting.invoices accounting.payments accounting.contacts accounting.settings.read accounting.attachments';
 
 export const xeroConfigured = () => !!process.env.XERO_CLIENT_ID && !!process.env.XERO_CLIENT_SECRET;
 export const xeroRedirectUri = () => `${process.env.SITE_URL ?? 'http://localhost:3000'}/admin/xero/callback`;

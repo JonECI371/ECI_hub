@@ -167,7 +167,12 @@ async function attachPoFilesToInvoice(statementId: string, invoiceId: string) {
     let name = f.fileName.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 120) || 'purchase-order';
     for (let i = 2; used.has(name.toLowerCase()); i++) name = `${i}-${f.fileName.replace(/[\\/:*?"<>|]+/g, '_').slice(0, 110)}`;
     used.add(name.toLowerCase());
-    await xero('POST', `/Invoices/${invoiceId}/Attachments/${encodeURIComponent(name)}`, undefined, undefined, { data: stored.body, contentType: stored.type });
+    try {
+      await xero('POST', `/Invoices/${invoiceId}/Attachments/${encodeURIComponent(name)}`, undefined, undefined, { data: stored.body, contentType: stored.type });
+    } catch (e) {
+      if (e instanceof XeroError && e.status === 401) throw new XeroError('Xero has not allowed ECI-Hub to attach files. In Settings, Credit accounts and Xero, press Disconnect and then Connect to Xero again so Xero asks for that permission, then press Retry now. The invoice itself is already in Xero.', 401, false);
+      throw e;
+    }
     await db.poFile.update({ where: { id: f.id }, data: { xeroAttachedTo: { push: invoiceId } } });
   }
   if (todo.length > room) {

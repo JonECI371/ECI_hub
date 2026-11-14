@@ -23,4 +23,4 @@ Every send goes through a queue (Settings, Credit accounts and Xero). Failed sen
 5. Ask the accountant for the Stripe clearing account code and enter it, with the sales account code (200) and the tax code (OUTPUT2 for 20% VAT on income). Held invoices wait until the clearing code is set.
 6. Book a test course by card and check the invoice and payment appear in Xero. Then run month end for a test account.
 
-If Xero rejects the scopes, set `XERO_SCOPES` (default `offline_access accounting.invoices accounting.payments accounting.contacts accounting.settings.read`).
+If Xero rejects the scopes, set `XERO_SCOPES` (default `offline_access accounting.invoices accounting.payments accounting.contacts accounting.settings.read accounting.attachments`). Attaching PO files to invoices needs `accounting.attachments`; after adding a scope, disconnect and connect Xero again in Settings so Xero asks for it..

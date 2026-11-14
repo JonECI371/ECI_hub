@@ -38,6 +38,7 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 - [x] **2.7 Trainer app.** "Build the four trainer screens (TrainerSessions, TrainerAttendance, TrainerAvailability, TrainerProfile), phone first. Attendance creates the certificate upload task."
 - [x] **2.8 Certificates and expiry reminders.**
 - [ ] **2.9 Admin Add booking (ADM-12).** "Build Add booking in Admin, Bookings: choose a person or booker, course, date and places; pay on account with PO, by card with an emailed payment link, or already paid with a note. A credit or capacity override needs a visible warning, an override box and a reason, and is audited. Same confirmation, Teams invite and Xero entry as a customer booking." Open point: how an already-paid booking appears in Xero.
+- [ ] **2.10 Booking flow review (proposed, Jon 14 Nov).** Breadcrumb trail on every public and portal page so people see where they are. Review the book then complete-registration steps from a user's point of view: get a booker to payment as soon as places are secured, then collect each delegate's details as quickly and easily as possible. Options and a recommendation are in docs/progress.md; needs Jon's sign-off before building.
 
 ## Phase 3: Replace Zoho and automate (gate: Zoho switched off)
 

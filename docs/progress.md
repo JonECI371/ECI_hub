@@ -12,6 +12,8 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 
 ## 2026-11-14: Jon's decisions
 
+- Booking flow review requested: add breadcrumbs, and review the step after booking ("Complete registration") so a booker reaches payment as soon as places are held, with delegate details collected as fast as possible. Proposal sent to Jon; build plan item 2.10 (proposed).
+- Xero month-end test: the draft invoice reached Xero but attaching the PO files was refused (401) because the app had not asked Xero for the `accounting.attachments` permission. Fixed in the code; Jon must Disconnect and Connect Xero again in Settings once the deploy is live, then Retry now.
 - Admin Add booking added to the plan (2.9) and spec (ADM-12): staff may override a credit limit or a full session, but only with a warning, an override box and a reason, audited. Open point: how already-paid bookings show in Xero.
 - Admin approval ceiling stays at £5,000 (Settings, Super Admin can change it).
 - Late PO files are attached to the Xero draft invoice automatically on the next scheduled run. PO uploads stay PDF or image only; the checkout says "PDF preferred, photo also works".

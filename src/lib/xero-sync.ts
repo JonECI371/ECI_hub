@@ -80,9 +80,18 @@ export async function ensureAccountContact(accountId: string): Promise<string> {
 }
 
 /** Xero says only "Account could not be found" when the clearing account is missing or cannot take payments; say what to check. */
+async function clearingAccountId(code: string): Promise<string> {
+  const r = await xero<{ Accounts?: { AccountID: string; Code?: string }[] }>('GET', `/Accounts?where=${encodeURIComponent(`Code=="${code.replace(/"/g, '')}"`)}`);
+  const id = r.Accounts?.find((a) => a.Code?.toLowerCase() === code.toLowerCase())?.AccountID;
+  if (!id) throw new XeroError(`Xero has no account with code ${code} in the organisation ECI-Hub is connected to. Check the code in Settings, and that the account was created in that organisation (Xero shows its name top left). Use Check Xero setup in Settings to test.`, 400, false);
+  return id;
+}
+
 async function paymentsPut(clearing: string, body: unknown, idem: string) {
   try {
-    return await xero<{ Payments: { PaymentID: string }[] }>('PUT', '/Payments', body, idem);
+    const accountId = await clearingAccountId(clearing);
+    const payments = (body as { Payments: Record<string, unknown>[] }).Payments.map((p) => ({ ...p, Account: { AccountID: accountId } }));
+    return await xero<{ Payments: { PaymentID: string }[] }>('PUT', '/Payments', { Payments: payments }, idem);
   } catch (e) {
     if (e instanceof XeroError && /Account could not be found/i.test(e.message)) {
       throw new XeroError(`Xero cannot find an account with code ${clearing} that accepts payments. In Xero open Chart of accounts and check the code is exactly ${clearing}, it is active, and Enable payments to this account is ticked. Make sure you are in the same organisation ECI-Hub is connected to. Use Check Xero setup in Settings to test.`, 400, false);
@@ -258,7 +267,9 @@ export async function processXeroJobs(limit = 20): Promise<{ done: number; faile
         await db.xeroJob.update({ where: { id: j.id }, data: { attempts, lastError: msg, status: giveUp ? 'FAILED' : 'PENDING', nextAttemptAt: new Date(Date.now() + Math.min(60, 2 ** attempts) * 60000) } });
         if (giveUp) {
           out.failed++;
-          await db.task.create({ data: { type: 'INTEGRATION_FAILURE', title: `Xero did not accept: ${j.kind.toLowerCase().replace('_', ' ')}`, detail: `${msg} Fix the cause if needed, then press Retry now on this task (or Send now and retry failed in Settings, Credit accounts and Xero).`, recordType: 'XeroJob', recordId: j.id } });
+          const taskData = { type: 'INTEGRATION_FAILURE' as const, title: `Xero did not accept: ${j.kind.toLowerCase().replace('_', ' ')}`, detail: `${msg} Fix the cause if needed, then press Retry now on this task (or Send now and retry failed in Settings, Credit accounts and Xero).`, recordType: 'XeroJob', recordId: j.id };
+          const open = await db.task.findFirst({ where: { type: 'INTEGRATION_FAILURE', recordType: 'XeroJob', recordId: j.id, status: 'OPEN' } });
+          if (open) await db.task.update({ where: { id: open.id }, data: { detail: taskData.detail, createdAt: new Date() } }); else await db.task.create({ data: taskData });
         }
       }
     }

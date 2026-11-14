@@ -34,9 +34,10 @@ describe('Xero sync (against a simulated Xero)', async () => {
     if (path.startsWith('/Contacts/')) return ok({ Contacts: [{ ContactID: path.split('/')[2] }] });
     if (path === '/Invoices') return ok({ Invoices: [{ InvoiceID: `inv-${++n}`, InvoiceNumber: body.Invoices[0].Status === 'DRAFT' ? undefined : `INV-${n}`, Status: body.Invoices[0].Status }] });
     if (/^\/Invoices\/[^/]+\/Attachments\//.test(path)) return ok({ Attachments: [{ AttachmentID: `att-${++n}` }] });
+    if (path.startsWith('/Accounts?where=')) { const code = decodeURIComponent(path.split('where=')[1]).match(/Code=="(.*)"/)?.[1]; const all = [{ AccountID: 'acc-090', Code: '090' }, { AccountID: 'acc-091', Code: '091' }]; return ok({ Accounts: all.filter((a) => a.Code === code) }); }
     if (path === '/Accounts') return ok({ Accounts: [{ Code: '200', Name: 'Sales', Type: 'REVENUE', Status: 'ACTIVE' }, { Code: '090', Name: 'Stripe clearing', Type: 'CURRENT', Status: 'ACTIVE', EnablePaymentsToAccount: true }, { Code: '091', Name: 'No payments here', Type: 'CURRENT', Status: 'ACTIVE', EnablePaymentsToAccount: false }] });
     if (path === '/TaxRates') return ok({ TaxRates: [{ TaxType: 'OUTPUT2', Name: '20% (VAT on Income)', Status: 'ACTIVE' }] });
-    if (path === '/Payments' && body?.Payments?.[0]?.Account?.Code === '999') return new Response(JSON.stringify({ Message: 'A validation exception occurred', Elements: [{ ValidationErrors: [{ Message: 'Account could not be found' }] }] }), { status: 400 });
+    if (path === '/Payments' && body?.Payments?.[0]?.Account?.AccountID === 'acc-999') return new Response(JSON.stringify({ Message: 'A validation exception occurred', Elements: [{ ValidationErrors: [{ Message: 'Account could not be found' }] }] }), { status: 400 });
     if (path === '/Payments') return ok({ Payments: [{ PaymentID: `pay-${++n}` }] });
     if (path === '/CreditNotes') return ok({ CreditNotes: [{ CreditNoteID: `cn-${++n}` }] });
     if (path.startsWith('/Invoices?IDs=')) return ok({ Invoices: path.split('IDs=')[1].split(',').map((id) => ({ InvoiceID: id, InvoiceNumber: 'INV-900', Status: paid.has(id) ? 'PAID' : 'DRAFT' })) });
@@ -89,7 +90,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const row = await db.booking.findUniqueOrThrow({ where: { id: b.id }, include: { payments: true } });
     expect(row.xeroInvoiceId).toMatch(/^inv-/);
     const pay = sent('/Payments').find((c) => c.body.Payments[0].Invoice.InvoiceID === row.xeroInvoiceId)!.body.Payments[0];
-    expect(pay).toMatchObject({ Account: { Code: '090' }, Amount: b.totalPence / 100, Reference: `pi_${b.id}` });
+    expect(pay).toMatchObject({ Account: { AccountID: 'acc-090' }, Amount: b.totalPence / 100, Reference: `pi_${b.id}` });
     expect(row.payments[0].xeroPaymentId).toMatch(/^pay-/);
     const before = calls.length;
     await settle();
@@ -106,7 +107,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const cn = sent('/CreditNotes').find((c) => c.body.CreditNotes[0].Reference === `Refund ${ref}`)!.body.CreditNotes[0];
     expect(cn).toMatchObject({ Type: 'ACCRECCREDIT', Status: 'AUTHORISED', LineAmountTypes: 'Inclusive' });
     expect(cn.LineItems[0].UnitAmount).toBe((b.totalPence - Math.round(b.totalPence / 2)) / 100);
-    expect(sent('/Payments').some((c) => c.body.Payments[0].CreditNote && c.body.Payments[0].Account.Code === '090')).toBe(true);
+    expect(sent('/Payments').some((c) => c.body.Payments[0].CreditNote && c.body.Payments[0].Account.AccountID === 'acc-090')).toBe(true);
     const c2 = await cardBooking(); await settle();
     await cancelConfirmedBooking(c2.id, c2.bookerId, { refund: false, review: true });
     await decideCancellation(c2.id, 'admin', { kind: 'CHARGE' });
@@ -210,7 +211,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     const b = await cardBooking();
     await settle();
     const job = await db.xeroJob.findUniqueOrThrow({ where: { key: `CARD_INVOICE:${b.id}` } });
-    expect([job.status, job.lastError]).toEqual(['FAILED', expect.stringContaining('cannot find an account with code 999')]);
+    expect([job.status, job.lastError]).toEqual(['FAILED', expect.stringContaining('no account with code 999')]);
     await setClearing('090');
     await retryFailedXeroJobs();
     await settle();

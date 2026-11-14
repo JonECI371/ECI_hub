@@ -37,14 +37,18 @@ Already in the starter: database schema, sample data, design tokens, Courses pag
 - [x] **2.6 eLearning enrolment packs.** "Enrolment task with copy fields and Mark enrolled, or email to the provider, per course setting."
 - [x] **2.7 Trainer app.** "Build the four trainer screens (TrainerSessions, TrainerAttendance, TrainerAvailability, TrainerProfile), phone first. Attendance creates the certificate upload task."
 - [x] **2.8 Certificates and expiry reminders.**
+- [ ] **2.9 Admin Add booking (ADM-12).** "Build Add booking in Admin, Bookings: choose a person or booker, course, date and places; pay on account with PO, by card with an emailed payment link, or already paid with a note. A credit or capacity override needs a visible warning, an override box and a reason, and is audited. Same confirmation, Teams invite and Xero entry as a customer booking." Open point: how an already-paid booking appears in Xero.
 
 ## Phase 3: Replace Zoho and automate (gate: Zoho switched off)
+
+Order agreed with Jon on 14 Nov 2026: pipelines and reports first (3.1, 3.2), then SCORM (3.7), then Zoom (3.5). Admin-editable pages with a template per page type (3.9) after testing.
 
 - [ ] **3.1 Contact form and pipelines** (Enquiry, AdminPipeline, Deal model)
 - [ ] **3.2 Reports** (AdminReport, CSV)
 - [ ] **3.3 Email block editor** (EmailTemplate)
 - [ ] **3.4 Free tools template** (Hook)
 - [ ] **3.5 Zoom**
-- [ ] **3.6 Xero API**
+- [x] **3.6 Xero API** (built in Phase 2: card invoices and payments, credit notes, contacts, monthly draft invoices, PO attachments)
 - [ ] **3.7 SCORM hosting and provider APIs**
+- [ ] **3.9 Admin-editable pages**, with an editable template for each page type (homepage, content pages), so wording changes do not need a developer
 - [ ] **3.8 Data migration from SimplyBook and Zoho**, re-runnable with a reconciliation report

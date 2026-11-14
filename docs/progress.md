@@ -12,6 +12,7 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 
 ## 2026-11-14: Jon's decisions
 
+- Admin Add booking added to the plan (2.9) and spec (ADM-12): staff may override a credit limit or a full session, but only with a warning, an override box and a reason, audited. Open point: how already-paid bookings show in Xero.
 - Admin approval ceiling stays at £5,000 (Settings, Super Admin can change it).
 - Late PO files are attached to the Xero draft invoice automatically on the next scheduled run. PO uploads stay PDF or image only; the checkout says "PDF preferred, photo also works".
 - Wording edits: Jon and Kirsty list them in the shared Doc "Website wording changes"; Claude applies them in one batch and deploys once on request ("apply the wording changes").

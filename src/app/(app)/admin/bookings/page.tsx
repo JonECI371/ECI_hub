@@ -30,39 +30,39 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
     return u.toString();
   };
   const notice: [string, boolean] | null = msg === 'sent' ? [`Email sent to ${n} ${n === '1' ? 'booker' : 'bookers'}.`, true] : msg === 'none' ? ['Tick at least one booking first.', false] : msg === 'empty' ? ['Add a subject and a message.', false] : null;
-  const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
+  const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink';
   return (
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-1.5 text-xs">Admin › Bookings</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Bookings</h1></div>
-        <a href={`/admin/bookings/export?${qs({})}`} className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Export CSV</a>
+        <a href={`/admin/bookings/export?${qs({})}`} className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Export CSV</a>
       </div>
       <form className="flex flex-wrap items-end gap-3" role="search">
         <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={q} placeholder="Reference, name, email, course" className={`${input} w-[280px] max-w-full`} /></label>
         <label className="flex flex-col gap-1 text-xs font-bold">Status
           <select name="status" defaultValue={status ?? ''} className={input}><option value="">Any status</option>{STATUSES.map((s) => <option key={s} value={s}>{s === 'PAYMENT_PENDING' ? 'Not paid (checkout open)' : STATUS_LABEL[s]}</option>)}<option value="EXPIRED">Expired checkouts</option></select>
         </label>
-        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
+        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Search</button>
         {(q || status) && <Link href="/admin/bookings" className="inline-flex min-h-11 items-center text-sm">Clear</Link>}
       </form>
       {notice && <p role={notice[1] ? 'status' : 'alert'} className={`rounded-control px-4 py-3 text-sm font-semibold ${notice[1] ? 'bg-cyan-soft text-ink' : 'bg-bad-bg text-bad-fg'}`}>{notice[0]}</p>}
       <form id="bulk" action={emailBookers} />
-      <details className="rounded-card bg-white px-6 py-4 shadow-card">
+      <details className="rounded-card bg-card px-6 py-4 shadow-card">
         <summary className="min-h-11 cursor-pointer py-2 text-sm font-bold text-ink">Email the bookers of ticked bookings</summary>
         <div className="mt-3 flex flex-col gap-3">
           <input type="hidden" name="back" value={qs({ page: p > 1 ? p : undefined })} form="bulk" />
           <label className="flex flex-col gap-1 text-xs font-bold">Subject<input name="subject" form="bulk" required maxLength={150} className={`${input} w-full`} /></label>
-          <label className="flex flex-col gap-1 text-xs font-bold">Message<textarea name="message" form="bulk" required maxLength={5000} rows={5} className="rounded-control border border-field bg-white px-3 py-2 text-sm font-normal text-ink" /></label>
+          <label className="flex flex-col gap-1 text-xs font-bold">Message<textarea name="message" form="bulk" required maxLength={5000} rows={5} className="rounded-control border border-field bg-card px-3 py-2 text-sm font-normal text-ink" /></label>
           <p className="text-xs">Each booker gets one email, which starts with their name and ends with their booking references. On the test server, emails are logged, not sent.</p>
-          <button type="submit" form="bulk" className="inline-flex min-h-11 w-fit items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Send email</button>
+          <button type="submit" form="bulk" className="inline-flex min-h-11 w-fit items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Send email</button>
         </div>
       </details>
-      <section className="overflow-hidden rounded-card bg-white shadow-card">
+      <section className="overflow-hidden rounded-card bg-card shadow-card">
         <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{total} {total === 1 ? 'booking' : 'bookings'}</p>
         {rows.length === 0 ? <p className="px-6 py-8">No bookings match.</p> : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[900px] text-left text-sm">
-              <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr><th className="w-12 px-4 py-3"><span className="sr-only">Select</span></th>{['Reference', 'Booked', 'Course', 'Date', 'Booker', 'Places', 'Total', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+              <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr><th className="w-12 px-4 py-3"><span className="sr-only">Select</span></th>{['Reference', 'Booked', 'Course', 'Date', 'Booker', 'Places', 'Total', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
               <tbody>
                 {rows.map((b) => (
                   <tr key={b.id} className="border-t border-hairline align-top">

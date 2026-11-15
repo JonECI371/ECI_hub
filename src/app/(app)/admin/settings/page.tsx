@@ -16,8 +16,8 @@ import { xeroSettings } from '@/lib/billing';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Settings', robots: { index: false } };
 
-const card = 'rounded-card bg-white p-6 shadow-card';
-const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink disabled:bg-page';
+const card = 'rounded-card bg-card p-6 shadow-card';
+const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink disabled:bg-page';
 
 export default async function Settings({ searchParams }: { searchParams: Promise<{ msg?: string; detail?: string }> }) {
   const me = await requireAdmin('/admin/settings');
@@ -46,7 +46,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       {msg === 'xeroconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero connected{detail ? `: ${detail}` : ''}. Anything waiting in the queue will now be sent.</p>}
       {msg === 'xerodisconnected' && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">Xero disconnected. Work keeps queuing and is sent when you reconnect.</p>}
       {msg === 'xerocheck' && (
-        <ul role="status" className="flex flex-col gap-1 rounded-control bg-white px-4 py-3 text-sm shadow-card">
+        <ul role="status" className="flex flex-col gap-1 rounded-control bg-card px-4 py-3 text-sm shadow-card">
           {(detail ?? '').split('|').map((l) => <li key={l} className={l.startsWith('OK') ? 'font-semibold text-ink' : 'font-semibold text-bad-fg'}>{l.startsWith('OK') ? '\u2713 ' : '\u2717 '}{l.replace(/^(OK|PROBLEM): /, '')}</li>)}
         </ul>
       )}
@@ -77,7 +77,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <form action={saveSubjects}>
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
-              <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Subject', 'Live', 'Places left shown', 'Change or cancel cut-off (hours)', 'Check registrations first'].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr></thead>
+              <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Subject', 'Live', 'Places left shown', 'Change or cancel cut-off (hours)', 'Check registrations first'].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr></thead>
               <tbody>
                 {subjects.map((s) => (
                   <tr key={s.id} className="border-t border-hairline">
@@ -91,20 +91,20 @@ export default async function Settings({ searchParams }: { searchParams: Promise
               </tbody>
             </table>
           </div>
-          {isSuper && <button type="submit" className="mt-4 inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save subjects</button>}
+          {isSuper && <button type="submit" className="mt-4 inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-on-cyan">Save subjects</button>}
         </form>
       </section>
 
       <section className={card} aria-labelledby="ven-h">
         <h2 id="ven-h" className="mb-1 text-lg font-extrabold text-ink">Venues</h2>
         <p className="mb-3 text-sm">Training rooms and client sites used for in-person dates, with directions sent once the address is released.</p>
-        <Link href="/admin/venues" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage venues</Link>
+        <Link href="/admin/venues" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Manage venues</Link>
       </section>
 
       <section className={card} aria-labelledby="users-h">
         <h2 id="users-h" className="mb-1 text-lg font-extrabold text-ink">Admin users</h2>
         <p className="mb-3 text-sm">{staff} staff {staff === 1 ? 'account' : 'accounts'}. Add staff, change roles and reset authenticators in People.</p>
-        <Link href="/admin/people?show=staff" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">Manage staff in People</Link>
+        <Link href="/admin/people?show=staff" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Manage staff in People</Link>
       </section>
 
       <section id="xero" className={card} aria-labelledby="xero-h">
@@ -119,10 +119,10 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {xq.lastError && <p className="mb-3 rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">Last problem: {xq.lastError}</p>}
         {isSuper ? (
           <div className="flex flex-wrap gap-2">
-            {!xs.connected && <a href="/admin/xero/connect" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink no-underline">Connect Xero</a>}
-            {xs.connected && <form action={checkXeroSetupAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Check Xero setup</button></form>}
-            {xs.connected && <form action={retryXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Send now and retry failed</button></form>}
-            {xs.connected && <form action={disconnectXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 text-sm font-bold text-ink">Disconnect</button></form>}
+            {!xs.connected && <a href="/admin/xero/connect" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-on-cyan no-underline">Connect Xero</a>}
+            {xs.connected && <form action={checkXeroSetupAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-5 text-sm font-bold text-ink">Check Xero setup</button></form>}
+            {xs.connected && <form action={retryXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-5 text-sm font-bold text-ink">Send now and retry failed</button></form>}
+            {xs.connected && <form action={disconnectXeroAction}><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-5 text-sm font-bold text-ink">Disconnect</button></form>}
           </div>
         ) : <p className="text-sm">Only a Super Admin can connect Xero.</p>}
       </section>
@@ -144,10 +144,10 @@ export default async function Settings({ searchParams }: { searchParams: Promise
             })}
             <p className="text-xs">Leave a row blank to skip it. The last tier must be 0 days (anything later than the other tiers).</p>
             <label className="flex items-center gap-2 text-sm font-bold text-ink">Late cancellation window (hours before the start)<input name="lateHours" type="number" min={0} max={168} defaultValue={policy.lateHours} className={`${input} w-24`} /></label>
-            <label className="flex flex-col gap-1 text-sm font-bold text-ink">Opening wording on the public terms<textarea name="intro" rows={3} defaultValue={policy.intro} className="rounded-control border border-field bg-white px-3 py-2 text-sm font-normal" /></label>
+            <label className="flex flex-col gap-1 text-sm font-bold text-ink">Opening wording on the public terms<textarea name="intro" rows={3} defaultValue={policy.intro} className="rounded-control border border-field bg-card px-3 py-2 text-sm font-normal" /></label>
           </fieldset>
           <div className="rounded-control bg-page p-4 text-sm"><p className="mb-1 font-bold text-ink">What customers will read</p><ul className="list-disc pl-5">{policyLines(policy).map((l) => <li key={l}>{l}</li>)}</ul></div>
-          {isSuper && <div><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save cancellation policy</button></div>}
+          {isSuper && <div><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-on-cyan">Save cancellation policy</button></div>}
         </form>
       </section>
 
@@ -164,7 +164,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Xero tax code (live connection)<input name="taxCode" defaultValue={xero.taxCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">The code, not the name: OUTPUT2 is 20% (VAT on Income) in UK organisations.</span></label>
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Stripe clearing account code<input name="stripeClearingCode" defaultValue={xero.stripeClearingCode} disabled={!isSuper} className={input} /><span className="text-xs font-normal">The Xero account that card payments are recorded against. Needed before card bookings can be sent.</span></label>
           <label className="flex flex-col gap-1 text-sm font-bold text-ink">Invoice number prefix<input name="invoicePrefix" defaultValue={xero.invoicePrefix} disabled={!isSuper} className={input} /><span className="text-xs font-normal">Used until you enter Xero&apos;s own invoice number.</span></label>
-          {isSuper && <div className="sm:col-span-3"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-ink">Save credit and Xero settings</button></div>}
+          {isSuper && <div className="sm:col-span-3"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 text-sm font-bold text-on-cyan">Save credit and Xero settings</button></div>}
         </form>
       </section>
 

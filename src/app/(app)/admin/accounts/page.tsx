@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Accounts', robots: { index: false } };
 
 const STATUSES = Object.keys(ACCOUNT_STATUS) as AccountStatus[];
-const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
+const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink';
 
 export default async function Accounts({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
   await requireAdmin('/admin/accounts');
@@ -31,15 +31,15 @@ export default async function Accounts({ searchParams }: { searchParams: Promise
       <form className="flex flex-wrap items-end gap-3" role="search">
         <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={q} placeholder="Company, number, accounts email" className={`${input} w-[280px] max-w-full`} /></label>
         <label className="flex flex-col gap-1 text-xs font-bold">Status<select name="status" defaultValue={status ?? ''} className={input}><option value="">Any status</option>{STATUSES.map((s) => <option key={s} value={s}>{ACCOUNT_STATUS[s][1]}</option>)}</select></label>
-        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
+        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Search</button>
         {(q || status) && <Link href="/admin/accounts" className="inline-flex min-h-11 items-center text-sm">Clear</Link>}
       </form>
-      <section className="overflow-hidden rounded-card bg-white shadow-card">
+      <section className="overflow-hidden rounded-card bg-card shadow-card">
         <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{rows.length} {rows.length === 1 ? 'account' : 'accounts'}</p>
         {rows.length === 0 ? <p className="px-6 py-8">No accounts match.</p> : (
           <div className="relative overflow-x-auto">
             <table className="w-full min-w-[820px] text-left text-sm">
-              <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Company', 'Main booker', 'Limit', 'Available', 'Terms', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+              <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Company', 'Main booker', 'Limit', 'Available', 'Terms', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
               <tbody>
                 {rows.map((a) => {
                   const mb = a.members[0]?.person;

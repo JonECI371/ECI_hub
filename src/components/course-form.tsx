@@ -11,10 +11,10 @@ export type CourseFormValues = {
   provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
 };
 
-const input = 'box-border h-[44px] w-full rounded-control border border-field bg-white px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
+const input = 'box-border h-[44px] w-full rounded-control border border-field bg-card px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-line';
 const label = 'flex flex-col gap-1.5 text-sm font-bold text-ink';
 const hint = 'text-[13px] font-normal text-slate';
-const card = 'rounded-card bg-white p-6 shadow-card';
+const card = 'rounded-card bg-card p-6 shadow-card';
 const DELIVERY: [DeliveryType, string, string][] = [
   ['ELEARNING', 'eLearning', 'Self-paced. No dates. Enrol on a provider platform.'],
   ['VIRTUAL_CLASSROOM', 'Virtual classroom', 'Live on Teams or Zoom. Fixed dates and a place limit.'],
@@ -77,7 +77,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
               // eslint-disable-next-line @next/next/no-img-element
               <img src={initial.photoUrl} alt={initial.photoAlt} className="aspect-[3/2] w-full rounded-control object-cover" />
             ) : (
-              <div className="flex aspect-[3/2] w-full items-center justify-center rounded-control bg-[#D9DBDF] text-xs font-bold uppercase tracking-[0.08em] text-slate">No photo yet</div>
+              <div className="flex aspect-[3/2] w-full items-center justify-center rounded-control bg-elearn text-xs font-bold uppercase tracking-[0.08em] text-slate">No photo yet</div>
             )}
             <div className="flex flex-col gap-3">
               <label className={label}>{initial.photoUrl ? 'Replace photo' : 'Upload a photo'}<input name="photo" type="file" accept="image/jpeg,image/png,image/webp" className="text-sm font-normal" {...err('photo')} /><span className={hint}>JPEG, PNG or WebP, up to 5MB.</span><E k="photo" /></label>
@@ -146,7 +146,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label className={label}>Web address<span className="flex items-center gap-1 font-normal"><span className="text-sm">/courses/</span><input name="slug" value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'))} className={input} {...err('slug')} /></span><span className={hint}>Changing this breaks old links. Leave it once a course is live.</span><E k="slug" /></label>
             <label className={label}>Search title <span className={hint}>{seoTitle.length}/60</span><input name="seoTitle" maxLength={60} value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} className={input} /></label>
             <label className={label}>Search description <span className={hint}>{seoDesc.length}/155</span><textarea name="seoDescription" maxLength={155} value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} className="min-h-[72px] rounded-control border border-field px-3 py-2 text-[15px] font-normal" /></label>
-            <div className="rounded-control border border-hairline p-4" aria-label="Google result preview">
+            <div className="rounded-control border border-hairline bg-[#FFFFFF] p-4 text-[#4D5156]" aria-label="Google result preview">
               <p className="text-xs">Preview in Google</p>
               <p className="mt-1 truncate text-[13px] text-[#4D5156]">{siteUrl.replace(/^https?:\/\//, '')} › courses › {slug}</p>
               <p className="truncate text-lg text-[#1A0DAB]">{seoTitle || 'Course name'} | ECI-Hub</p>
@@ -164,7 +164,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label key={val} className="flex cursor-pointer gap-3 rounded-control border border-hairline p-3"><input type="radio" name="status" value={val} defaultChecked={v.status === val} className="mt-1 accent-ink" /><span><span className="block font-bold text-ink">{t}</span><span className="text-[13px]">{d}</span></span></label>
           ))}
         </fieldset>
-        <button type="submit" disabled={pending} className="inline-flex min-h-[52px] items-center justify-center rounded-chip bg-cyan px-5 font-bold text-ink disabled:opacity-60">{pending ? 'Saving…' : 'Save course'}</button>
+        <button type="submit" disabled={pending} className="inline-flex min-h-[52px] items-center justify-center rounded-chip bg-cyan px-5 font-bold text-on-cyan disabled:opacity-60">{pending ? 'Saving…' : 'Save course'}</button>
       </aside>
     </form>
   );

@@ -2,6 +2,36 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Colour tokens as RGB triplets. Light is the public site; .admin-theme is the dark Admin palette (always dark, so staff can tell at a glance). */
+:root {
+  --c-ink: 36 36 36; --c-slate: 66 70 82; --c-page: 243 244 246; --c-card: 255 255 255; --c-card2: 250 250 250; --c-hairline: 227 229 232; --c-field: 138 141 150;
+  --c-cyan-tint: 211 242 233; --c-cyan-soft: 232 248 243; --c-elearn: 230 232 238; --c-chrome: 36 36 36; --c-strong: 36 36 36; --c-strong-fg: 255 255 255; --c-on-cyan: 36 36 36;
+  --c-warn-bg: 255 241 214; --c-warn-fg: 92 59 0; --c-bad-bg: 253 228 220; --c-bad-fg: 138 36 0;
+  --c-warn-line: 255 241 214; --c-bad-line: 253 228 220; --c-ok-line: 232 248 243; --c-bad-solid: 138 36 0;
+}
+.admin-theme, :root:has(.admin-theme) {
+  --c-ink: 241 242 244; --c-slate: 196 200 208; --c-page: 23 24 27; --c-card: 32 34 38; --c-card2: 39 42 47; --c-hairline: 52 55 61; --c-field: 111 116 128;
+  --c-cyan-tint: 30 77 64; --c-cyan-soft: 23 47 41; --c-elearn: 52 55 61; --c-chrome: 16 17 20; --c-strong: 241 242 244; --c-strong-fg: 23 24 27; --c-on-cyan: 11 43 34;
+  /* Ruby (229 72 77) and Burnt orange (240 136 62) are the brand shades; text uses lighter tints of them so small text passes AA. */
+  --c-warn-bg: 65 50 42; --c-warn-fg: 245 154 87; --c-warn-line: 240 136 62; --c-bad-bg: 64 40 44; --c-bad-fg: 242 118 123; --c-bad-line: 229 72 77; --c-ok-line: 46 195 155; --c-bad-solid: 212 63 68;
+  color-scheme: dark;
+}
+:root:has(.admin-theme) { background-color: rgb(var(--c-page)); }
+:where(.admin-theme) textarea { background-color: rgb(var(--c-card)); }
+.admin-theme input[type='checkbox'], .admin-theme input[type='radio'] { accent-color: #2EC39B; }
+.admin-theme .shadow-card { box-shadow: 0 0 0 1px rgb(var(--c-hairline)), 0 8px 24px rgba(0, 0, 0, 0.35); }
+.admin-theme .shadow-lift { box-shadow: 0 0 0 1px rgb(var(--c-hairline)), 0 14px 32px rgba(0, 0, 0, 0.5); }
+/* Printing and saving as PDF (class lists and so on) is always light, on white paper. */
+@media print {
+  .admin-theme, :root:has(.admin-theme) {
+    --c-ink: 36 36 36; --c-slate: 66 70 82; --c-page: 255 255 255; --c-card: 255 255 255; --c-card2: 250 250 250; --c-hairline: 227 229 232; --c-field: 138 141 150;
+    --c-cyan-tint: 211 242 233; --c-cyan-soft: 232 248 243; --c-elearn: 230 232 238; --c-warn-bg: 255 241 214; --c-warn-fg: 92 59 0; --c-bad-bg: 253 228 220; --c-bad-fg: 138 36 0;
+    --c-warn-line: 255 241 214; --c-bad-line: 253 228 220; --c-ok-line: 232 248 243; --c-bad-solid: 138 36 0;
+    color-scheme: light;
+  }
+  .admin-theme .shadow-card, .admin-theme .shadow-lift { box-shadow: none; }
+}
+
 body { @apply bg-page font-sans text-slate antialiased; }
 a { @apply text-ink underline decoration-cyan decoration-2 underline-offset-[3px] hover:text-slate; }
 :focus-visible { outline: 3px solid #2EC39B; outline-offset: 2px; }
@@ -15,4 +45,4 @@ a { @apply text-ink underline decoration-cyan decoration-2 underline-offset-[3px
   background-repeat: no-repeat;
 }
 
-.card-link { @apply block rounded-card bg-white no-underline shadow-card transition hover:-translate-y-px hover:shadow-lift; }
+.card-link { @apply block rounded-card bg-card no-underline shadow-card transition hover:-translate-y-px hover:shadow-lift; }

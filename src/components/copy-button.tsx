@@ -17,7 +17,7 @@ export function CopyButton({ text, label = 'Copy all' }: { text: string; label?:
         }
         setTimeout(() => setState('idle'), 2000);
       }}
-      className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink"
+      className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink"
     >
       <span aria-live="polite">{state === 'ok' ? 'Copied' : state === 'fail' ? 'Copy failed' : label}</span>
     </button>

@@ -23,9 +23,9 @@ const ROLE_LABEL: Record<Role, string> = { DELEGATE: 'Delegate', BOOKER: 'Booker
 const SUBJECTS = ['CompEx', 'EUSR', 'Thames Water', 'Process safety', 'DSEAR', 'Functional safety'];
 const dt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/London' });
 const dtt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
-const input = 'h-11 w-full rounded-control border border-field bg-white px-3 text-sm text-ink';
+const input = 'h-11 w-full rounded-control border border-field bg-card px-3 text-sm text-ink';
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
-const card = 'rounded-card bg-white p-6 shadow-card';
+const card = 'rounded-card bg-card p-6 shadow-card';
 
 export default async function PersonRecord({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> }) {
   const me = await requireAdmin('/admin/people');
@@ -75,9 +75,9 @@ export default async function PersonRecord({ params, searchParams }: { params: P
               {tp.status === 'APPROVED' && tp.approvedAt && <p className="mb-4 text-sm">Approved {dt.format(tp.approvedAt)}{tp.approvedById && actors.get(tp.approvedById) ? ` by ${actors.get(tp.approvedById)}` : ''}.</p>}
               {isSuper ? (
                 <div className="mb-5 flex flex-wrap gap-2">
-                  {tp.status !== 'APPROVED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="APPROVED" /><button type="submit" className={`${btn} bg-cyan text-ink`}>Approve trainer</button></form>}
-                  {tp.status === 'APPROVED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="SUSPENDED" /><button type="submit" className={`${btn} border border-field bg-white text-bad-fg`}>Suspend</button></form>}
-                  {tp.status === 'SUSPENDED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="PENDING" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Back to awaiting approval</button></form>}
+                  {tp.status !== 'APPROVED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="APPROVED" /><button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Approve trainer</button></form>}
+                  {tp.status === 'APPROVED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="SUSPENDED" /><button type="submit" className={`${btn} border border-field bg-card text-bad-fg`}>Suspend</button></form>}
+                  {tp.status === 'SUSPENDED' && <form action={setTrainerStatus}>{hidden}<input type="hidden" name="status" value="PENDING" /><button type="submit" className={`${btn} border border-field bg-card text-ink`}>Back to awaiting approval</button></form>}
                 </div>
               ) : tp.status === 'PENDING' && <p className="mb-5 rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">A Super Admin approves trainers after checking their qualifications.</p>}
 
@@ -88,7 +88,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
                 </fieldset>
                 <label className="flex flex-col gap-1 text-xs font-bold">Based in<input name="homeBase" defaultValue={tp.homeBase ?? ''} className={input} /></label>
                 <label className="flex flex-col gap-1 text-xs font-bold">Employment<select name="employment" defaultValue={tp.employment ?? ''} className={input}><option value="">Not set</option><option value="EMPLOYED">Employed</option><option value="ASSOCIATE">Associate (freelance)</option></select></label>
-                <div className="sm:col-span-2"><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save trainer details</button></div>
+                <div className="sm:col-span-2"><button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save trainer details</button></div>
               </form>
 
               <h3 className="mb-2 font-bold text-ink">Qualifications</h3>
@@ -96,7 +96,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
               {quals.length === 0 ? <p className="mb-4 text-sm">No qualifications recorded yet.</p> : (
                 <div className="relative mb-4 overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-sm">
-                    <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Qualification', 'Issued by', 'Expires', 'Status', 'Certificate', ''].map((h, i) => <th key={i} className="px-3 py-2">{h}</th>)}</tr></thead>
+                    <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Qualification', 'Issued by', 'Expires', 'Status', 'Certificate', ''].map((h, i) => <th key={i} className="px-3 py-2">{h}</th>)}</tr></thead>
                     <tbody>
                       {quals.map((q) => {
                         const st = qualState(q);
@@ -123,7 +123,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
                   <label className="flex flex-col gap-1 text-xs font-bold">Issued by<input name="issuer" className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Expires (leave empty if it does not)<input name="expiresAt" type="date" className={input} /></label>
                   <label className="flex flex-col gap-1 text-xs font-bold">Certificate (PDF or image, optional)<input name="file" type="file" accept="application/pdf,image/jpeg,image/png,image/webp" className="text-sm font-normal" /></label>
-                  <div className="sm:col-span-2"><button type="submit" className={`${btn} bg-cyan text-ink`}>Add qualification</button></div>
+                  <div className="sm:col-span-2"><button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Add qualification</button></div>
                 </form>
               </details>
 
@@ -136,7 +136,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
             </section>
           )}
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="bk-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="bk-h">
             <h2 id="bk-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Bookings</h2>
             {made.length + attending.length === 0 ? <p className="px-6 py-6 text-sm">No bookings.</p> : (
               <ul>
@@ -146,7 +146,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
             )}
           </section>
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="hist-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="hist-h">
             <h2 id="hist-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">History</h2>
             {history.length === 0 ? <p className="px-6 py-6 text-sm">No changes recorded.</p> : (
               <ul>{history.map((h) => <li key={h.id} className="flex flex-wrap justify-between gap-2 border-b border-hairline px-6 py-2.5 text-sm last:border-0"><span className="font-semibold text-ink">{h.action.toLowerCase().replace(/_/g, ' ')}{h.recordId !== id ? ` (${h.recordType.toLowerCase()})` : ''}</span><span>{h.actorId ? actors.get(h.actorId) ?? 'Someone' : 'System'} · {dtt.format(h.createdAt)}</span></li>)}</ul>
@@ -164,7 +164,7 @@ export default async function PersonRecord({ params, searchParams }: { params: P
               <label className="flex flex-col gap-1 text-xs font-bold">Mobile<input name="mobile" defaultValue={p.mobile ?? ''} className={input} /></label>
               <label className="flex flex-col gap-1 text-xs font-bold">Employer<input name="employer" defaultValue={p.employer ?? ''} className={input} /></label>
               <p className="text-xs">Email: {p.email}. Created {dt.format(p.createdAt)}.</p>
-              <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save details</button>
+              <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save details</button>
             </form>
           </section>
 
@@ -177,12 +177,12 @@ export default async function PersonRecord({ params, searchParams }: { params: P
                 {(['ADMIN', 'SUPER_ADMIN', 'TRAINER', 'BOOKER'] as Role[]).map((r) => (
                   <label key={r} className="flex min-h-11 items-center gap-3 text-sm text-ink"><input type="checkbox" name={`role_${r}`} defaultChecked={p.roles.includes(r)} className="size-5 accent-ink" />{ROLE_LABEL[r]}{r === 'SUPER_ADMIN' && <span className="text-xs text-slate">(includes Admin)</span>}</label>
                 ))}
-                <button type="submit" className={`${btn} bg-cyan text-ink`}>Save roles</button>
+                <button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Save roles</button>
               </form>
               {staff && (
                 <form action={resetAuthenticator}>
                   {hidden}
-                  <button type="submit" className={`${btn} w-full border border-field bg-white text-ink`}>Reset authenticator (lost phone)</button>
+                  <button type="submit" className={`${btn} w-full border border-field bg-card text-ink`}>Reset authenticator (lost phone)</button>
                 </form>
               )}
             </section>

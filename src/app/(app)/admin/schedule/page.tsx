@@ -16,7 +16,7 @@ const parts = (d: Date) => {
   const g = (t: string) => Number(p.find((x) => x.type === t)!.value);
   return { y: g('year'), m: g('month'), d: g('day') };
 };
-const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
+const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink';
 
 type View = 'month' | 'week' | 'day';
 const DAY = 86400000;
@@ -63,7 +63,7 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
   const prev = view === 'month' ? `${ym(y, m - 1)}-01` : iso(anchor - (view === 'week' ? 7 : 1) * DAY);
   const next = view === 'month' ? `${ym(y, m + 1)}-01` : iso(anchor + (view === 'week' ? 7 : 1) * DAY);
   const q = (extra: Record<string, string | undefined>) => { const u = new URLSearchParams(); for (const [k, v] of Object.entries({ view: view === 'month' ? undefined : view, date: iso(anchor), trainer: sp.trainer, ...extra })) if (v) u.set(k, v); return `/admin/schedule?${u}`; };
-  const pill = (s: (typeof inRange)[number]) => `block rounded-chip px-1.5 py-1 text-[11px] font-bold leading-tight no-underline ${clash.has(s.id) ? 'bg-bad-bg text-bad-fg' : s.status === 'PUBLISHED' ? (s.course.deliveryType === 'IN_PERSON' ? 'bg-ink text-white hover:text-white' : 'bg-cyan-tint text-ink') : 'border border-dashed border-field bg-white text-slate'}`;
+  const pill = (s: (typeof inRange)[number]) => `block rounded-chip px-1.5 py-1 text-[11px] font-bold leading-tight no-underline ${clash.has(s.id) ? 'bg-bad-bg text-bad-fg' : s.status === 'PUBLISHED' ? (s.course.deliveryType === 'IN_PERSON' ? 'bg-strong text-strong-fg hover:text-white' : 'bg-cyan-tint text-ink') : 'border border-dashed border-field bg-card text-slate'}`;
   const sub = (s: (typeof inRange)[number]) => `${fmtTime(s.startsAt)} · ${s.capacity - (left.get(s.id) ?? 0)}/${s.capacity}${(left.get(s.id) ?? 0) <= 0 ? ' FULL' : ''}${s.trainer ? ` · ${s.trainer.firstName}` : ' · no trainer'}${s.status !== 'PUBLISHED' ? ' · draft' : ''}`;
 
   return (
@@ -73,12 +73,12 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
         <form className="flex items-end gap-2">
           <input type="hidden" name="date" value={iso(anchor)} />{view !== 'month' && <input type="hidden" name="view" value={view} />}
           <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainer" defaultValue={sp.trainer ?? ''} className={input}><option value="">All trainers</option>{trainers.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}</select></label>
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink">Filter</button>
+          <button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink">Filter</button>
         </form>
       </div>
 
       {sp.new && /^\d{4}-\d{2}-\d{2}$/.test(sp.new) && (
-        <section className="rounded-card bg-white p-6 shadow-card" aria-labelledby="new-h">
+        <section className="rounded-card bg-card p-6 shadow-card" aria-labelledby="new-h">
           <h2 id="new-h" className="mb-3 text-lg font-extrabold text-ink">New session on {new Date(`${sp.new}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
           <form action={addSession} className="grid gap-3 sm:grid-cols-4">
             <input type="hidden" name="date" value={sp.new} />
@@ -88,12 +88,12 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
             <label className="flex flex-col gap-1 text-xs font-bold">Last day <span className="font-normal">(blank = course length)</span><input type="date" name="lastDay" className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={sp.trainer ?? ''} className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
             <label className="flex min-h-11 items-center gap-2 self-end text-sm text-ink"><input type="checkbox" name="publish" className="size-5 accent-ink" />Publish now</label>
-            <div className="flex items-end gap-2"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink">Add session</button><Link href={q({ new: undefined })} className="inline-flex min-h-11 items-center text-sm">Cancel</Link></div>
+            <div className="flex items-end gap-2"><button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-on-cyan">Add session</button><Link href={q({ new: undefined })} className="inline-flex min-h-11 items-center text-sm">Cancel</Link></div>
           </form>
         </section>
       )}
 
-      <section className="overflow-hidden rounded-card bg-white shadow-card">
+      <section className="overflow-hidden rounded-card bg-card shadow-card">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-5 py-4">
           <div className="flex items-center gap-3">
             <Link href={q({ date: prev })} aria-label={`Previous ${view}`} className="inline-flex size-11 items-center justify-center rounded-control border border-field text-ink no-underline">←</Link>
@@ -101,21 +101,21 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
             <Link href={q({ date: next })} aria-label={`Next ${view}`} className="inline-flex size-11 items-center justify-center rounded-control border border-field text-ink no-underline">→</Link>
           </div>
           <nav aria-label="Calendar view" className="flex rounded-control border border-field p-0.5">
-            {(['month', 'week', 'day'] as View[]).map((v) => <Link key={v} href={q({ view: v === 'month' ? undefined : v })} aria-current={v === view ? 'page' : undefined} className={`inline-flex min-h-10 items-center rounded-[6px] px-4 text-sm font-bold capitalize no-underline ${v === view ? 'bg-ink text-white hover:text-white' : 'text-ink'}`}>{v}</Link>)}
+            {(['month', 'week', 'day'] as View[]).map((v) => <Link key={v} href={q({ view: v === 'month' ? undefined : v })} aria-current={v === view ? 'page' : undefined} className={`inline-flex min-h-10 items-center rounded-[6px] px-4 text-sm font-bold capitalize no-underline ${v === view ? 'bg-strong text-strong-fg hover:text-white' : 'text-ink'}`}>{v}</Link>)}
           </nav>
         </div>
         {clash.size > 0 && <p role="alert" className="bg-bad-bg px-5 py-3 text-sm font-semibold text-bad-fg">{clash.size} sessions clash: the same trainer is booked at the same time. They are marked in red.</p>}
         {view === 'month' && (
         <div className="relative overflow-x-auto">
           <div className="min-w-[860px]">
-            <div className="grid grid-cols-7 border-b border-hairline bg-[#FAFAFA]">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d} className="p-2.5 text-xs font-extrabold uppercase tracking-[0.06em]">{d}</span>)}</div>
-            <div className="grid grid-cols-7 gap-px bg-[#E6E6E6]">
+            <div className="grid grid-cols-7 border-b border-hairline bg-card2">{['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((d) => <span key={d} className="p-2.5 text-xs font-extrabold uppercase tracking-[0.06em]">{d}</span>)}</div>
+            <div className="grid grid-cols-7 gap-px bg-hairline">
               {Array.from({ length: cells }, (_, i) => {
                 const d = i - firstDow + 1;
                 const ok = d >= 1 && d <= days;
                 const key = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
                 return (
-                  <div key={i} className={`min-h-[120px] p-2 ${ok ? 'bg-white' : 'bg-page'}`}>
+                  <div key={i} className={`min-h-[120px] p-2 ${ok ? 'bg-card' : 'bg-page'}`}>
                     {ok && (
                       <div className="mb-1.5 flex items-center justify-between">
                         <span className="text-[13px] font-bold text-ink">{d}</span>
@@ -139,12 +139,12 @@ export default async function Schedule({ searchParams }: { searchParams: Promise
         )}
         {view === 'week' && (
           <div className="relative overflow-x-auto">
-            <div className="grid min-w-[860px] grid-cols-7 gap-px bg-[#E6E6E6]">
+            <div className="grid min-w-[860px] grid-cols-7 gap-px bg-hairline">
               {Array.from({ length: 7 }, (_, i) => {
                 const t = weekStart + i * DAY;
                 const key = iso(t);
                 return (
-                  <div key={key} className="min-h-[360px] bg-white p-2">
+                  <div key={key} className="min-h-[360px] bg-card p-2">
                     <div className="mb-2 flex items-center justify-between">
                       <Link href={q({ view: 'day', date: key })} className="text-[13px] font-bold">{fmt({ weekday: 'short', day: 'numeric', month: 'short' }, t)}</Link>
                       <Link href={q({ new: key })} aria-label={`Add a session on ${fmt({ day: 'numeric', month: 'long' }, t)}`} className="flex size-7 items-center justify-center rounded-chip text-slate no-underline hover:bg-page">+</Link>

@@ -20,12 +20,12 @@ export default async function AdminCourses() {
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-1.5 text-xs">Admin › Courses</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Courses</h1></div>
-        <Link href="/admin/courses/new" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink no-underline">New course</Link>
+        <Link href="/admin/courses/new" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-on-cyan no-underline">New course</Link>
       </div>
-      <section className="overflow-hidden rounded-card bg-white shadow-card">
+      <section className="overflow-hidden rounded-card bg-card shadow-card">
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[820px] text-left text-sm">
-            <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Course', 'Subject', 'Delivery', 'Price', 'Next date', 'Upcoming', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+            <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Course', 'Subject', 'Delivery', 'Price', 'Next date', 'Upcoming', 'Status'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
             <tbody>
               {courses.map((c) => (
                 <tr key={c.id} className="border-t border-hairline">

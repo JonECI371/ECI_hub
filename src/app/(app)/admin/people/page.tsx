@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: 'People', robots: { index: false } };
 const PER_PAGE = 30;
 const FILTERS: [string, string][] = [['', 'Everyone'], ['staff', 'Staff'], ['TRAINER', 'Trainers'], ['pending', 'Trainers awaiting approval'], ['BOOKER', 'Bookers'], ['DELEGATE', 'Delegates']];
 const ROLE_LABEL: Record<Role, string> = { DELEGATE: 'Delegate', BOOKER: 'Booker', TRAINER: 'Trainer', ADMIN: 'Admin', SUPER_ADMIN: 'Super Admin' };
-const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
+const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink';
 
 export default async function People({ searchParams }: { searchParams: Promise<{ q?: string; show?: string; page?: string; msg?: string }> }) {
   const me = await requireAdmin('/admin/people');
@@ -51,14 +51,14 @@ export default async function People({ searchParams }: { searchParams: Promise<{
       <form className="flex flex-wrap items-end gap-3" role="search">
         <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={term} placeholder="Name, email or employer" className={`${input} w-[260px] max-w-full`} /></label>
         <label className="flex flex-col gap-1 text-xs font-bold">Show<select name="show" defaultValue={show} className={input}>{FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
+        <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Search</button>
       </form>
 
-      <section className="overflow-hidden rounded-card bg-white shadow-card">
+      <section className="overflow-hidden rounded-card bg-card shadow-card">
         <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{total} {total === 1 ? 'person' : 'people'}</p>
         <div className="relative overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Name', 'Email', 'Employer', 'Roles', 'Bookings', 'Trainer'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+            <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Name', 'Email', 'Employer', 'Roles', 'Bookings', 'Trainer'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
             <tbody>
               {rows.map((r) => {
                 const block = r.roles.includes('TRAINER') ? assignBlock(r) : null;
@@ -86,7 +86,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
       )}
 
       {isSuper && (
-        <section className="rounded-card bg-white p-6 shadow-card" aria-labelledby="add-h">
+        <section className="rounded-card bg-card p-6 shadow-card" aria-labelledby="add-h">
           <h2 id="add-h" className="mb-1 text-lg font-extrabold text-ink">Add a staff member or trainer</h2>
           <p className="mb-4 text-sm">They log in with their email code. Admins and trainers also set up an authenticator app at first log-in. New trainers start as awaiting approval.</p>
           <form action={addStaff} className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5 lg:items-end">
@@ -94,7 +94,7 @@ export default async function People({ searchParams }: { searchParams: Promise<{
             <label className="flex flex-col gap-1 text-xs font-bold">Last name<input name="lastName" className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Email<input name="email" type="email" required className={input} /></label>
             <label className="flex flex-col gap-1 text-xs font-bold">Role<select name="role" className={input}><option value="ADMIN">Admin</option><option value="TRAINER">Trainer</option><option value="SUPER_ADMIN">Super Admin</option></select></label>
-            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink">Add person</button>
+            <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-chip bg-cyan px-4 text-sm font-bold text-on-cyan">Add person</button>
           </form>
         </section>
       )}

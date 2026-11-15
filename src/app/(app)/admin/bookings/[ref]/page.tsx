@@ -20,7 +20,7 @@ const MSG: Record<string, [string, boolean]> = {
 const dt = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
 const TONE = { CONFIRMED: 'soft', PAYMENT_PENDING: 'warn', COMPLETED: 'grey', CANCELLED: 'grey' } as const;
 const ATT: Record<string, string> = { DETAILS_MISSING: 'Details missing', INVITED: 'Registration not done', REGISTERED: 'Registered', APPROVED: 'Approved', ATTENDED: 'Attended', NO_SHOW: 'No show', CERTIFIED: 'Certified', CANCELLED: 'Cancelled' };
-const card = 'rounded-card bg-white p-6 shadow-card';
+const card = 'rounded-card bg-card p-6 shadow-card';
 const PAY: Record<string, string> = { succeeded: 'Paid', refunded: 'Refunded', refunded_test: 'Refunded (test mode)', partially_refunded: 'Part refunded' };
 
 export default async function AdminBooking({ params, searchParams }: { params: Promise<{ ref: string }>; searchParams: Promise<{ msg?: string }> }) {
@@ -61,7 +61,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
             </dl>
           </section>
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="att-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="att-h">
             <h2 id="att-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Attendees</h2>
             <ul>
               {b.attendees.map((a, i) => (
@@ -73,14 +73,14 @@ export default async function AdminBooking({ params, searchParams }: { params: P
             </ul>
           </section>
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="pay-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="pay-h">
             <h2 id="pay-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Payments</h2>
             {b.payments.length === 0 ? <p className="px-6 py-6 text-sm">{b.method === 'ACCOUNT' ? 'On account: billed on the monthly statement.' : 'No payment yet.'}</p> : (
               <ul>{b.payments.map((p) => <li key={p.id} className="flex flex-wrap justify-between gap-2 border-b border-hairline px-6 py-3 text-sm last:border-0"><span className="font-bold text-ink">{gbp(p.amountPence)} · {PAY[p.status] ?? p.status}</span><span>{p.refundedPence ? `${gbp(p.refundedPence)} refunded · ` : ''}{dt.format(p.createdAt)}</span></li>)}</ul>
             )}
           </section>
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="hist-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="hist-h">
             <h2 id="hist-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">History</h2>
             {history.length === 0 ? <p className="px-6 py-6 text-sm">No changes recorded.</p> : (
               <ul>{history.map((h) => <li key={h.id} className="flex flex-wrap justify-between gap-2 border-b border-hairline px-6 py-2.5 text-sm last:border-0"><span className="font-semibold text-ink">{h.action.toLowerCase().replace(/_/g, ' ')}</span><span>{dt.format(h.createdAt)}</span></li>)}</ul>
@@ -96,7 +96,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
               <form action={adminCancelBooking} className="flex flex-col gap-3">
                 <input type="hidden" name="ref" value={b.reference} />
                 <label className="flex flex-col gap-1 text-sm font-bold text-ink">Reason (included in the email)
-                  <textarea name="reason" required maxLength={200} rows={3} className="rounded-control border border-field bg-white px-3 py-2 text-sm font-normal" />
+                  <textarea name="reason" required maxLength={200} rows={3} className="rounded-control border border-field bg-card px-3 py-2 text-sm font-normal" />
                 </label>
                 {b.method === 'ACCOUNT' && (
                   <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" name="refund" defaultChecked className="h-5 w-5" />Take {gbp(b.totalPence)} off the company statement</label>
@@ -105,7 +105,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
                   <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" name="refund" defaultChecked className="h-5 w-5" />Refund {gbp(paid)} to the card</label>
                 )}
                 <label className="flex min-h-11 items-center gap-3 text-sm"><input type="checkbox" name="confirm" required className="h-5 w-5" />I want to cancel {b.reference}</label>
-                <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-chip bg-bad-fg px-4 text-sm font-bold text-white">Cancel booking</button>
+                <button type="submit" className="inline-flex min-h-11 items-center justify-center rounded-chip bg-bad-solid px-4 text-sm font-bold text-white">Cancel booking</button>
               </form>
             </section>
           )}

@@ -53,12 +53,12 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
         <div><p className="mb-1.5 text-xs"><Link href="/admin/tasks">Tasks</Link> › Done</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Done tasks</h1></div>
         <form className="flex flex-wrap items-end gap-3" role="search">
           <input type="hidden" name="view" value="done" />
-          <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={term} placeholder="Name, course, reference" className="h-11 w-[280px] max-w-full rounded-control border border-field bg-white px-3 text-sm text-ink" /></label>
-          <label className="flex flex-col gap-1 text-xs font-bold">Type<select name="type" defaultValue={filter ?? ''} className="h-11 rounded-control border border-field bg-white px-3 text-sm text-ink"><option value="">All types</option>{Object.entries(TASK_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-          <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-ink px-5 text-sm font-bold text-white">Search</button>
+          <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={term} placeholder="Name, course, reference" className="h-11 w-[280px] max-w-full rounded-control border border-field bg-card px-3 text-sm text-ink" /></label>
+          <label className="flex flex-col gap-1 text-xs font-bold">Type<select name="type" defaultValue={filter ?? ''} className="h-11 rounded-control border border-field bg-card px-3 text-sm text-ink"><option value="">All types</option>{Object.entries(TASK_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Search</button>
           {(term || filter) && <Link href="/admin/tasks?view=done" className="inline-flex min-h-11 items-center text-sm">Clear all filters</Link>}
         </form>
-        <section className="overflow-hidden rounded-card bg-white shadow-card">
+        <section className="overflow-hidden rounded-card bg-card shadow-card">
           <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{total} done {total === 1 ? 'task' : 'tasks'}, newest first</p>
           {rows.length === 0 ? <p className="px-6 py-8">No done tasks match.</p> : (
             <ul>{rows.map((r) => <li key={r.id} className="flex flex-wrap justify-between gap-2 border-b border-hairline px-6 py-3 text-sm last:border-0"><span><span className="block text-xs font-bold uppercase tracking-[0.08em]">{TASK_LABEL[r.type]}</span><span className="font-bold text-ink">{r.title}</span>{r.detail && <span className="block text-xs">{r.detail}</span>}</span><span className="text-right text-xs">{r.doneAt ? when.format(r.doneAt) : '-'}<span className="block">{r.status === 'DISMISSED' ? 'Dismissed' : 'Done'}{r.assigneeId ? ` by ${who.get(r.assigneeId) ?? 'someone'}` : ''}</span></span></li>)}</ul>
@@ -107,7 +107,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
   const left = await placesLeft(altSessions);
   const total = counts.reduce((n, c) => n + c._count, 0);
   const notice: [string, boolean] | null = msg === 'rule' ? [detail ?? 'That change is not allowed.', false] : msg ? MSG[msg] : null;
-  const pill = (on: boolean) => `inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm no-underline ${on ? 'bg-ink font-bold text-white hover:text-white' : 'border border-hairline bg-white font-semibold text-ink'}`;
+  const pill = (on: boolean) => `inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm no-underline ${on ? 'bg-strong font-bold text-strong-fg hover:text-white' : 'border border-hairline bg-card font-semibold text-ink'}`;
 
   return (
     <>
@@ -130,7 +130,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
           <Link href="/admin/tasks" className="font-bold">Clear all filters</Link>
         </p>
       )}
-      {tasks.length === 0 && <p className="rounded-card bg-white p-8 shadow-card">{filter ? `No open ${TASK_LABEL[filter].toLowerCase()} tasks.${total > 0 ? ` ${total} ${total === 1 ? 'task is' : 'tasks are'} waiting under other types.` : ''} ` : 'Nothing to do here. Done tasks leave the list. '}{filter && total > 0 && <Link href="/admin/tasks" className="font-bold">Show all tasks</Link>}</p>}
+      {tasks.length === 0 && <p className="rounded-card bg-card p-8 shadow-card">{filter ? `No open ${TASK_LABEL[filter].toLowerCase()} tasks.${total > 0 ? ` ${total} ${total === 1 ? 'task is' : 'tasks are'} waiting under other types.` : ''} ` : 'Nothing to do here. Done tasks leave the list. '}{filter && total > 0 && <Link href="/admin/tasks" className="font-bold">Show all tasks</Link>}</p>}
 
       <ul className="flex flex-col gap-4">
         {tasks.map((t) => {
@@ -143,14 +143,14 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             </>
           );
           let body: React.ReactNode = <p className="text-sm">{t.detail}</p>;
-          let actions: React.ReactNode = <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-ink`}>Mark done</button></form>;
+          let actions: React.ReactNode = <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Mark done</button></form>;
 
           if (t.type === 'INTEGRATION_FAILURE' && t.recordType === 'XeroJob') {
             actions = (
               <div className="flex flex-wrap items-center justify-end gap-2">
-                <Link href="/admin/settings#xero" className={`${btn} border border-field bg-white text-ink no-underline`}>Open Xero settings</Link>
-                {isSuper && <form action={retryXeroAction}><button type="submit" className={`${btn} bg-cyan text-ink`}>Retry now</button></form>}
-                <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-white text-ink`}>Mark done</button></form>
+                <Link href="/admin/settings#xero" className={`${btn} border border-field bg-card text-ink no-underline`}>Open Xero settings</Link>
+                {isSuper && <form action={retryXeroAction}><button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Retry now</button></form>}
+                <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-card text-ink`}>Mark done</button></form>
               </div>
             );
           }
@@ -175,7 +175,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             actions = (
               <>
                 <CopyButton text={pack.map(([k, v]) => `${k}: ${v}`).join('\n')} />
-                <form action={markEnrolled}>{hidden}<button type="submit" disabled={!a.registration} className={`${btn} bg-cyan text-ink disabled:opacity-50`}>Mark enrolled</button></form>
+                <form action={markEnrolled}>{hidden}<button type="submit" disabled={!a.registration} className={`${btn} bg-cyan text-on-cyan disabled:opacity-50`}>Mark enrolled</button></form>
               </>
             );
           }
@@ -195,14 +195,14 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             actions = (
               <>
                 <details className="w-full sm:w-auto">
-                  <summary className={`${btn} cursor-pointer list-none border border-field bg-white text-ink [&::-webkit-details-marker]:hidden`}>Ask for changes</summary>
+                  <summary className={`${btn} cursor-pointer list-none border border-field bg-card text-ink [&::-webkit-details-marker]:hidden`}>Ask for changes</summary>
                   <form action={decideRegistration} className="mt-2 flex flex-col gap-2 sm:w-[360px]">
                     {hidden}<input type="hidden" name="decision" value="return" />
                     <label className="text-sm font-bold text-ink">What needs changing?<textarea name="note" required className="mt-1 min-h-[72px] w-full rounded-control border border-field px-3 py-2 font-normal" /></label>
-                    <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Send back to delegate</button>
+                    <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Send back to delegate</button>
                   </form>
                 </details>
-                <form action={decideRegistration}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-ink`}>Approve</button></form>
+                <form action={decideRegistration}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Approve</button></form>
               </>
             );
           }
@@ -239,19 +239,19 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             actions = (
               <>
                 <details className="w-full sm:w-auto">
-                  <summary className={`${btn} cursor-pointer list-none border border-field bg-white text-ink [&::-webkit-details-marker]:hidden`}>Decline</summary>
+                  <summary className={`${btn} cursor-pointer list-none border border-bad-line bg-transparent text-bad-fg [&::-webkit-details-marker]:hidden`}>Decline</summary>
                   <form action={decideAccount} className="mt-2 flex flex-col gap-2 sm:w-[360px]">
                     {hidden}<input type="hidden" name="decision" value="decline" />
                     <label className="text-sm font-bold text-ink">Reason (sent to the main booker)<textarea name="reason" required className="mt-1 min-h-[72px] w-full rounded-control border border-field px-3 py-2 font-normal" /></label>
-                    <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline application</button>
+                    <button type="submit" className={`${btn} border border-bad-line bg-transparent text-bad-fg`}>Decline application</button>
                   </form>
                 </details>
                 <form action={decideAccount} className="flex flex-wrap items-end gap-2">
                   {hidden}<input type="hidden" name="decision" value="approve" />
-                  <label className="flex flex-col gap-1 text-xs font-bold">Credit limit (£)<input name="limit" inputMode="numeric" defaultValue={suggested / 100} required className="h-11 w-28 rounded-control border border-field bg-white px-3 text-sm" /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">Terms (days)<input name="terms" type="number" min={0} max={120} defaultValue={credit.termsDays} className="h-11 w-20 rounded-control border border-field bg-white px-3 text-sm" /></label>
-                  <label className="flex flex-col gap-1 text-xs font-bold">PO numbers<select name="poRule" defaultValue={acc.poRule} className="h-11 rounded-control border border-field bg-white px-3 text-sm">{Object.entries(PO_RULES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
-                  <button type="submit" className={`${btn} bg-cyan text-ink`}>Approve account</button>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Credit limit (£)<input name="limit" inputMode="numeric" defaultValue={suggested / 100} required className="h-11 w-28 rounded-control border border-field bg-card px-3 text-sm" /></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">Terms (days)<input name="terms" type="number" min={0} max={120} defaultValue={credit.termsDays} className="h-11 w-20 rounded-control border border-field bg-card px-3 text-sm" /></label>
+                  <label className="flex flex-col gap-1 text-xs font-bold">PO numbers<select name="poRule" defaultValue={acc.poRule} className="h-11 rounded-control border border-field bg-card px-3 text-sm">{Object.entries(PO_RULES).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+                  <button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Approve account</button>
                 </form>
               </>
             );
@@ -274,8 +274,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             );
             actions = (
               <>
-                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline</button></form>
-                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-ink`}>Approve booker</button></form>
+                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-bad-line bg-transparent text-bad-fg`}>Decline</button></form>
+                <form action={decideBookerTask}>{hidden}<input type="hidden" name="decision" value="approve" /><button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Approve booker</button></form>
               </>
             );
           }
@@ -298,8 +298,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             );
             actions = (
               <>
-                <a href={`/admin/billing/xero/${t.recordId}.csv`} className={`${btn} border border-field bg-white text-ink no-underline`}>Download Xero file</a>
-                <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-ink`}>Imported into Xero</button></form>
+                <a href={`/admin/billing/xero/${t.recordId}.csv`} className={`${btn} border border-field bg-card text-ink no-underline`}>Download Xero file</a>
+                <form action={markDone}>{hidden}<button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Imported into Xero</button></form>
               </>
             );
           }
@@ -319,9 +319,9 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                         {x.status === 'CERTIFIED' ? <span className="text-sm font-bold text-ink">Issued</span> : (
                           <form action={uploadCertificate} encType="multipart/form-data" className="flex flex-wrap items-end gap-2">
                             {hidden}<input type="hidden" name="attendeeId" value={x.id} />
-                            <label className="flex flex-col gap-1 text-xs font-bold">Issued<input type="date" name="issuedAt" defaultValue={issuedDefault} required className="h-11 rounded-control border border-field bg-white px-2 text-sm" /></label>
+                            <label className="flex flex-col gap-1 text-xs font-bold">Issued<input type="date" name="issuedAt" defaultValue={issuedDefault} required className="h-11 rounded-control border border-field bg-card px-2 text-sm" /></label>
                             <label className="flex flex-col gap-1 text-xs font-bold">Certificate<input type="file" name="file" required accept="application/pdf,image/jpeg,image/png,image/webp" className="max-w-[210px] text-xs font-normal" /></label>
-                            <button type="submit" className={`${btn} bg-cyan text-ink`}>Upload</button>
+                            <button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Upload</button>
                           </form>
                         )}
                       </li>
@@ -330,7 +330,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                 )}
               </>
             );
-            actions = <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-white text-ink`}>Done without uploading</button></form>;
+            actions = <form action={markDone}>{hidden}<button type="submit" className={`${btn} border border-field bg-card text-ink`}>Done without uploading</button></form>;
           }
 
           if (t.type === 'CANCELLATION_REVIEW' && b) {
@@ -338,8 +338,8 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             const options = altSessions.filter((x) => x.courseId === b.courseId && x.id !== b.sessionId && (left.get(x.id) ?? 0) >= b.places);
             const pct = sg.chargePercent > 0 && sg.chargePercent < 100 ? sg.chargePercent : 50;
             const pick = (k: string) => (sg.suggested === 'REFUND' ? k === 'REFUND' : sg.suggested === 'PART_CHARGED' ? k === 'PARTIAL' : k === 'CHARGE');
-            const strong = `${btn} bg-cyan text-ink`;
-            const plain = `${btn} border border-field bg-white text-ink`;
+            const strong = `${btn} bg-cyan text-on-cyan`;
+            const plain = `${btn} border border-field bg-card text-ink`;
             body = (
               <>
                 <dl className="grid gap-x-6 gap-y-2 rounded-control bg-page p-4 text-sm sm:grid-cols-2">
@@ -355,10 +355,10 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
                 <div className="flex flex-wrap gap-2">
                   <form action={decideCancellationTask}>{hidden}<input type="hidden" name="kind" value="REFUND" /><button type="submit" className={pick('REFUND') ? strong : plain}>Refund in full{pick('REFUND') ? ' (suggested)' : ''}</button></form>
                   <form action={decideCancellationTask}>{hidden}<input type="hidden" name="kind" value="CHARGE" /><button type="submit" className={pick('CHARGE') ? strong : plain}>Charge in full{pick('CHARGE') ? ' (suggested)' : ''}</button></form>
-                  <form action={decideCancellationTask} className="flex items-center gap-2">{hidden}<input type="hidden" name="kind" value="PARTIAL" /><label className="sr-only" htmlFor={`pc-${t.id}`}>Charge percent</label><input id={`pc-${t.id}`} name="percent" type="number" min={1} max={99} defaultValue={pct} className="h-11 w-20 rounded-control border border-field bg-white px-3 text-sm" /><span className="text-sm">%</span><button type="submit" className={pick('PARTIAL') ? strong : plain}>Part charge{pick('PARTIAL') ? ' (suggested)' : ''}</button></form>
+                  <form action={decideCancellationTask} className="flex items-center gap-2">{hidden}<input type="hidden" name="kind" value="PARTIAL" /><label className="sr-only" htmlFor={`pc-${t.id}`}>Charge percent</label><input id={`pc-${t.id}`} name="percent" type="number" min={1} max={99} defaultValue={pct} className="h-11 w-20 rounded-control border border-field bg-card px-3 text-sm" /><span className="text-sm">%</span><button type="submit" className={pick('PARTIAL') ? strong : plain}>Part charge{pick('PARTIAL') ? ' (suggested)' : ''}</button></form>
                 </div>
-                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="WAIVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Waive the charge: what were the extenuating circumstances?<input name="note" required maxLength={300} className="h-11 rounded-control border border-field bg-white px-3 text-sm font-normal" /></label><button type="submit" className={plain}>Waive and refund in full</button></form>
-                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="MOVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Or move them to another date instead<select name="sessionId" required disabled={!options.length} className="h-11 rounded-control border border-field bg-white px-3 text-sm font-normal">{options.length ? options.map((x) => <option key={x.id} value={x.id}>{fmtSessionDates(x.startsAt, x.endsAt)}, {fmtTime(x.startsAt)} ({left.get(x.id)} left)</option>) : <option>No other dates with room</option>}</select></label><button type="submit" disabled={!options.length} className={`${plain} disabled:opacity-50`}>Move booking</button></form>
+                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="WAIVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Waive the charge: what were the extenuating circumstances?<input name="note" required maxLength={300} className="h-11 rounded-control border border-field bg-card px-3 text-sm font-normal" /></label><button type="submit" className={plain}>Waive and refund in full</button></form>
+                <form action={decideCancellationTask} className="flex flex-wrap items-end gap-2">{hidden}<input type="hidden" name="kind" value="MOVE" /><label className="flex min-w-[240px] flex-1 flex-col gap-1 text-xs font-bold">Or move them to another date instead<select name="sessionId" required disabled={!options.length} className="h-11 rounded-control border border-field bg-card px-3 text-sm font-normal">{options.length ? options.map((x) => <option key={x.id} value={x.id}>{fmtSessionDates(x.startsAt, x.endsAt)}, {fmtTime(x.startsAt)} ({left.get(x.id)} left)</option>) : <option>No other dates with room</option>}</select></label><button type="submit" disabled={!options.length} className={`${plain} disabled:opacity-50`}>Move booking</button></form>
               </div>
             );
           }
@@ -377,21 +377,21 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             );
             actions = (
               <>
-                <form action={decideDateChange}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Decline</button></form>
+                <form action={decideDateChange}>{hidden}<input type="hidden" name="decision" value="decline" /><button type="submit" className={`${btn} border border-bad-line bg-transparent text-bad-fg`}>Decline</button></form>
                 <form action={decideDateChange} className="flex flex-wrap gap-2">
                   {hidden}<input type="hidden" name="decision" value="approve" />
                   <label className="sr-only" htmlFor={`s-${t.id}`}>New date</label>
-                  <select id={`s-${t.id}`} name="sessionId" defaultValue={pref ?? options[0]?.id} required className="h-11 rounded-control border border-field bg-white px-3 text-sm">
+                  <select id={`s-${t.id}`} name="sessionId" defaultValue={pref ?? options[0]?.id} required className="h-11 rounded-control border border-field bg-card px-3 text-sm">
                     {options.map((s) => <option key={s.id} value={s.id}>{fmtSessionDates(s.startsAt, s.endsAt)}, {fmtTime(s.startsAt)} ({left.get(s.id)} left)</option>)}
                   </select>
-                  <button type="submit" disabled={!options.length} className={`${btn} bg-cyan text-ink disabled:opacity-50`}>Move booking</button>
+                  <button type="submit" disabled={!options.length} className={`${btn} bg-cyan text-on-cyan disabled:opacity-50`}>Move booking</button>
                 </form>
               </>
             );
           }
 
           return (
-            <li key={t.id} className="rounded-card bg-white p-6 shadow-card">
+            <li key={t.id} className="rounded-card bg-card p-6 shadow-card">
               <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
                 <div>
                   <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em]">{TASK_LABEL[t.type]}</p>

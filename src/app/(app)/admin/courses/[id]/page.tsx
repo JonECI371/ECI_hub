@@ -25,7 +25,7 @@ const MSG: Record<string, [string, boolean]> = {
   ...Object.fromEntries(Object.entries(SESSION_BLOCK_TEXT).map(([k, t]) => [k, [t, false] as [string, boolean]])),
 };
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
-const input = 'h-11 rounded-control border border-field bg-white px-3 text-sm text-ink';
+const input = 'h-11 rounded-control border border-field bg-card px-3 text-sm text-ink';
 const short = new Intl.DateTimeFormat('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Europe/London' });
 
 export default async function AdminCourse({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ session?: string; msg?: string }> }) {
@@ -60,8 +60,8 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
           <div className="mt-2 flex flex-wrap gap-1.5"><Chip tone={c.status === 'PUBLISHED' ? 'soft' : 'warn'}>{c.status === 'PUBLISHED' ? 'Published' : c.status === 'DRAFT' ? 'Draft' : 'Withdrawn'}</Chip><Chip>{c.subject.name}</Chip><DeliveryChip type={c.deliveryType} /></div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {c.status === 'PUBLISHED' && <Link href={`/courses/${c.slug}`} className={`${btn} border border-field bg-white text-ink no-underline`}>View page</Link>}
-          <Link href={`/admin/courses/${c.id}/edit`} className={`${btn} bg-cyan text-ink no-underline`}>Edit course</Link>
+          {c.status === 'PUBLISHED' && <Link href={`/courses/${c.slug}`} className={`${btn} border border-field bg-card text-ink no-underline`}>View page</Link>}
+          <Link href={`/admin/courses/${c.id}/edit`} className={`${btn} bg-cyan text-on-cyan no-underline`}>Edit course</Link>
         </div>
       </div>
       {notice && <p role="status" className={`rounded-control px-4 py-3 text-sm font-semibold ${notice[1] ? 'bg-cyan-soft text-ink' : 'bg-bad-bg text-bad-fg'}`}>{notice[0]}</p>}
@@ -69,7 +69,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start">
         <div className="flex min-w-0 flex-col gap-6">
           {c.deliveryType !== 'ELEARNING' && (
-            <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="sess-h">
+            <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="sess-h">
               <h2 id="sess-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Sessions</h2>
               {sessions.length === 0 ? <p className="px-6 py-6 text-sm">No sessions yet. Add one below.</p> : (
                 <ul>
@@ -99,20 +99,20 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                   <label className="flex flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" className={input}><option value="">Not yet</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
                   {c.deliveryType === 'IN_PERSON' && <label className="flex flex-col gap-1 text-xs font-bold sm:col-span-2">Venue<select name="venueId" defaultValue={c.defaultVenueId ?? ''} className={input}><option value="">Course default</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}</select></label>}
                   <label className="flex min-h-11 items-center gap-2 text-sm text-ink sm:col-span-2"><input type="checkbox" name="publish" defaultChecked className="size-5 accent-ink" />Publish now (shows on the website)</label>
-                  <button type="submit" className={`${btn} bg-cyan text-ink sm:col-start-3`}>Add session</button>
+                  <button type="submit" className={`${btn} bg-cyan text-on-cyan sm:col-start-3`}>Add session</button>
                 </form>
               </details>
             </section>
           )}
 
-          <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="del-h">
+          <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="del-h">
             <h2 id="del-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">
               {c.deliveryType === 'ELEARNING' ? 'Learners' : 'Delegates'} ({live.length}){selected && c.deliveryType !== 'ELEARNING' && <span className="ml-2 text-sm font-normal">{fmtSessionDates(selected.startsAt, selected.endsAt)}</span>}
             </h2>
             {live.length === 0 ? <p className="px-6 py-6 text-sm">Nobody booked yet.</p> : (
               <div className="relative overflow-x-auto">
                 <table className="w-full min-w-[760px] text-left text-sm">
-                  <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr>{['Delegate', 'Booking', 'Payment', 'Registration', c.deliveryType === 'ELEARNING' ? 'Progress' : 'Needs'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
+                  <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr>{['Delegate', 'Booking', 'Payment', 'Registration', c.deliveryType === 'ELEARNING' ? 'Progress' : 'Needs'].map((h) => <th key={h} className="px-4 py-3">{h}</th>)}</tr></thead>
                   <tbody>
                     {live.map((a) => {
                       const st = attendeeState(a, { ...c, subject: c.subject });
@@ -126,7 +126,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                           <td className="px-4 py-3"><Chip tone={st.tone}>{st.label}</Chip></td>
                           <td className="px-4 py-3 text-xs">{c.deliveryType === 'ELEARNING' ? (
                             a.enrolment?.completedAt ? `Completed ${a.enrolment.completedAt.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`
-                              : a.enrolment?.enrolledAt ? <form action={markCompleted}><input type="hidden" name="attendeeId" value={a.id} /><span className="mb-1 block">Enrolled{a.enrolment.deadline ? `, finish by ${a.enrolment.deadline.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}` : ''}</span><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-3 text-xs font-bold text-ink">Mark completed</button></form>
+                              : a.enrolment?.enrolledAt ? <form action={markCompleted}><input type="hidden" name="attendeeId" value={a.id} /><span className="mb-1 block">Enrolled{a.enrolment.deadline ? `, finish by ${a.enrolment.deadline.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}` : ''}</span><button type="submit" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-3 text-xs font-bold text-ink">Mark completed</button></form>
                               : a.enrolment?.packSentAt ? 'Pack sent to provider' : 'Not enrolled yet'
                           ) : needs || '-'}</td>
                         </tr>
@@ -139,7 +139,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
           </section>
 
           {selected && (
-            <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="wl-h">
+            <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="wl-h">
               <h2 id="wl-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Waitlist ({waitlist.length})</h2>
               {waitlist.length === 0 ? <p className="px-6 py-6 text-sm">Nobody waiting.</p> : (
                 <ol>
@@ -157,7 +157,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
 
         <aside className="flex flex-col gap-6 xl:sticky xl:top-6">
           {selected && c.deliveryType !== 'ELEARNING' && (
-            <section className="rounded-card bg-white p-6 shadow-card" aria-labelledby="sel-h">
+            <section className="rounded-card bg-card p-6 shadow-card" aria-labelledby="sel-h">
               <h2 id="sel-h" className="mb-1 text-lg font-extrabold text-ink">This session</h2>
               <p className="mb-4 text-sm">{fmtSessionDates(selected.startsAt, selected.endsAt)}, {fmtTime(selected.startsAt)} to {fmtTime(selected.endsAt)}</p>
               {selected.status !== 'CANCELLED' ? (
@@ -165,35 +165,35 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                   <form action={updateSession} className="flex items-end gap-2">
                     <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="trainer" />
                     <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Trainer<select name="trainerId" defaultValue={selected.trainerId ?? ''} className={input}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id} value={t.id} disabled={!!t.block}>{t.name}{t.block ? ` (${t.block.toLowerCase()})` : ''}</option>)}</select></label>
-                    <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
+                    <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save</button>
                   </form>
                   <form action={updateSession} className="flex items-end gap-2">
                     <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="capacity" />
                     <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={selected.capacity} className={input} /></label>
-                    <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
+                    <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save</button>
                   </form>
                   {c.deliveryType === 'IN_PERSON' && (
                     <form action={updateSession} className="flex items-end gap-2">
                       <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="venue" />
                       <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Venue<select name="venueId" defaultValue={selected.venueId ?? ''} className={input}><option value="">To be confirmed</option>{venues.map((v) => <option key={v.id} value={v.id}>{v.name}{v.isClientSite ? ' (client site)' : ''}</option>)}</select></label>
-                      <button type="submit" className={`${btn} border border-field bg-white text-ink`}>Save</button>
+                      <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save</button>
                     </form>
                   )}
                   {c.deliveryType === 'IN_PERSON' && <p className="-mt-2 text-xs">Changing the venue emails everyone booked. <Link href="/admin/venues">Manage venues</Link></p>}
-                  <Link href={`/admin/courses/${c.id}/class-list?session=${selected.id}`} className={`${btn} w-full border border-field bg-white text-ink no-underline`}>Class list (print or PDF)</Link>
+                  <Link href={`/admin/courses/${c.id}/class-list?session=${selected.id}`} className={`${btn} w-full border border-field bg-card text-ink no-underline`}>Class list (print or PDF)</Link>
                   {c.deliveryType === 'VIRTUAL_CLASSROOM' && (
                     <div className="rounded-control bg-page p-3 text-sm">
                       <p className="mb-2 font-bold text-ink">Teams meeting</p>
                       {selected.joinUrl ? <p className="mb-2">Invites sent. <a href={selected.joinUrl} target="_blank" rel="noopener noreferrer">Open the Teams link</a></p> : <p className="mb-2">No meeting yet. It is created when the session is published and someone books.</p>}
                       <form action={updateSession}>
                         <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="teams" />
-                        <button type="submit" className={`${btn} w-full border border-field bg-white text-ink`}>{selected.joinUrl ? 'Resend and update invites' : 'Create Teams meeting now'}</button>
+                        <button type="submit" className={`${btn} w-full border border-field bg-card text-ink`}>{selected.joinUrl ? 'Resend and update invites' : 'Create Teams meeting now'}</button>
                       </form>
                     </div>
                   )}
                   <form action={updateSession}>
                     <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value={selected.status === 'PUBLISHED' ? 'unpublish' : 'publish'} />
-                    <button type="submit" className={`${btn} w-full ${selected.status === 'PUBLISHED' ? 'border border-field bg-white text-ink' : 'bg-cyan text-ink'}`}>{selected.status === 'PUBLISHED' ? 'Hide from website' : 'Publish session'}</button>
+                    <button type="submit" className={`${btn} w-full ${selected.status === 'PUBLISHED' ? 'border border-field bg-card text-ink' : 'bg-cyan text-on-cyan'}`}>{selected.status === 'PUBLISHED' ? 'Hide from website' : 'Publish session'}</button>
                   </form>
                   <details>
                     <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-bold text-bad-fg">Cancel this session…</summary>
@@ -201,14 +201,14 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                       <input type="hidden" name="sessionId" value={selected.id} />
                       <p className="text-sm">All bookings on this date are cancelled, card payments refunded and everyone emailed. This cannot be undone.</p>
                       <label className="flex flex-col gap-1 text-xs font-bold">Type the course name to confirm<input name="confirm" autoComplete="off" className={input} /></label>
-                      <button type="submit" className={`${btn} bg-bad-fg text-white`}>Cancel session</button>
+                      <button type="submit" className={`${btn} bg-bad-solid text-white`}>Cancel session</button>
                     </form>
                   </details>
                 </div>
               ) : <p className="text-sm">This session was cancelled.</p>}
             </section>
           )}
-          <section className="rounded-card bg-white p-6 shadow-card" aria-labelledby="det-h">
+          <section className="rounded-card bg-card p-6 shadow-card" aria-labelledby="det-h">
             <h2 id="det-h" className="mb-3 text-lg font-extrabold text-ink">Course details</h2>
             <dl className="flex flex-col gap-2 text-sm">
               {[

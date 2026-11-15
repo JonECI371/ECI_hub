@@ -41,8 +41,8 @@ export default async function AdminHome() {
           <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}, {me.firstName}</h1>
         </div>
         <div className="flex gap-2.5">
-          <Link href="/admin/courses/new" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-4 text-sm font-bold text-ink no-underline">New course</Link>
-          <Link href="/admin/schedule" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-ink no-underline">New session</Link>
+          <Link href="/admin/courses/new" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">New course</Link>
+          <Link href="/admin/schedule" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-4 text-sm font-bold text-on-cyan no-underline">New session</Link>
         </div>
       </div>
 
@@ -57,7 +57,7 @@ export default async function AdminHome() {
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="up-h">
+        <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="up-h">
           <div className="flex items-center justify-between border-b border-hairline px-6 py-4">
             <h2 id="up-h" className="text-lg font-extrabold text-ink">Upcoming courses</h2>
             <Link href="/admin/schedule" className="text-sm font-bold">Open schedule →</Link>
@@ -67,7 +67,7 @@ export default async function AdminHome() {
           ) : (
             <div className="relative overflow-x-auto">
               <table className="w-full min-w-[720px] text-left text-sm">
-                <thead className="bg-[#FAFAFA] text-xs uppercase tracking-[0.06em]"><tr><th className="px-6 py-3">Date</th><th className="px-6 py-3">Course</th><th className="px-6 py-3">Delivery</th><th className="px-6 py-3">Trainer</th><th className="px-6 py-3">Places</th><th className="px-6 py-3">Status</th></tr></thead>
+                <thead className="bg-card2 text-xs uppercase tracking-[0.06em]"><tr><th className="px-6 py-3">Date</th><th className="px-6 py-3">Course</th><th className="px-6 py-3">Delivery</th><th className="px-6 py-3">Trainer</th><th className="px-6 py-3">Places</th><th className="px-6 py-3">Status</th></tr></thead>
                 <tbody>
                   {sessions.map((s) => {
                     const booked = s.capacity - (left.get(s.id) ?? 0);
@@ -92,7 +92,7 @@ export default async function AdminHome() {
           )}
         </section>
 
-        <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="att-h">
+        <section className="overflow-hidden rounded-card bg-card shadow-card" aria-labelledby="att-h">
           <h2 id="att-h" className="border-b border-hairline px-6 py-4 text-lg font-extrabold text-ink">Needs attention</h2>
           {byType.length === 0 ? (
             <p className="px-6 py-6 text-sm">Nothing waiting. The Tasks inbox is clear.</p>

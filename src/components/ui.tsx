@@ -11,7 +11,7 @@ const ICONS: Record<DeliveryType, string> = {
 const TINT: Record<DeliveryType, string> = {
   ELEARNING: 'bg-elearn text-ink',
   VIRTUAL_CLASSROOM: 'bg-cyan-tint text-ink',
-  IN_PERSON: 'bg-ink text-white',
+  IN_PERSON: 'bg-strong text-strong-fg',
 };
 
 export function DeliveryChip({ type }: { type: DeliveryType }) {
@@ -26,23 +26,23 @@ export function DeliveryChip({ type }: { type: DeliveryType }) {
 }
 
 export function Chip({ children, tone = 'soft' }: { children: React.ReactNode; tone?: 'soft' | 'grey' | 'warn' | 'bad' }) {
-  const t = { soft: 'bg-cyan-soft text-ink', grey: 'bg-elearn text-ink', warn: 'bg-warn-bg text-warn-fg', bad: 'bg-bad-bg text-bad-fg' }[tone];
-  return <span className={`inline-block rounded-chip px-2.5 py-1 text-xs font-bold ${t}`}>{children}</span>;
+  const t = { soft: 'bg-cyan-soft text-ink border-ok-line', grey: 'bg-elearn text-ink border-elearn', warn: 'bg-warn-bg text-warn-fg border-warn-line', bad: 'bg-bad-bg text-bad-fg border-bad-line' }[tone];
+  return <span className={`inline-block rounded-chip border px-2.5 py-1 text-xs font-bold ${t}`}>{children}</span>;
 }
 
 type BtnProps = { href?: string; kind?: 'primary' | 'secondary' | 'dark'; children: React.ReactNode } & React.ButtonHTMLAttributes<HTMLButtonElement>;
 export function Button({ href, kind = 'primary', children, className = '', ...rest }: BtnProps) {
   const k = {
-    primary: 'bg-cyan text-ink',
-    secondary: 'bg-white text-ink border border-field',
-    dark: 'bg-ink text-white',
+    primary: 'bg-cyan text-on-cyan',
+    secondary: 'bg-card text-ink border border-field',
+    dark: 'bg-strong text-strong-fg',
   }[kind];
   const cls = `inline-flex min-h-11 items-center justify-center gap-2 rounded-control px-5 text-sm font-bold no-underline ${k} ${className}`;
   return href ? <Link href={href} className={cls}>{children}</Link> : <button className={cls} {...rest}>{children}</button>;
 }
 
 export function Card({ children, className = '' }: { children: React.ReactNode; className?: string }) {
-  return <section className={`rounded-card bg-white p-6 shadow-card ${className}`}>{children}</section>;
+  return <section className={`rounded-card bg-card p-6 shadow-card ${className}`}>{children}</section>;
 }
 
 /** Dark hero band with the zone-hatch motif. Marketing and confirmation pages only. */

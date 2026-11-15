@@ -5,16 +5,24 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Colours are CSS variables (see globals.css) so the Admin area can run a dark palette. Light values are the design system v2 originals.
       colors: {
-        ink: '#242424',
-        slate: '#424652',
-        cyan: { DEFAULT: '#2EC39B', tint: '#D3F2E9', soft: '#E8F8F3' },
-        page: '#F3F4F6',
-        hairline: '#E3E5E8',
-        field: '#8A8D96',
-        elearn: '#E6E8EE',
-        warn: { bg: '#FFF1D6', fg: '#5C3B00' },
-        bad: { bg: '#FDE4DC', fg: '#8A2400' },
+        ink: 'rgb(var(--c-ink) / <alpha-value>)',
+        slate: 'rgb(var(--c-slate) / <alpha-value>)',
+        cyan: { DEFAULT: '#2EC39B', tint: 'rgb(var(--c-cyan-tint) / <alpha-value>)', soft: 'rgb(var(--c-cyan-soft) / <alpha-value>)' },
+        page: 'rgb(var(--c-page) / <alpha-value>)',
+        card: 'rgb(var(--c-card) / <alpha-value>)',
+        card2: 'rgb(var(--c-card2) / <alpha-value>)',
+        hairline: 'rgb(var(--c-hairline) / <alpha-value>)',
+        field: 'rgb(var(--c-field) / <alpha-value>)',
+        elearn: 'rgb(var(--c-elearn) / <alpha-value>)',
+        chrome: 'rgb(var(--c-chrome) / <alpha-value>)', // side menu and other always-dark bands
+        strong: 'rgb(var(--c-strong) / <alpha-value>)', // fill of dark buttons and selected pills (flips light in Admin)
+        'strong-fg': 'rgb(var(--c-strong-fg) / <alpha-value>)',
+        'on-cyan': 'rgb(var(--c-on-cyan) / <alpha-value>)', // text on the green accent: always dark
+        warn: { bg: 'rgb(var(--c-warn-bg) / <alpha-value>)', fg: 'rgb(var(--c-warn-fg) / <alpha-value>)', line: 'rgb(var(--c-warn-line) / <alpha-value>)' },
+        bad: { bg: 'rgb(var(--c-bad-bg) / <alpha-value>)', fg: 'rgb(var(--c-bad-fg) / <alpha-value>)', line: 'rgb(var(--c-bad-line) / <alpha-value>)', solid: 'rgb(var(--c-bad-solid) / <alpha-value>)' },
+        'ok-line': 'rgb(var(--c-ok-line) / <alpha-value>)',
       },
       fontFamily: { sans: ['Mulish', 'Avenir', 'system-ui', 'sans-serif'] },
       borderRadius: { chip: '4px', control: '6px', card: '8px' },

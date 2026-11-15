@@ -21,7 +21,7 @@ export function SideNav({ items }: { items: NavItem[] }) {
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={it.icon} /></svg>
               {it.label}
-              {it.badge ? <span className="ml-auto rounded-full bg-cyan px-[7px] py-0.5 text-[11px] font-extrabold text-ink">{it.badge}</span> : null}
+              {it.badge ? <span className="ml-auto rounded-full bg-cyan px-[7px] py-0.5 text-[11px] font-extrabold text-on-cyan">{it.badge}</span> : null}
             </Link>
           </li>
         );

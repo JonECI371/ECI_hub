@@ -1,9 +1,14 @@
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin';
 import { ICONS } from '@/lib/icons';
+import type { Viewport } from 'next';
 import { AppShell } from '@/components/app-shell';
+import { SITE_URL } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
+/** Admin is always dark: the page surround, scrollbars and form controls follow, and Safari and Android Chrome tint their bar to match. */
+export const viewport: Viewport = { themeColor: '#101114', colorScheme: 'dark' };
+const isTestSite = /\/\/(test|staging|localhost)/i.test(SITE_URL);
 
 /** Admin back office: ADMIN and SUPER_ADMIN only, checked on the server. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +17,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AppShell
       label="Admin"
+      theme="admin"
+      strip={isTestSite ? { left: 'Admin', right: 'Test site: changes here affect test bookings', tone: 'test' } : { left: 'Admin', right: 'Live site: changes here affect real customers', tone: 'live' }}
       me={me}
       roleLabel={me.roles.includes('SUPER_ADMIN') ? 'Super Admin' : 'Admin'}
       topbar={

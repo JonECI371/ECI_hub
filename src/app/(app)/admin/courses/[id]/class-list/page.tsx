@@ -34,9 +34,9 @@ export default async function ClassList({ params, searchParams }: { params: Prom
         <p className="text-sm">{fmtSessionDates(s.startsAt, s.endsAt)}, {fmtTime(s.startsAt)} to {fmtTime(s.endsAt)} · {s.venue ? `${s.venue.name}, ${s.venue.address}, ${s.venue.postcode}` : s.course.deliveryType === 'IN_PERSON' ? 'Venue to be confirmed' : 'Online'} · Trainer: {s.trainer ? `${s.trainer.firstName} ${s.trainer.lastName}` : 'not assigned'}</p>
         <p className="text-sm font-bold text-ink">{rows.length} {rows.length === 1 ? 'delegate' : 'delegates'} of {s.capacity} places · {needs} with dietary or access needs</p>
       </header>
-      <div className="relative overflow-x-auto rounded-card bg-white p-4 shadow-card print:overflow-visible print:p-0 print:shadow-none">
+      <div className="relative overflow-x-auto rounded-card bg-card p-4 shadow-card print:overflow-visible print:p-0 print:shadow-none">
         <table className="w-full min-w-[900px] border-collapse text-left text-[13px] print:min-w-0 print:text-[10px]">
-          <thead className="bg-[#FAFAFA]"><tr>{['#', 'Name', 'Company', 'Mobile', 'Registration', 'Dietary', 'Access needs', 'Emergency contact', 'Signature'].map((h) => <th key={h} className={`${cell} font-bold text-ink`}>{h}</th>)}</tr></thead>
+          <thead className="bg-card2"><tr>{['#', 'Name', 'Company', 'Mobile', 'Registration', 'Dietary', 'Access needs', 'Emergency contact', 'Signature'].map((h) => <th key={h} className={`${cell} font-bold text-ink`}>{h}</th>)}</tr></thead>
           <tbody>
             {rows.map(({ a, b }, i) => {
               const ans = (a.registration?.answers ?? {}) as Record<string, string>;

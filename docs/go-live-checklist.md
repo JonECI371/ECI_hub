@@ -29,4 +29,4 @@ Everything that must be true before real customers use the platform. Items are c
 ## D. Testing sign-off
 
 - [ ] Kirsty's Phase 1 and Phase 2 checklists and Round 3 signed off.
-- [ ] Full Xero run against the test organisation passed: card invoice and payment, refund credit note, account contact, month-end draft invoice with PO files, payment in Xero marks the statement paid.
+- [x] (15 Nov 2026, ECI Test Hub) Full Xero run against the test organisation passed: card invoice and payment, refund credit note, account contact, month-end draft invoice with PO files, payment in Xero marks the statement paid.

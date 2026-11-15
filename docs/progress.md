@@ -10,6 +10,13 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-15: Full Xero run passed on the test organisation
+
+- Card booking, refund credit note, account contacts (including a duplicate name), month-end draft invoice with PO files attached (needed the `accounting.attachments` permission, so Xero had to be reconnected once), and payment in Xero marking the statement paid with credit restored all worked end to end against ECI Test Hub.
+- Invoice INV-0003: dated 31 Oct 2026, due 30 Nov 2026, reference "Training October 2026", one line per booking with its PO number, 20% VAT on Income (OUTPUT2), total £666.00, two files attached, paid.
+- Booking flow mock-up approved by Jon (plan item 2.10); Admin Add booking (2.9) approved. Both are built after Kirsty's testing.
+- Still open for Jon: connect real Xero and Stripe at go-live (docs/go-live-checklist.md), Kirsty's checklists, SharePoint upload of the 2026-11-14b Word spec.
+
 ## 2026-11-14: Jon's decisions
 
 - Booking flow review requested: add breadcrumbs, and review the step after booking ("Complete registration") so a booker reaches payment as soon as places are held, with delegate details collected as fast as possible. Proposal sent to Jon; build plan item 2.10 (proposed).

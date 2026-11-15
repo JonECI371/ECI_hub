@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-15: CRM proposal and mock-up
+
+- CRM proposal (Claude Doc) and clickable mock-up written for Jon; Jon's first answers: Teams call recording and transcription probably owned but not switched on (to check); first line is the main contact number; recording notice to be added later; email logging probably limited to the shared mailboxes (support, bookings, training), to be revisited. Remaining questions are listed in the proposal. Nothing built yet; CRM is Phase 3.1 and 3.2.
+- Dark Admin theme built and deployed (3ebcb7e).
+
 ## 2026-11-15: Full Xero run passed on the test organisation
 
 - Card booking, refund credit note, account contacts (including a duplicate name), month-end draft invoice with PO files attached (needed the `accounting.attachments` permission, so Xero had to be reconnected once), and payment in Xero marking the statement paid with credit restored all worked end to end against ECI Test Hub.

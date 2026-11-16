@@ -44,11 +44,13 @@ export async function checkPoFiles(files: File[]): Promise<string | null> {
 }
 
 /** Stores the files against the booking's PO. Called after the booking is made. */
-export async function attachPoFiles(accountId: string, number: string, files: File[], personId: string) {
+/** Returns the names of any files that could not be saved, so the booker can be told instead of the file vanishing. */
+export async function attachPoFiles(accountId: string, number: string, files: File[], personId: string): Promise<string[]> {
   const real = files.filter((f) => f.size > 0).slice(0, PO_MAX_FILES);
-  if (!real.length) return;
+  const failed: string[] = [];
+  if (!real.length) return failed;
   const po = await upsertPurchaseOrder(db, accountId, number, null);
-  if (!po) return;
+  if (!po) return real.map((f) => f.name);
   for (const f of real) {
     try {
       const fileKey = await storeFile('files', `po/${accountId}`, f);
@@ -56,8 +58,11 @@ export async function attachPoFiles(accountId: string, number: string, files: Fi
       await db.auditLog.create({ data: { actorId: personId, action: 'PO_FILE_ADDED', recordType: 'PurchaseOrder', recordId: po.id, after: { fileId: row.id, fileName: row.fileName } } });
     } catch (e) {
       if (!(e instanceof UploadError)) throw e;
+      console.error(`[po-files] not saved: ${f.name} (browser said "${f.type}"): ${(e as Error).message}`);
+      failed.push(f.name);
     }
   }
+  return failed;
 }
 
 export type PoRow = { id: string | null; number: string; valuePence: number | null; billedPence: number; leftPence: number | null; files: { id: string; fileName: string; sizeBytes: number }[] };

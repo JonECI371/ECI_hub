@@ -165,6 +165,7 @@ model Course {
   accreditation    String?
   photoUrl         String?
   photoAlt         String?
+  issuesCertificate Boolean         @default(true) // false: no certificate task or upload for this course
   faqs             Json                @default("[]")
   // Course page copy: { eyebrow, assessment, beforeYouBook, audienceHeading, audience, cover: [{ title, text }], completionHeading, completion, related: [slug] }
   content          Json                @default("{}")
@@ -570,4 +571,18 @@ model XeroJob {
   createdAt     DateTime  @default(now())
   doneAt        DateTime?
   @@index([status, nextAttemptAt])
+}
+
+/// Odd input seen on key forms while testing: placeholder text, hidden characters, pasted text, very fast or
+/// automated-looking submissions. A prompt to look, not proof of anything. Super Admin only.
+model TestAnomaly {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  kind      String   // ODD_VALUE | FAST_SUBMIT | AUTOMATED_BROWSER | NO_INTERACTION | PASTED_TEXT
+  form      String
+  field     String?
+  value     String?
+  detail    String?
+  personId  String?
+  @@index([createdAt])
 }

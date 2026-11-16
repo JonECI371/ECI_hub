@@ -1,5 +1,6 @@
 'use server';
 
+import { inspectSubmission } from '@/lib/anomalies';
 import { z } from 'zod';
 import { db } from '@/lib/db';
 import { INDUSTRIES, PO_RULES, submitApplication, type PoRule } from '@/lib/accounts';
@@ -10,8 +11,9 @@ export type ApplyState = { ok?: boolean; firstName?: string; error?: string; fie
 const email = (v: string) => z.string().email().safeParse(v).success;
 
 export async function applyForAccount(_prev: ApplyState, form: FormData): Promise<ApplyState> {
+  await inspectSubmission(form, 'Credit account application', null);
   const values: Record<string, string> = {};
-  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$')) values[k] = v.trim().slice(0, 1000);
+  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$') && k !== '_sig') values[k] = v.trim().slice(0, 1000);
   const get = (k: string) => values[k] ?? '';
   const others = Math.max(1, Math.min(10, Number(get('others')) || 1));
   if (get('url')) return { ok: true }; // bots fill the hidden field

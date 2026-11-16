@@ -30,3 +30,9 @@ Everything that must be true before real customers use the platform. Items are c
 
 - [ ] Kirsty's Phase 1 and Phase 2 checklists and Round 3 signed off.
 - [x] (15 Nov 2026, ECI Test Hub) Full Xero run against the test organisation passed: card invoice and payment, refund credit note, account contact, month-end draft invoice with PO files, payment in Xero marks the statement paid.
+
+## Added 16 Nov 2026
+
+- [ ] Xero (ECFIO real organisation): choose a sales account per course type (200-1 Safety passport, 200-2 CompEx, 200-3 Cogent, 200-4 Bespoke, 200-5 EUSR eLearning) instead of one code; create or choose the Stripe clearing account (695 does not exist; Stripe is a bank account "Stripe GBP" with no code).
+- [ ] Staff monitoring notice covers the Test log (odd input, fast and automated-looking submissions) before anyone is told it exists on production, or switch the Test log off for production.
+- [ ] Switch test email (Microsoft 365) off and use Amazon SES with the email DNS records.

@@ -49,6 +49,19 @@ async function graph(method: string, path: string, body?: unknown, attempt = 1):
   return res.status === 204 || res.status === 202 ? {} : ((await res.json()) as Record<string, unknown>);
 }
 
+/** Sends one email from a mailbox through Graph (needs the Mail.Send application permission). */
+export async function sendGraphMail(from: string, to: string, subject: string, html: string): Promise<void> {
+  await graph('POST', `/users/${encodeURIComponent(from)}/sendMail`, {
+    message: { subject, body: { contentType: 'HTML', content: html }, toRecipients: [{ emailAddress: { address: to } }] },
+    saveToSentItems: true,
+  });
+}
+
+/** Test-server rule shared by invites and email: outside live production, only allow-listed addresses are contacted. */
+export function recipientAllowed(email: string): boolean {
+  return allowed(email);
+}
+
 function allowed(email: string): boolean {
   if (process.env.NODE_ENV === 'production' && !process.env.MS_INVITE_ALLOWLIST) return true;
   const list = (process.env.MS_INVITE_ALLOWLIST ?? '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);

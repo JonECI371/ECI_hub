@@ -53,7 +53,7 @@ export async function submitApplication(a: Application) {
       if (p.id !== main.id) await tx.accountMember.upsert({ where: { accountId_personId: { accountId: acc.id, personId: p.id } }, create: { accountId: acc.id, personId: p.id, role: 'BOOKER', status: 'PENDING_APPROVAL' }, update: {} });
     }
     await tx.task.create({ data: { type: 'ACCOUNT_APPLICATION', title: `Credit account: ${a.company}`, detail: `${gbp(a.creditRequestedPence)} requested by ${a.main.firstName} ${a.main.lastName}`, recordType: 'Account', recordId: acc.id } });
-    await tx.auditLog.create({ data: { actorId: main.id, action: 'ACCOUNT_APPLIED', recordType: 'Account', recordId: acc.id, after: { company: a.company, companyNumber: a.companyNumber, creditRequestedPence: a.creditRequestedPence } } });
+    await tx.auditLog.create({ data: { actorId: main.id, action: 'ACCOUNT_APPLIED', recordType: 'Account', recordId: acc.id, after: { company: a.company, companyNumber: a.companyNumber, creditRequestedPence: a.creditRequestedPence, poRule: a.poRule, otherBookers: a.others.map((o) => o.email.toLowerCase()) } } });
     return acc;
   });
   const check = await checkCompany(a.companyNumber, account.id);

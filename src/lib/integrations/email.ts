@@ -18,7 +18,7 @@ function toBlocks(text: string): Block[] {
   });
 }
 
-export const emailLive = () => process.env.EMAIL_MODE === 'ses';
+export const emailLive = () => process.env.EMAIL_MODE === 'ses' || process.env.EMAIL_MODE === 'graph';
 
 export async function sendEmail(input: Email): Promise<void> {
   const rendered = renderEmail(input.subject, input.blocks ?? toBlocks(input.text ?? ''));
@@ -30,6 +30,26 @@ export async function sendEmail(input: Email): Promise<void> {
     return;
   }
   try {
+    if (process.env.EMAIL_MODE === 'graph') {
+      // Test servers: send through Microsoft 365, and only to allow-listed addresses so nobody real is emailed.
+      const { sendGraphMail, recipientAllowed } = await import('@/lib/integrations/teams');
+      if (!recipientAllowed(e.to)) {
+        console.info(`[email:test] not on the allow-list, not sent: to=${e.to} trigger=${e.trigger}`);
+        await db.emailLog.create({ data: { to: e.to, trigger: e.trigger, status: 'TEST_NOT_SENT', personId: e.personId } });
+        return;
+      }
+      const sender = process.env.MS_MAIL_FROM || process.env.MS_MEETING_HOST;
+      if (!sender) { console.error('[email:graph] MS_MAIL_FROM is not set'); await db.emailLog.create({ data: { to: e.to, trigger: e.trigger, status: 'FAILED', personId: e.personId } }); return; }
+      try {
+        await sendGraphMail(sender, e.to, e.subject, e.html!);
+        await db.emailLog.create({ data: { to: e.to, trigger: e.trigger, status: 'SENT', personId: e.personId } });
+      } catch (err) {
+        // Test servers only: a failed test email is logged but never breaks a booking or floods Tasks.
+        console.error(`[email:graph] not sent to ${e.to} (${e.trigger}): ${(err as Error).message}`);
+        await db.emailLog.create({ data: { to: e.to, trigger: e.trigger, status: 'FAILED', personId: e.personId } });
+      }
+      return;
+    }
     const { SESv2Client, SendEmailCommand } = await import('@aws-sdk/client-sesv2');
     const ses = new SESv2Client({ region: process.env.AWS_REGION });
     await ses.send(

@@ -30,6 +30,9 @@ fi
 # Xero: secret name in /opt/eci/xero.env (XERO_SECRET_ID); the secret holds XERO_CLIENT_ID and XERO_CLIENT_SECRET.
 XERO_SECRET_ID=""; XERO_CLIENT_ID=""; XERO_CLIENT_SECRET=""
 [ -f /opt/eci/xero.env ] && source /opt/eci/xero.env
+# Test email through Microsoft 365: /opt/eci/mail.env holds EMAIL_MODE=graph and MS_MAIL_FROM=<mailbox>. Absent: emails are only logged.
+EMAIL_MODE=""; MS_MAIL_FROM=""
+[ -f /opt/eci/mail.env ] && source /opt/eci/mail.env
 if [ -n "$XERO_SECRET_ID" ]; then
   XERO_JSON=$(aws secretsmanager get-secret-value --region "$REGION" --secret-id "$XERO_SECRET_ID" --query SecretString --output text 2>/dev/null || true)
   XERO_CLIENT_ID=$(echo "$XERO_JSON" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("XERO_CLIENT_ID",""))' 2>/dev/null || true)
@@ -45,7 +48,7 @@ case "$SITE" in https://*) PUBLISH=""; HOST="${SITE#https://}" ;; *) PUBLISH="-p
 docker rm -f caddy >/dev/null 2>&1 || true
 docker run -d --name app --network eci --restart always $PUBLISH \
   -e DATABASE_URL="$DBURL" -e SITE_URL="$SITE" -e AUTH_SECRET="$AUTH_SECRET" -e NODE_ENV=production \
-  -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
+  -e EMAIL_MODE="$EMAIL_MODE" -e MS_MAIL_FROM="$MS_MAIL_FROM" -e EMAIL_FROM=bookings@eci-hub.co.uk -e AWS_REGION="$REGION" \
   -e LOCAL_UPLOAD_DIR=/data/uploads -v eci-uploads:/data/uploads -e RUN_JOBS=1 \
   -e MS_TENANT_ID="$MS_TENANT_ID" -e MS_CLIENT_ID="$MS_CLIENT_ID" -e MS_CLIENT_SECRET="$MS_CLIENT_SECRET" \
   -e MS_MEETING_HOST="$MS_MEETING_HOST" -e MS_INVITE_ALLOWLIST="$MS_INVITE_ALLOWLIST" \

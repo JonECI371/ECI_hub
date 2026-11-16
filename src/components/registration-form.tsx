@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { TestSignals } from '@/components/test-signals';
 import { submitRegistration, type RegState } from '@/app/(site)/register/[attendeeId]/actions';
 import type { QuestionSet } from '@/lib/registration-sets';
 
@@ -28,6 +29,7 @@ export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile 
 
   return (
     <form action={action} className="flex flex-col gap-6" noValidate>
+      <TestSignals />
       <input type="hidden" name="attendeeId" value={attendeeId} />
       <input type="hidden" name="t" value={token} />
       {state.error && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 font-semibold text-bad-fg">{state.error}</p>}

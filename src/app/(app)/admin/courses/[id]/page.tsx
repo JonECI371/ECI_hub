@@ -172,6 +172,20 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                     <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Places<input type="number" name="capacity" min={1} defaultValue={selected.capacity} className={input} /></label>
                     <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Save</button>
                   </form>
+                  <details>
+                    <summary className="inline-flex min-h-11 cursor-pointer items-center text-sm font-bold text-ink">Change date or time…</summary>
+                    <form action={updateSession} className="mt-2 flex flex-col gap-2">
+                      <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="when" />
+                      <p className="text-sm">Everyone booked is emailed the new date and the Teams invite is updated.</p>
+                      <label className="flex flex-col gap-1 text-xs font-bold">First day<input type="date" name="date" required className={input} /></label>
+                      <label className="flex flex-col gap-1 text-xs font-bold">Last day (leave empty to keep the same number of days)<input type="date" name="lastDay" className={input} /></label>
+                      <div className="flex gap-2">
+                        <label className="flex flex-1 flex-col gap-1 text-xs font-bold">Start<input type="time" name="start" required className={input} /></label>
+                        <label className="flex flex-1 flex-col gap-1 text-xs font-bold">End<input type="time" name="end" required className={input} /></label>
+                      </div>
+                      <button type="submit" className={`${btn} border border-field bg-card text-ink`}>Change and email everyone</button>
+                    </form>
+                  </details>
                   {c.deliveryType === 'IN_PERSON' && (
                     <form action={updateSession} className="flex items-end gap-2">
                       <input type="hidden" name="sessionId" value={selected.id} /><input type="hidden" name="op" value="venue" />

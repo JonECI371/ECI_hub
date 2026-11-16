@@ -42,7 +42,7 @@ export async function saveAttendance(trainerId: string, sessionId: string, marks
     const open = await tx.task.findFirst({ where: { type: 'CERTIFICATE_UPLOAD', recordType: 'Session', recordId: s.id, status: 'OPEN' } });
     const detail = `${attended} attended, ${entries.length - attended} no-show, marked by the trainer.`;
     if (open) await tx.task.update({ where: { id: open.id }, data: { detail } });
-    else if (attended) await tx.task.create({ data: { type: 'CERTIFICATE_UPLOAD', title: `Upload certificates: ${s.course.title}, ${s.startsAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })}`, detail, recordType: 'Session', recordId: s.id } });
+    else if (attended && s.course.issuesCertificate) await tx.task.create({ data: { type: 'CERTIFICATE_UPLOAD', title: `Upload certificates: ${s.course.title}, ${s.startsAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'Europe/London' })}`, detail, recordType: 'Session', recordId: s.id } });
     await tx.auditLog.create({ data: { actorId: trainerId, action: 'ATTENDANCE_SAVED', recordType: 'Session', recordId: s.id, after: Object.fromEntries(entries) } });
   });
   return { attended, total: allowed.size, marked: entries.length };

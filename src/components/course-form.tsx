@@ -8,7 +8,7 @@ import type { CourseFormState } from '@/app/(app)/admin/courses/actions';
 export type CourseFormValues = {
   id?: string; title: string; slug: string; subjectId: string; pricePounds: string; vatRatePercent: string; shortDescription: string; description: string;
   deliveryType: DeliveryType; durationText: string; durationValue: string; durationUnit: string; defaultStartTime: string; defaultEndTime: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
-  provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
+  provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; issuesCertificate: boolean; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
 };
 
 const input = 'box-border h-[44px] w-full rounded-control border border-field bg-card px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-line';
@@ -134,6 +134,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
         <section className={card} aria-labelledby="after-h">
           <h2 id="after-h" className="mb-4 text-lg font-extrabold text-ink">After the course</h2>
           <div className="grid gap-4 sm:grid-cols-2">
+            <label className="flex min-h-11 items-center gap-2 text-sm text-ink"><input type="checkbox" name="issuesCertificate" defaultChecked={v.issuesCertificate} className="size-5 accent-ink" />This course gives a certificate (untick if none is issued, such as EUSR)</label>
             <label className={label}>Certificate valid for (years)<input name="validityYears" inputMode="numeric" defaultValue={v.validityYears} placeholder="Leave empty if it does not expire" className={input} /></label>
             <label className={label}>Awarded by<input name="accreditation" defaultValue={v.accreditation} placeholder="CompEx, EUSR, Cogent Skills" className={input} /></label>
           </div>

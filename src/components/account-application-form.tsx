@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState, useState } from 'react';
+import { TestSignals } from '@/components/test-signals';
 import { applyForAccount, type ApplyState } from '@/app/(site)/accounts/apply/actions';
 
 const input = 'box-border h-[46px] w-full rounded-control border border-field bg-white px-3.5 text-[15px] font-normal text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
@@ -51,6 +52,7 @@ export function AccountApplicationForm({ industries }: { industries: string[] })
 
   return (
     <form action={action} noValidate className="flex flex-col gap-6 rounded-card bg-white p-6 shadow-card md:p-8">
+      <TestSignals />
       <div aria-hidden="true" className="absolute -left-[9999px]"><label>Leave blank<input name="url" tabIndex={-1} autoComplete="off" /></label></div>
       <input type="hidden" name="others" value={shown} />
       <p className="text-sm"><span aria-hidden="true" className="text-bad-fg">*</span> Required</p>

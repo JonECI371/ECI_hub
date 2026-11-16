@@ -1,5 +1,6 @@
 'use server';
 
+import { inspectSubmission } from '@/lib/anomalies';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -23,10 +24,11 @@ const email = z.string().trim().toLowerCase().email('Enter a valid email address
 const name = z.string().trim().min(1, 'Enter a name').max(80);
 
 export async function startCheckout(_prev: CheckoutState, form: FormData): Promise<CheckoutState> {
+  await inspectSubmission(form, 'Booking checkout', (await currentPerson())?.id);
   const fields: Record<string, string> = {};
   const get = (k: string) => String(form.get(k) ?? '');
   const values: Record<string, string> = {};
-  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$')) values[k] = v;
+  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$') && k !== '_sig') values[k] = v;
   const places = Number(get('places'));
   const mode = get('mode') === 'later' ? 'later' : 'now';
   const bookerAttends = get('bookerAttends') === 'on';
@@ -109,11 +111,12 @@ async function bookOnAccount(form: FormData, values: Record<string, string>, o: 
   if (fileError) fields.poFiles = fileError;
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
   let reference: string;
+  let poFailed = 0;
   try {
     const addedToId = get('addTo') ? (await addToBookingId(me.id, get('addTo'), o.sessionId)) ?? undefined : undefined;
     if (get('addTo') && !addedToId) return { error: 'You can only add places to a booking you manage, on the same date.', values };
     const b = await createAccountBooking({ addedToId, personId: me.id, courseId: o.courseId, sessionId: o.sessionId, places: o.places, bookerAttends: o.bookerAttends, others: o.mode === 'now' ? others : null, poNumber: get('poNumber'), poValuePence: typeof poValue === 'number' ? poValue : null });
-    if (get('poNumber') && poFiles.length) await attachPoFiles(b.accountId!, get('poNumber'), poFiles, me.id);
+    if (get('poNumber') && poFiles.length) poFailed = (await attachPoFiles(b.accountId!, get('poNumber'), poFiles, me.id)).length;
     reference = b.reference;
     await sendBookingConfirmation(b.id);
     if (b.sessionId) await syncSessionMeeting(b.sessionId);
@@ -121,7 +124,7 @@ async function bookOnAccount(form: FormData, values: Record<string, string>, o: 
     if (e instanceof CheckoutError) return { error: e.message, values, fields: /PO number/.test(e.message) ? { poNumber: 'Enter your PO number' } : undefined };
     throw e;
   }
-  redirect(`/book/outcome?ref=${reference}`);
+  redirect(`/book/outcome?ref=${reference}${poFailed ? `&pofail=${poFailed}` : ''}`);
 }
 
 /** The booking this browser is checking out, if any. */

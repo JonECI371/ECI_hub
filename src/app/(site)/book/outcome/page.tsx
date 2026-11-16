@@ -12,7 +12,7 @@ import { statementText } from '@/lib/credit';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your booking', robots: { index: false } };
 
-type Search = Promise<{ ref?: string; state?: string }>;
+type Search = Promise<{ ref?: string; state?: string; pofail?: string }>;
 
 function Steps({ items }: { items: [string, string][] }) {
   return (
@@ -42,7 +42,7 @@ function Message({ eyebrow, title, children, tone = 'ok' }: { eyebrow: string; t
 }
 
 export default async function Outcome({ searchParams }: { searchParams: Search }) {
-  const { ref, state } = await searchParams;
+  const { ref, state, pofail } = await searchParams;
   const bid = await checkoutBookingId();
   const me = await currentPerson();
 
@@ -114,6 +114,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
   return (
     <>
       <Message eyebrow="Booking confirmed" title={elearn ? `You're enrolled, ${b.booker.firstName}` : b.places > 1 ? `${b.places} places booked on ${c.title}` : `You're booked, ${b.booker.firstName}`}>
+        {Number(pofail) > 0 && <p className="rounded-control border border-warn-line bg-warn-bg p-3 text-warn-fg">Your booking is confirmed, but {Number(pofail) === 1 ? '1 of your PO files was' : `${Number(pofail)} of your PO files were`} not saved. Please email {Number(pofail) === 1 ? 'it' : 'them'} to us, quoting your booking reference.</p>}
         <p>Reference <strong className="text-white">{b.reference}</strong>. {b.method === 'ACCOUNT' ? `Confirmed on account. Your confirmation is on its way to ${b.booker.email}.` : `Your receipt is on its way to ${b.booker.email}.`}</p>
       </Message>
       <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">

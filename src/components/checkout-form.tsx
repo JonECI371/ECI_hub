@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { TestSignals } from '@/components/test-signals';
 import { useActionState, useState } from 'react';
 import type { DeliveryType } from '@prisma/client';
 import { startCheckout, type CheckoutState } from '@/app/(site)/book/actions';
@@ -61,6 +62,7 @@ export function CheckoutForm(p: CheckoutProps) {
 
   return (
     <form action={action} className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-20 lg:flex-row lg:items-start" noValidate>
+      <TestSignals />
       <input type="hidden" name="courseId" value={p.courseId} />
       <input type="hidden" name="sessionId" value={p.sessionId ?? ''} />
       <input type="hidden" name="places" value={places} />
@@ -124,7 +126,7 @@ export function CheckoutForm(p: CheckoutProps) {
             <h2 id="you-h" className="mb-3 text-[22px] font-extrabold text-ink">Booking as</h2>
             <p className="font-bold text-ink">{p.account.bookerName} · {p.account.company}</p>
             <p className="text-sm">{p.account.bookerEmail} · {p.account.role}</p>
-            <p className="mt-2 text-sm">Not you? <Link href="/logout">Log out</Link></p>
+            <p className="mt-2 text-sm">Not you? <a href="/logout">Log out</a></p>
           </section>
         ) : (
         <section className={card} aria-labelledby="you-h">

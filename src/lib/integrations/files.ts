@@ -31,7 +31,7 @@ export function sniffType(b: Uint8Array): string | null {
 export async function storeFile(area: Area, prefix: string, file: File): Promise<string> {
   const body = Buffer.from(await file.arrayBuffer());
   const type = sniffType(body);
-  if (!type || type !== file.type) throw new UploadError('The file is not a PDF, JPEG, PNG or WebP.');
+  if (!type || (file.type && file.type !== 'application/octet-stream' && type !== file.type)) throw new UploadError('The file is not a PDF, JPEG, PNG or WebP.');
   const rel = `${area}/${prefix}/${randomUUID()}.${EXT[type]}`;
   const bucket = bucketFor(area);
   if (bucket) {

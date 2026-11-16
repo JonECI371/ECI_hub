@@ -10,6 +10,12 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-16: fixes from Kirsty's Round 2 and Round 3 testing
+
+- Signed off by Jon one by one. Built: bad PO files no longer vanish (booking goes ahead, confirmation page warns which files were not saved); Log out link on checkout works (GET /logout, plain link; it had been a link to a POST-only route); "This course gives a certificate" tick per course (no certificate task when off); Change date or time for one session (emails everyone booked, moves the Teams invite, audit entry); test emails through Microsoft 365 (EMAIL_MODE=graph from /opt/eci/mail.env, only to allow-listed addresses, needs Mail.Send); application audit now records PO choice and other bookers; Test log (Super Admin only, Settings) of odd input on the booking, credit account and registration forms.
+- Checked against the test database and not app faults: no course has a photo (G1); kirsty+acme2 does not exist as a person and no application since 12 Nov exists (B1, C2, N4); the "Please select" county cannot come from our county box, which is plain text (A1). Left as is by Jon: six files at once error page (N8). Emails were never sent on the test server (TEST_NOT_SENT) until the Microsoft 365 route.
+- Go-live: ECFIO Xero needs a sales code per course type (200-1 to 200-5), and Stripe clearing account 695 does not exist there (Stripe is a bank account "Stripe GBP"). Staff monitoring notice must mention the Test log.
+
 ## 2026-11-15: CRM proposal and mock-up
 
 - CRM proposal (Claude Doc) and clickable mock-up written for Jon; Jon's first answers: Teams call recording and transcription probably owned but not switched on (to check); first line is the main contact number; recording notice to be added later; email logging probably limited to the shared mailboxes (support, bookings, training), to be revisited. Remaining questions are listed in the proposal. Nothing built yet; CRM is Phase 3.1 and 3.2.

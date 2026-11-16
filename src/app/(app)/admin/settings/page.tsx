@@ -101,6 +101,14 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         <Link href="/admin/venues" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Manage venues</Link>
       </section>
 
+      {me.roles.includes('SUPER_ADMIN') && (
+        <section className={card} aria-labelledby="tlog-h">
+          <h2 id="tlog-h" className="mb-1 text-lg font-extrabold text-ink">Test log</h2>
+          <p className="mb-3 text-sm">Odd input seen on the booking, credit account and registration forms while testing. Super Admin only.</p>
+          <Link href="/admin/test-log" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Open the test log</Link>
+        </section>
+      )}
+
       <section className={card} aria-labelledby="users-h">
         <h2 id="users-h" className="mb-1 text-lg font-extrabold text-ink">Admin users</h2>
         <p className="mb-3 text-sm">{staff} staff {staff === 1 ? 'account' : 'accounts'}. Add staff, change roles and reset authenticators in People.</p>

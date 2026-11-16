@@ -74,7 +74,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     provider: delivery === 'ELEARNING' ? get('provider') || null : null,
     fulfilment: delivery === 'ELEARNING' ? (get('fulfilment') === 'EMAIL_PROVIDER' ? 'EMAIL_PROVIDER' : 'ADMIN_TASK') : null,
     providerEmail: get('providerEmail') || null, daysToComplete: delivery === 'ELEARNING' ? optInt(get('daysToComplete')) : null,
-    validityYears: optInt(get('validityYears')), accreditation: get('accreditation') || null,
+    validityYears: optInt(get('validityYears')), issuesCertificate: get('issuesCertificate') === 'on', accreditation: get('accreditation') || null,
     seoTitle: get('seoTitle').slice(0, 60) || null, seoDescription: get('seoDescription').slice(0, 155) || null,
     photoAlt: get('photoAlt').slice(0, 200) || null,
     ...(get('removePhoto') === 'on' ? { photoUrl: null, photoAlt: null } : {}),
@@ -142,6 +142,28 @@ export async function updateSession(form: FormData) {
     if (block) redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=${block}`);
   }
   const data: Prisma.SessionUpdateInput = {};
+  if (op === 'when') {
+    const date = String(form.get('date') ?? ''), start = String(form.get('start') ?? ''), end = String(form.get('end') ?? ''), lastDay = String(form.get('lastDay') ?? '');
+    const ok = (re: RegExp, v: string) => re.test(v);
+    if (!ok(/^\d{4}-\d{2}-\d{2}$/, date) || !ok(/^\d{2}:\d{2}$/, start) || !ok(/^\d{2}:\d{2}$/, end) || (lastDay && !ok(/^\d{4}-\d{2}-\d{2}$/, lastDay))) redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=badsession`);
+    const ukDay = (d: Date) => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/London' }).format(d);
+    const spanDays = Math.round((Date.parse(`${ukDay(s.endsAt)}T00:00:00Z`) - Date.parse(`${ukDay(s.startsAt)}T00:00:00Z`)) / 86400000);
+    const endDate = lastDay || new Date(Date.parse(`${date}T00:00:00Z`) + spanDays * 86400000).toISOString().slice(0, 10);
+    const startsAt = ukToUtc(date, start), endsAt = ukToUtc(endDate, end);
+    if (endsAt <= startsAt || startsAt <= new Date()) redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=badsession`);
+    await db.session.update({ where: { id: s.id }, data: { startsAt, endsAt } });
+    await audit(me.id, 'SESSION_DATE_CHANGED', 'Session', s.id, { startsAt: s.startsAt, endsAt: s.endsAt }, { startsAt, endsAt });
+    await syncSessionMeeting(s.id); // moves the Teams invite for everyone on it
+    const full = await db.session.findUniqueOrThrow({ where: { id: s.id }, include: { course: true, bookings: { where: { status: { in: ['CONFIRMED', 'PAYMENT_PENDING'] } }, include: { booker: true, attendees: { include: { person: true } } } } } });
+    const people = new Map<string, { email: string; firstName: string; id: string }>();
+    for (const b of full.bookings) { people.set(b.booker.id, b.booker); for (const a of b.attendees) if (a.person) people.set(a.person.id, a.person); }
+    const was = `${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)}`, now = `${fmtSessionDates(startsAt, endsAt)}, ${fmtTime(startsAt)} to ${fmtTime(endsAt)}`;
+    for (const p of people.values()) {
+      await sendEmail({ to: p.email, personId: p.id, trigger: 'SESSION_DATE_CHANGED', subject: `New date and time: ${full.course.title}`, text: `Hello ${p.firstName},\n\nWe have changed the date or time of ${full.course.title}. It was ${was}. It is now ${now} (UK time).\n\nIf this does not suit you, reply to this email or call us on +44 (0) 1932 963463 and we will help.` });
+    }
+    revalidatePath('/', 'layout');
+    redirect(`/admin/courses/${s.courseId}?session=${s.id}&msg=updated`);
+  }
   if (op === 'publish') data.status = 'PUBLISHED';
   if (op === 'unpublish') data.status = 'DRAFT';
   if (op === 'capacity') data.capacity = Math.max(1, Math.min(500, Number(form.get('capacity')) || s.capacity));
@@ -206,7 +228,7 @@ export async function markCompleted(form: FormData) {
   await db.$transaction(async (tx) => {
     await tx.enrolment.update({ where: { attendeeId: a.id }, data: { completedAt: new Date() } });
     await tx.attendee.update({ where: { id: a.id }, data: { status: 'ATTENDED' } });
-    await tx.task.create({ data: { type: 'CERTIFICATE_UPLOAD', title: `Upload certificate: ${a.person?.firstName ?? ''} ${a.person?.lastName ?? ''}`.trim(), detail: `${a.booking.course.title} (eLearning), completed ${new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`, recordType: 'Attendee', recordId: a.id } });
+    if (a.booking.course.issuesCertificate) await tx.task.create({ data: { type: 'CERTIFICATE_UPLOAD', title: `Upload certificate: ${a.person?.firstName ?? ''} ${a.person?.lastName ?? ''}`.trim(), detail: `${a.booking.course.title} (eLearning), completed ${new Date().toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`, recordType: 'Attendee', recordId: a.id } });
     await tx.auditLog.create({ data: { actorId: me.id, action: 'ELEARNING_COMPLETED', recordType: 'Attendee', recordId: a.id } });
   });
   revalidatePath('/admin', 'layout');

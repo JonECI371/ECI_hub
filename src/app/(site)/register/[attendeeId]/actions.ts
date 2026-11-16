@@ -1,5 +1,6 @@
 'use server';
 
+import { inspectSubmission } from '@/lib/anomalies';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import type { Prisma } from '@prisma/client';
@@ -27,9 +28,10 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   const token = String(form.get('t') ?? '') || undefined;
   const a = await loadForRegistration(attendeeId, token);
   if (!a || !a.person) return { error: 'This registration link is not valid. Use the link in your email, or log in.' };
+  await inspectSubmission(form, 'Delegate registration', a.person.id);
 
   const values: Record<string, string> = {};
-  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$')) values[k] = v;
+  for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$') && k !== '_sig') values[k] = v;
   const get = (k: string) => String(values[k] ?? '').trim();
   const fields: Record<string, string> = {};
   const course = a.booking.course;

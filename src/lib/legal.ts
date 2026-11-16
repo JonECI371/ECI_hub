@@ -15,7 +15,7 @@ export const LEGAL: Record<string, LegalDoc> = {
     sections: [
       { heading: 'Who we are', body: 'ECFIO Engineering Ltd, trading as ECI-Hub. Company number 09147227. Summit House, 33 Hanworth Road, Sunbury-on-Thames TW16 5DA.' },
       ...['What we collect', 'Why we use it', 'Who we share it with'].map((h) => ({ heading: h, body: P })),
-      { heading: 'Identity documents', body: 'Photo ID and passport photos you upload for registration are deleted automatically one month after we send your registration to the awarding body.' },
+      { heading: 'Identity documents', body: 'Copies of photo ID and the photos you upload for registration are deleted automatically one month after we send your registration to the awarding body.' },
       ...['How long we keep it', 'Your rights'].map((h) => ({ heading: h, body: P })),
     ],
   },

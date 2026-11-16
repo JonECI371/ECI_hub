@@ -11,8 +11,8 @@ export type QuestionSet = { minutes: number; intro?: string; questions: Question
 const access: Question = { key: 'accessNeeds', kind: 'textarea', label: 'Accessibility or support needs', hint: 'For example captions or extra breaks.', optional: true };
 const dietary: Question = { key: 'dietary', kind: 'textarea', label: 'Dietary requirements', optional: true };
 const emergency: Question = { key: 'emergencyContact', kind: 'text', label: 'Emergency contact name and number' };
-const photo: Question = { key: 'photo', kind: 'file', label: 'Passport-style photo', hint: 'Face on a plain background. JPEG, PNG or PDF, up to 10MB.' };
-const photoId: Question = { key: 'photoId', kind: 'file', label: 'Photo ID', hint: 'Passport or driving licence. JPEG, PNG or PDF, up to 10MB.' };
+const photo: Question = { key: 'photo', kind: 'file', label: 'Your photo (a selfie)', hint: 'A clear selfie of your face and shoulders, for your virtual card. This is not your passport or ID. JPEG, PNG or PDF, up to 10MB.' };
+const photoId: Question = { key: 'photoId', kind: 'file', label: 'Copy of photo ID', hint: 'A clear copy or photo of your passport or driving licence showing your name and photo. JPEG, PNG or PDF, up to 10MB.' };
 
 /** Question set by the subject's registrationSet, falling back to sensible defaults for the delivery type. */
 export function questionSet(set: string, delivery: DeliveryType, approvalRequired: boolean, subjectName: string): QuestionSet {

@@ -7,7 +7,7 @@ import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { loadForRegistration } from '@/lib/registration';
 import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets';
-import { storeIdFile } from '@/lib/integrations/files';
+import { storeFile, storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
 import { sendEnrolmentPack, sendVenueReleased } from '@/lib/notifications';
 
@@ -72,6 +72,11 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   const fileKeys = [...(a.registration?.fileKeys ?? [])];
   for (const [key, f] of files) fileKeys.push(await storeIdFile(`registrations/${a.id}/${key}`, f));
 
+  // The selfie also becomes the person's profile picture, kept until they remove it (the ID copies are not).
+  let photoKey: string | null = null;
+  const selfie = files.find(([k, f]) => k === 'photo' && /^image\/(jpeg|png|webp)$/.test(f.type));
+  if (selfie) { try { photoKey = await storeFile('files', `profile/${a.person.id}`, selfie[1]); } catch { /* not a usable image: the registration itself still goes through */ } }
+
   const scheme = { ...((a.person.schemeIds as Record<string, string>) ?? {}) };
   for (const q of set.questions) if (q.kind === 'text' && q.scheme && answers[q.key]) scheme[q.scheme] = answers[q.key];
   const approval = course.subject.approvalRequired ? 'PENDING' : 'NOT_REQUIRED';
@@ -81,7 +86,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     const before = { firstName: person.firstName, lastName: person.lastName, mobile: person.mobile, employer: person.employer };
     await tx.person.update({
       where: { id: person.id },
-      data: { firstName: get('firstName'), lastName: get('lastName'), mobile: get('mobile'), employer: get('employer'), dateOfBirth: dob, schemeIds: scheme as Prisma.InputJsonValue },
+      data: { firstName: get('firstName'), lastName: get('lastName'), mobile: get('mobile'), employer: get('employer'), dateOfBirth: dob, schemeIds: scheme as Prisma.InputJsonValue, ...(photoKey ? { photoKey, photoUpdatedAt: new Date() } : {}) },
     });
     await tx.registration.upsert({
       where: { attendeeId: a.id },

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-export type AttendanceRow = { id: string; name: string; company: string; needs: string; mark: 'ATTENDED' | 'NO_SHOW' | null };
+export type AttendanceRow = { id: string; personId: string; photo: boolean; photoV: number; name: string; company: string; needs: string; mark: 'ATTENDED' | 'NO_SHOW' | null };
 
 /** One tap per delegate: Attended or No-show, with a live count. */
 export function AttendanceForm({ action, sessionId, rows, open }: { action: (f: FormData) => void; sessionId: string; rows: AttendanceRow[]; open: boolean }) {
@@ -15,7 +15,10 @@ export function AttendanceForm({ action, sessionId, rows, open }: { action: (f: 
         {rows.map((r) => (
           <li key={r.id} className="border-b border-hairline px-5 py-4 last:border-0">
             <fieldset disabled={!open}>
-              <legend className="font-bold text-ink">{r.name}</legend>
+              <legend className="flex items-center gap-3 font-bold text-ink">
+                {r.photo && /* eslint-disable-next-line @next/next/no-img-element */ <img src={`/profile-photo/${r.personId}?v=${r.photoV}`} alt="" width={48} height={48} className="size-12 shrink-0 rounded-full object-cover" />}
+                {r.name}
+              </legend>
               {r.company && <p className="text-[13px]">{r.company}</p>}
               {r.needs && <p className="mt-1 rounded-control bg-warn-bg px-3 py-1.5 text-[13px] font-semibold text-warn-fg">{r.needs}</p>}
               <div className="mt-3 grid grid-cols-2 gap-2">

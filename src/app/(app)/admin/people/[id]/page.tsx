@@ -1,3 +1,4 @@
+import { Avatar } from '@/components/avatar';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -55,7 +56,10 @@ export default async function PersonRecord({ params, searchParams }: { params: P
     <>
       <div>
         <p className="mb-1.5 text-xs"><Link href="/admin/people">People</Link> › {p.firstName} {p.lastName === '-' ? '' : p.lastName}</p>
-        <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{p.firstName} {p.lastName === '-' ? '' : p.lastName}</h1>
+        <div className="flex items-center gap-4">
+          <Avatar person={p} size={64} />
+          <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{p.firstName} {p.lastName === '-' ? '' : p.lastName}</h1>
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm">
           {p.roles.map((r) => <Chip key={r} tone={r === 'SUPER_ADMIN' || r === 'ADMIN' ? 'soft' : 'grey'}>{ROLE_LABEL[r]}</Chip>)}
           {staff && <Chip tone={p.totpSecret ? 'soft' : 'warn'}>{p.totpSecret ? 'Authenticator set up' : 'Authenticator not set up yet'}</Chip>}

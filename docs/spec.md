@@ -291,7 +291,7 @@ The recommended stack is TypeScript end to end on AWS in the UK region (eu-west-
 
 **Data protection (UK GDPR)**
 
-- Photo ID and passport photos deleted automatically one month after submission to the awarding body.
+- Copies of photo ID deleted automatically one month after submission to the awarding body. The registration selfie also becomes the person's profile picture (decided by Jon 16 Nov 2026), kept until they remove it or close their account; shown to the person, Admin, Super Admin, and trainers for delegates on their sessions; the privacy page says so.
 - Data requests (copy or deletion) logged and actioned from the person record.
 - Privacy notice, cookie banner with consent before non-essential cookies, and retention periods in Settings.
 

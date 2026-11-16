@@ -23,7 +23,7 @@ export default async function MarkAttendance({ params, searchParams }: { params:
     .map(({ a, b }) => {
       const ans = (a.registration?.answers ?? {}) as Record<string, string>;
       return {
-        id: a.id, name: `${a.person!.firstName} ${a.person!.lastName}`, company: b.account?.company ?? a.person!.employer ?? '',
+        id: a.id, personId: a.person!.id, photo: !!a.person!.photoKey, photoV: a.person!.photoUpdatedAt?.getTime() ?? 0, name: `${a.person!.firstName} ${a.person!.lastName}`, company: b.account?.company ?? a.person!.employer ?? '',
         needs: [ans.dietary && `Diet: ${ans.dietary}`, ans.accessNeeds && `Access: ${ans.accessNeeds}`].filter(Boolean).join(' · '),
         mark: a.status === 'ATTENDED' || a.status === 'NO_SHOW' ? a.status : null,
       };

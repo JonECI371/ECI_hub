@@ -45,3 +45,5 @@ Everything that must be true before real customers use the platform. Items are c
   - handle bounces and complaints into the Email bounce task;
   - send one of every email type to a real mailbox and check wording, branding and spam score;
   - solicitor checks reminder wording and unsubscribe rules for marketing email.
+- [ ] Solicitor approves the profile picture wording: the registration selfie is kept as a profile picture automatically (not opt-in), visible to Admin, Super Admin and trainers, until the person removes it. Check the privacy page text, the retention rule for closed accounts, and whether a tick box is needed.
+- [ ] Account closure or deletion must also delete the profile picture file (no delete helper yet for stored files).

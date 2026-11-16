@@ -20,6 +20,14 @@ export async function saveMyDetails(form: FormData) {
   redirect('/account/settings?msg=saved');
 }
 
+/** Remove the profile picture. The stored file is no longer shown or reachable. */
+export async function removeMyPhoto() {
+  const me = await requirePerson();
+  await db.person.update({ where: { id: me.id }, data: { photoKey: null, photoUpdatedAt: null } });
+  await db.auditLog.create({ data: { actorId: me.id, action: 'PROFILE_PHOTO_REMOVED', recordType: 'Person', recordId: me.id } });
+  redirect('/account/settings?msg=saved');
+}
+
 /** Sign out of every device: all sessions started before now stop working, including this one. */
 export async function signOutEverywhere() {
   const me = await requirePerson();

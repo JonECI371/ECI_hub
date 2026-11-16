@@ -1,6 +1,7 @@
+import { Avatar } from '@/components/avatar';
 import type { Metadata } from 'next';
 import { requirePerson } from '@/lib/auth';
-import { saveMyDetails, signOutEverywhere } from './actions';
+import { removeMyPhoto, saveMyDetails, signOutEverywhere } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Settings', robots: { index: false } };
@@ -18,6 +19,15 @@ export default async function Settings({ searchParams }: { searchParams: Promise
       {msg === 'invalid' && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">Check your details: names are required and the mobile number can only contain digits and spaces.</p>}
       <section className="max-w-[760px] rounded-card bg-white p-6 shadow-card md:p-8" aria-labelledby="me-h">
         <h2 id="me-h" className="mb-5 text-[22px] font-extrabold text-ink">My details</h2>
+        {me.photoKey && (
+          <div className="mb-5 flex items-center gap-4">
+            <Avatar person={me} size={72} />
+            <div className="text-sm">
+              <p className="mb-1">Your profile picture, from your registration selfie. We and your trainers can see it.</p>
+              <form action={removeMyPhoto}><button type="submit" className="min-h-11 text-sm font-bold underline">Remove my picture</button></form>
+            </div>
+          </div>
+        )}
         <form action={saveMyDetails} className="grid gap-4 sm:grid-cols-2">
           <label className={label}>First name<input name="firstName" required defaultValue={me.firstName} autoComplete="given-name" className={input} /></label>
           <label className={label}>Last name<input name="lastName" required defaultValue={me.lastName === '-' ? '' : me.lastName} autoComplete="family-name" className={input} /></label>

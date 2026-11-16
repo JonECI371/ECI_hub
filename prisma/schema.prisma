@@ -235,6 +235,8 @@ model Person {
   sessionsValidFrom DateTime? // sessions started before this are no longer valid (sign out everywhere, role change)
   xeroContactId   String?
   schemeIds       Json      @default("{}") // { skillguard, compex, eusr }
+  photoKey        String?   // profile picture (the registration selfie), kept until the person removes it
+  photoUpdatedAt  DateTime?
   roles           Role[]    @default([DELEGATE])
   marketingOptIn  Boolean   @default(false)
   totpSecret      String?   // staff and trainers only

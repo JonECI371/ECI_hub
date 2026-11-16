@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useActionState } from 'react';
+import { DobField } from '@/components/dob-field';
 import { TestSignals } from '@/components/test-signals';
 import { submitRegistration, type RegState } from '@/app/(site)/register/[attendeeId]/actions';
 import type { QuestionSet } from '@/lib/registration-sets';
@@ -41,7 +42,7 @@ export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile 
           <label className={labelCls}>Last name<input name="lastName" autoComplete="family-name" defaultValue={val('lastName')} className={input} {...err('lastName')} /><E k="lastName" /></label>
           <label className={labelCls}>Email<input type="email" value={prefill.email} readOnly className={`${input} bg-page`} /><span className={hintCls}>To change this, contact us.</span></label>
           <label className={labelCls}>Mobile<input name="mobile" type="tel" autoComplete="tel" defaultValue={val('mobile')} className={input} {...err('mobile')} /><E k="mobile" /></label>
-          <label className={labelCls}>Date of birth<input name="dob" inputMode="numeric" placeholder="DD/MM/YYYY" autoComplete="bday" defaultValue={val('dob')} className={input} {...err('dob')} /><span className={hintCls}>Needed by the awarding body.</span><E k="dob" /></label>
+          <div className="flex flex-col gap-1"><DobField name="dob" defaultValue={val('dob')} inputClass={input} invalid={!!f.dob} describedBy={f.dob ? 'dob-err' : undefined} /><span className={hintCls}>Needed by the awarding body.</span><E k="dob" /></div>
           <label className={labelCls}>Employer<input name="employer" autoComplete="organization" defaultValue={val('employer')} className={input} {...err('employer')} /><E k="employer" /></label>
         </div>
       </section>

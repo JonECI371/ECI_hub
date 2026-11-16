@@ -48,7 +48,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     if (!r.success) fields[k] = r.error.issues[0].message;
   }
   const dob = parseDob(get('dob'));
-  if (!dob) fields.dob = 'Enter your date of birth as DD/MM/YYYY';
+  if (!dob) fields.dob = 'Enter your full date of birth: day, month and year';
 
   const answers: Record<string, string> = {};
   const files: [string, File][] = [];

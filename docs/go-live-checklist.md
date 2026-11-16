@@ -35,4 +35,13 @@ Everything that must be true before real customers use the platform. Items are c
 
 - [ ] Xero (ECFIO real organisation): choose a sales account per course type (200-1 Safety passport, 200-2 CompEx, 200-3 Cogent, 200-4 Bespoke, 200-5 EUSR eLearning) instead of one code; create or choose the Stripe clearing account (695 does not exist; Stripe is a bank account "Stripe GBP" with no code).
 - [ ] Staff monitoring notice covers the Test log (odd input, fast and automated-looking submissions) before anyone is told it exists on production, or switch the Test log off for production.
-- [ ] Switch test email (Microsoft 365) off and use Amazon SES with the email DNS records.
+- [ ] Email: replace the test route (Microsoft 365, Mail.Send, support@, allow-listed addresses only) with Amazon SES:
+  - add the 5 email DNS records for eci-hub.co.uk (SES domain verification, DKIM, SPF, DMARC, custom mail-from);
+  - ask AWS to move SES out of sandbox so it can send to any customer;
+  - verify bookings@ and support@ as senders and set EMAIL_FROM;
+  - set EMAIL_MODE=ses in production and do not copy /opt/eci/mail.env;
+  - remove the Mail.Send permission from the Microsoft 365 app (it was for the test server only) or keep it limited to support@ by the access policy;
+  - remove the test allow-list so real customers receive invites and emails;
+  - handle bounces and complaints into the Email bounce task;
+  - send one of every email type to a real mailbox and check wording, branding and spam score;
+  - solicitor checks reminder wording and unsubscribe rules for marketing email.

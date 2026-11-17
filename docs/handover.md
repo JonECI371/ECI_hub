@@ -30,6 +30,11 @@ Read this first in a new chat, then `docs/spec.md`, `docs/build-plan.md`, `docs/
 #20 five email DNS records; #23 card test; #37 optional Companies House key; #41/#46 upload spec Word (use 2026-11-14b) to SharePoint; #48 AWS budget (about 13 USD, alerts incl. forecast and free-tier); #49 anomaly alerts; #50 root MFA; #51 review AWS protections with the developer; #52 ask Kirsty the three sign-in questions (does it happen while using the site or after closing the browser, which address she uses, how often); #55 done (Mail.Send added). Teams recording/transcription check for the CRM.
 - Sign-in length: Admin and Super Admin sessions are 12 hours, a session cookie that dies when the browser closes. Proposed (not built): make it persist the full 12 hours. Awaiting Kirsty's answers and Jon's decision.
 
+## Built after the first handover (17 Nov, evening)
+- Admin Add booking (2.9, commit 572fa20): Admin > Bookings > Add booking. On account (PO, credit), card payment link (72 hour hold, emailed; route /book/pay-link) or already paid (new payment method MANUAL: no Xero entry yet, refund by hand). Warned overrides for credit, full date, PO missing, account on hold; override box plus reason; audited. 82 tests pass. Not yet deployed or retested by Kirsty. Open: how already-paid bookings appear in Xero.
+- Admin and Super Admin sign-ins now persist the full 12 hours (cookie has an expiry). Not deployed.
+- Deploys: the machine restarts every few hours and kills builds. To stop unfinished work breaking a deploy, deploy from a clean worktree of a commit: `git worktree add --detach $SCRATCH/clean <commit>`, then `sed "s#^REPO=.*#REPO=$SCRATCH/clean#" deploy.sh > deploy-clean.sh` and run that (deploy21 did this for ced251b). Latest commit with everything is 572fa20; deploy that next.
+
 ## Next build order (approved)
 1. Anything Kirsty finds on retest. 2. Admin Add booking (2.9) and booking flow with delegate details and breadcrumbs (2.10; mock-up approved). 3. Admin-editable pages with templates (3.9). 4. Phase 3: order pipelines and reports, SCORM, Zoom. 5. CRM (proposal waiting on Jon's answers to questions 4, 6 to 13, 14 to 17; Teams phone transcripts need recording switched on first, main number only, recording notice before live calls). 6. Production setup (London, WAF, GuardDuty, malware scanning, SES) after testing.
 

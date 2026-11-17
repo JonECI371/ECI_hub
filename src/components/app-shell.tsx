@@ -6,7 +6,7 @@ import { SideNav, type NavItem } from '@/components/side-nav';
 const initials = (p: Person) => `${p.firstName[0] ?? ''}${p.lastName[0] && p.lastName !== '-' ? p.lastName[0] : ''}`.toUpperCase();
 
 /** Signed-in area: dark side menu on desktop, a menu button on phones, and a top bar with the person. */
-export function AppShell({ label, items, me, roleLabel, children, topbar, theme, strip, contained }: { contained?: boolean; label: string; items: NavItem[]; me: Person; roleLabel: string; children: React.ReactNode; topbar?: React.ReactNode; theme?: 'admin'; contained?: boolean; strip?: { left: string; right: string; tone: 'test' | 'live' } }) {
+export function AppShell({ label, items, me, roleLabel, children, topbar, theme, strip, contained }: { label: string; items: NavItem[]; me: Person; roleLabel: string; children: React.ReactNode; topbar?: React.ReactNode; theme?: 'admin'; contained?: boolean; strip?: { left: string; right: string; tone: 'test' | 'live' } }) {
   const user = (
     <div className="flex items-center gap-2.5">
       <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-cyan text-[13px] font-extrabold text-on-cyan">{initials(me)}</span>

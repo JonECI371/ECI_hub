@@ -6,7 +6,7 @@ import { SideNav, type NavItem } from '@/components/side-nav';
 const initials = (p: Person) => `${p.firstName[0] ?? ''}${p.lastName[0] && p.lastName !== '-' ? p.lastName[0] : ''}`.toUpperCase();
 
 /** Signed-in area: dark side menu on desktop, a menu button on phones, and a top bar with the person. */
-export function AppShell({ label, items, me, roleLabel, children, topbar, theme, strip }: { label: string; items: NavItem[]; me: Person; roleLabel: string; children: React.ReactNode; topbar?: React.ReactNode; theme?: 'admin'; strip?: { left: string; right: string; tone: 'test' | 'live' } }) {
+export function AppShell({ label, items, me, roleLabel, children, topbar, theme, strip, contained }: { contained?: boolean; label: string; items: NavItem[]; me: Person; roleLabel: string; children: React.ReactNode; topbar?: React.ReactNode; theme?: 'admin'; contained?: boolean; strip?: { left: string; right: string; tone: 'test' | 'live' } }) {
   const user = (
     <div className="flex items-center gap-2.5">
       <span aria-hidden="true" className="flex size-9 items-center justify-center rounded-full bg-cyan text-[13px] font-extrabold text-on-cyan">{initials(me)}</span>
@@ -43,7 +43,7 @@ export function AppShell({ label, items, me, roleLabel, children, topbar, theme,
           <div className="min-w-0 flex-1">{topbar}</div>
           {user}
         </div>
-        <main className="flex flex-1 flex-col gap-6 px-4 pb-12 pt-7 lg:px-8">{children}</main>
+        <main className="flex flex-1 flex-col gap-6 px-4 pb-12 pt-7 lg:px-8">{contained ? <div className="mx-auto flex w-full max-w-screen-2xl flex-col gap-6 md:w-11/12">{children}</div> : children}</main>
       </div>
       </div>
     </div>

@@ -12,6 +12,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
   const m = await myMembership(me.id);
   return (
     <AppShell
+      contained
       label={m ? m.account.company : 'My account'}
       me={me}
       roleLabel={m ? `${m.role === 'MAIN_BOOKER' ? 'Main booker' : 'Booker'} · ${m.account.company}` : isBooker ? 'Booker' : 'Delegate'}

@@ -79,6 +79,7 @@ enum MemberStatus {
 enum PaymentMethod {
   CARD
   ACCOUNT
+  MANUAL // paid by cash or bank transfer, recorded by Admin (refunds are handled by hand)
 }
 
 enum BookingStatus {

@@ -1,3 +1,4 @@
+import { methodLabel } from '@/lib/admin-bookings';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
@@ -122,7 +123,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
                         <tr key={a.id} className="border-t border-hairline align-top">
                           <td className="px-4 py-3">{a.person ? <><span className="block font-bold text-ink">{a.person.firstName} {a.person.lastName}</span><span className="text-xs">{a.person.email}</span></> : <span className="text-warn-fg">Attendee details missing</span>}</td>
                           <td className="px-4 py-3"><Link href={`/admin/bookings?q=${a.booking.reference}`}>{a.booking.reference}</Link><span className="block text-xs">{a.booking.account ? `Account · ${a.booking.account.company}` : `${a.booking.booker.firstName} ${a.booking.booker.lastName}`}</span></td>
-                          <td className="px-4 py-3">{a.booking.method === 'CARD' ? 'Card' : 'On account'}</td>
+                          <td className="px-4 py-3">{methodLabel(a.booking.method)}</td>
                           <td className="px-4 py-3"><Chip tone={st.tone}>{st.label}</Chip></td>
                           <td className="px-4 py-3 text-xs">{c.deliveryType === 'ELEARNING' ? (
                             a.enrolment?.completedAt ? `Completed ${a.enrolment.completedAt.toLocaleDateString('en-GB', { timeZone: 'Europe/London' })}`

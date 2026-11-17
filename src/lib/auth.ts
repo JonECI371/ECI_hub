@@ -84,7 +84,9 @@ export async function startSession(personId: string, trusted: boolean) {
   const person = await db.person.findUnique({ where: { id: personId }, select: { roles: true } });
   const ms = sessionLifetimeMs(person?.roles ?? [], trusted);
   const exp = Date.now() + ms;
-  const persistent = ms > 12 * 3600000;
+  // Admin and Super Admin sign-ins last the full 12 hours even if the browser is closed; everyone else on an untrusted device signs out when the browser closes.
+  const privileged = (person?.roles ?? []).some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN');
+  const persistent = ms > 12 * 3600000 || privileged;
   (await cookies()).set(SESSION_COOKIE, sign({ pid: personId, exp, v: 1, iat: Date.now() }), {
     httpOnly: true,
     sameSite: 'lax',

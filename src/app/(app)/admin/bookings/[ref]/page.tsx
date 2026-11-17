@@ -4,7 +4,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin';
 import { gbp } from '@/lib/format';
-import { STATUS_LABEL } from '@/lib/admin-bookings';
+import { STATUS_LABEL, methodLabel } from '@/lib/admin-bookings';
 import { Chip, DeliveryChip } from '@/components/ui';
 import { adminCancelBooking } from '../actions';
 import { cancellationOutcome } from '@/lib/cancellation-text';
@@ -23,10 +23,10 @@ const ATT: Record<string, string> = { DETAILS_MISSING: 'Details missing', INVITE
 const card = 'rounded-card bg-card p-6 shadow-card';
 const PAY: Record<string, string> = { succeeded: 'Paid', refunded: 'Refunded', refunded_test: 'Refunded (test mode)', partially_refunded: 'Part refunded' };
 
-export default async function AdminBooking({ params, searchParams }: { params: Promise<{ ref: string }>; searchParams: Promise<{ msg?: string }> }) {
+export default async function AdminBooking({ params, searchParams }: { params: Promise<{ ref: string }>; searchParams: Promise<{ msg?: string; added?: string }> }) {
   await requireAdmin('/admin/bookings');
   const { ref } = await params;
-  const { msg } = await searchParams;
+  const { msg, added } = await searchParams;
   const b = await db.booking.findUnique({
     where: { reference: decodeURIComponent(ref) },
     include: { booker: true, account: true, course: true, session: true, payments: true, attendees: { include: { person: true, registration: true } } },
@@ -43,6 +43,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
         <h1 className="text-[30px] font-extrabold tracking-tight text-ink">{b.reference}</h1>
         <div className="mt-2 flex flex-wrap items-center gap-1.5 text-sm"><Chip tone={TONE[b.status]}>{STATUS_LABEL[b.status]}</Chip><DeliveryChip type={b.course.deliveryType} /></div>
       </div>
+      {added && <p role="status" className="rounded-control bg-cyan-soft px-4 py-3 text-sm font-semibold text-ink">{added === 'card_link' ? 'Booking added. We have emailed the booker a payment link; the places are held for 72 hours.' : 'Booking added and confirmed. The booker has been emailed and the Teams invite is updated.'}</p>}
       {notice && <p role={notice[1] ? 'status' : 'alert'} className={`rounded-control px-4 py-3 text-sm font-semibold ${notice[1] ? 'bg-cyan-soft text-ink' : 'bg-bad-bg text-bad-fg'}`}>{notice[0]}</p>}
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px] xl:items-start">
@@ -55,7 +56,7 @@ export default async function AdminBooking({ params, searchParams }: { params: P
               <dt>Booked by</dt><dd className="font-bold text-ink"><Link href={`/admin/people/${b.bookerId}`}>{b.booker.firstName} {b.booker.lastName}</Link> <span className="font-normal">{b.booker.email}</span></dd>
               {b.account && <><dt>Account</dt><dd className="font-bold text-ink">{b.account.company}</dd></>}
               <dt>Places</dt><dd className="font-bold text-ink">{b.places}</dd>
-              <dt>Total</dt><dd className="font-bold text-ink">{gbp(b.totalPence)} <span className="font-normal">({b.method === 'CARD' ? 'card' : 'on account'}{b.poNumber ? `, PO ${b.poNumber}` : ''})</span></dd>
+              <dt>Total</dt><dd className="font-bold text-ink">{gbp(b.totalPence)} <span className="font-normal">({methodLabel(b.method).toLowerCase()}{b.poNumber ? `, PO ${b.poNumber}` : ''})</span></dd>
               <dt>Booked</dt><dd className="font-bold text-ink">{dt.format(b.createdAt)}</dd>
               {b.status === 'CANCELLED' && <><dt>Cancellation</dt><dd className="font-bold text-ink">{cancellationOutcome(b) ?? 'Cancelled'}{b.cancellationReason ? <span className="block font-normal">Reason: {b.cancellationReason}</span> : null}{b.cancellationNote ? <span className="block font-normal">Note: {b.cancellationNote}</span> : null}{b.cancellationDecision === 'PENDING' && <span className="block font-normal"><Link href="/admin/tasks?type=CANCELLATION_REVIEW">Decide it in Tasks</Link></span>}</dd></>}
             </dl>

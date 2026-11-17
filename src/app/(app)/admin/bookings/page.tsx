@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin';
 import { gbp } from '@/lib/format';
-import { STATUSES, STATUS_LABEL, bookingWhere, isExpiredHold, statusLabel } from '@/lib/admin-bookings';
+import { STATUSES, STATUS_LABEL, bookingWhere, isExpiredHold, statusLabel, methodLabel } from '@/lib/admin-bookings';
 import { Chip, DeliveryChip } from '@/components/ui';
 import { emailBookers } from './actions';
 
@@ -35,6 +35,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
     <>
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div><p className="mb-1.5 text-xs">Admin › Bookings</p><h1 className="text-[30px] font-extrabold tracking-tight text-ink">Bookings</h1></div>
+        <Link href="/admin/bookings/new" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-4 text-sm font-bold text-strong-fg no-underline">Add booking</Link>
         <a href={`/admin/bookings/export?${qs({})}`} className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink no-underline">Export CSV</a>
       </div>
       <form className="flex flex-wrap items-end gap-3" role="search">
@@ -73,7 +74,7 @@ export default async function AdminBookings({ searchParams }: { searchParams: Pr
                     <td className="whitespace-nowrap px-4 py-3">{b.session ? dt.format(b.session.startsAt) : 'Any time'}</td>
                     <td className="px-4 py-3">{b.booker.firstName} {b.booker.lastName}<span className="block text-xs">{b.account?.company ?? b.booker.email}</span></td>
                     <td className="px-4 py-3">{b.places}{b.attendees.some((a) => !a.personId) && <span className="block text-xs text-warn-fg">{b.attendees.filter((a) => !a.personId).length} unnamed</span>}</td>
-                    <td className="whitespace-nowrap px-4 py-3 tabular-nums">{gbp(b.totalPence)}<span className="block text-xs">{b.method === 'CARD' ? 'Card' : 'Account'}</span></td>
+                    <td className="whitespace-nowrap px-4 py-3 tabular-nums">{gbp(b.totalPence)}<span className="block text-xs">{b.method === 'ACCOUNT' ? 'Account' : methodLabel(b.method)}</span></td>
                     <td className="px-4 py-3"><Chip tone={isExpiredHold(b) ? 'grey' : TONE[b.status]}>{statusLabel(b)}</Chip></td>
                   </tr>
                 ))}

@@ -5,6 +5,8 @@ export const STATUSES: BookingStatus[] = ['CONFIRMED', 'PAYMENT_PENDING', 'COMPL
 /** A started checkout whose 15-minute hold has run out. Shown as Expired and hidden unless asked for. */
 export const isExpiredHold = (b: { status: BookingStatus; holdExpiresAt: Date | null }) => b.status === 'PAYMENT_PENDING' && !!b.holdExpiresAt && b.holdExpiresAt < new Date();
 export const statusLabel = (b: { status: BookingStatus; holdExpiresAt: Date | null }) => (isExpiredHold(b) ? 'Expired' : STATUS_LABEL[b.status]);
+/** How a booking was paid, in words for Admin. */
+export const methodLabel = (m: string) => (m === 'CARD' ? 'Card' : m === 'MANUAL' ? 'Paid by cash or bank' : 'On account');
 export const STATUS_LABEL: Record<BookingStatus, string> = { CONFIRMED: 'Confirmed', PAYMENT_PENDING: 'Not paid', COMPLETED: 'Completed', CANCELLED: 'Cancelled' };
 
 /** Search across reference, course and the booker's or attendees' name and email. */

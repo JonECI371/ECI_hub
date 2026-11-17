@@ -95,7 +95,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
     <>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <div className="hero-motif px-4 pb-12 pt-10 md:px-20">
+      <div className="hero-motif px-4 pb-12 pt-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <nav aria-label="Breadcrumb" className="mb-4 text-[13px] text-white/70">
           <Link href="/" className="text-white/80">Home</Link> / <Link href="/courses" className="text-white/80">Training</Link> / {c.title}
         </nav>
@@ -112,7 +112,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
         </dl>
       </div>
 
-      <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-12">
           <section id="dates" className="scroll-mt-6">
             <Eyebrow>{isElearning ? 'Booking' : 'Dates and booking'}</Eyebrow>
@@ -208,7 +208,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
       </div>
 
       {content.completion && (
-        <section className="bg-ink px-4 py-[52px] md:px-20">
+        <section className="bg-ink px-4 py-[52px] md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">On completion</p>
           <h2 className="mb-3 text-[28px] font-bold tracking-tight text-white">{content.completionHeading ?? 'Your certificate'}</h2>
           <p className="max-w-[720px] text-base leading-[1.7] text-white/75">{content.completion}</p>
@@ -216,7 +216,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
       )}
 
       {related.length > 0 && (
-        <section className="bg-white px-4 py-14 md:px-20">
+        <section className="bg-white px-4 py-14 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
           <Eyebrow>Next steps</Eyebrow>
           <h2 className="mb-8 text-[28px] font-bold tracking-tight text-ink">Often taken alongside</h2>
           <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

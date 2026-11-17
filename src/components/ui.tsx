@@ -48,7 +48,7 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 /** Dark hero band with the zone-hatch motif. Marketing and confirmation pages only. */
 export function Hero({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (
-    <div className="hero-motif px-4 py-12 md:px-20">
+    <div className="hero-motif px-4 py-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
       <p className="mb-3 text-xs font-extrabold uppercase tracking-widest text-cyan">{eyebrow}</p>
       <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-5xl">{title}</h1>
       {sub && <p className="max-w-3xl text-lg leading-relaxed text-white/80">{sub}</p>}

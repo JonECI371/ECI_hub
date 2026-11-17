@@ -119,7 +119,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
-      <div className="hero-motif px-4 pb-10 pt-12 md:px-20">
+      <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <nav aria-label="Breadcrumb" className="mb-3 text-[13px] text-white/70">
           <Link href="/" className="text-white/80">Home</Link> / Courses
         </nav>
@@ -127,7 +127,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
         <p className="max-w-[760px] text-[17px] leading-relaxed text-white/80">Filter by how you want to learn, then pick a course or a date. eLearning starts the day you book.</p>
       </div>
 
-      <div className="flex flex-col gap-3.5 border-b border-hairline bg-white px-4 py-5 md:px-20">
+      <div className="flex flex-col gap-3.5 border-b border-hairline bg-white px-4 py-5 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <div role="group" aria-label="Delivery type" className="flex flex-wrap gap-2">
           <Link href={href({ type: undefined })} className={pill(!deliveryType)} aria-current={!deliveryType ? 'true' : undefined}>
             All delivery types<span className="ml-2 text-xs opacity-75">{countByType()}</span>
@@ -146,7 +146,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col gap-5 px-4 pb-16 pt-7 md:px-20">
+      <div className="flex flex-1 flex-col gap-5 px-4 pb-16 pt-7 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <p aria-live="polite" className="text-[15px] font-bold text-ink">{count}</p>
           <div role="group" aria-label="View" className="inline-flex overflow-hidden rounded-control border border-field">

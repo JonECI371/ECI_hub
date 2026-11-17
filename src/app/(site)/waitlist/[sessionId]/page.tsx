@@ -38,12 +38,12 @@ export default async function WaitlistJoin({ params, searchParams }: { params: P
   if (entry) {
     return (
       <>
-        <div className="hero-motif px-4 pb-10 pt-12 md:px-20">
+        <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Waitlist</p>
           <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">You&apos;re number {pos} on the waitlist</h1>
           <p className="text-[17px] text-white/80">This date is full. Nothing has been charged.</p>
         </div>
-        <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">
+        <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
           <section className="flex-1 rounded-card bg-white p-6 shadow-card md:p-8">
             <h2 className="mb-5 text-[22px] font-extrabold text-ink">What happens next</h2>
             <ol className="grid gap-5 md:grid-cols-3">
@@ -60,7 +60,7 @@ export default async function WaitlistJoin({ params, searchParams }: { params: P
   }
 
   return (
-    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-20 lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
           <Link href={`/courses/${s.course.slug}#dates`} className="text-sm">← Back to dates</Link>

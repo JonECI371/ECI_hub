@@ -25,7 +25,7 @@ export default async function PayPage() {
   const testMode = !stripeEnabled();
   const clientSecret = testMode ? null : await paymentIntentFor(b);
   return (
-    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-20 lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
           <Link href={b.sessionId ? `/book/${b.sessionId}` : `/book/course/${b.course.slug}`} className="text-sm">← Change details</Link>

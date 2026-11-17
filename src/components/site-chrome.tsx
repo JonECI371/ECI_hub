@@ -15,14 +15,14 @@ export async function SiteHeader() {
   const NAV: (readonly [string, string])[] = [...BASE_NAV, me ? ['My account', admin ? '/admin' : '/account'] : ['Log in', '/login']];
   return (
     <>
-      <div className="flex h-10 items-center justify-between bg-ink px-4 text-xs text-white/60 md:px-20">
+      <div className="flex h-10 items-center justify-between bg-ink px-4 text-xs text-white/60 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <div className="flex gap-6">
           <span>support@eci-hub.co.uk</span>
           <span className="hidden sm:inline">+44 (0) 1932 963463</span>
         </div>
         <span className="hidden md:inline">Sunbury-on-Thames and nationwide on-site delivery</span>
       </div>
-      <header className="relative flex h-[76px] items-center justify-between bg-ink px-4 md:px-20">
+      <header className="relative flex h-[76px] items-center justify-between bg-ink px-4 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <Link href="/" className="flex items-center no-underline">
           <Image src="/logo.png" alt="ECI-Hub, Engineering Safer Futures" width={146} height={52} priority className="h-[52px] w-auto" />
         </Link>
@@ -58,7 +58,7 @@ const FOOTER_COLS = [
 
 export function SiteFooter() {
   return (
-    <footer className="mt-auto bg-ink px-4 pt-14 text-white/65 md:px-20">
+    <footer className="mt-auto bg-ink px-4 pt-14 text-white/65 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
       <div className="grid gap-10 pb-12 sm:grid-cols-2 lg:grid-cols-[1.6fr_1fr_1fr_1fr]">
         <div>
           <Image src="/logo.png" alt="ECI-Hub" width={126} height={45} className="mb-5 h-[45px] w-auto" />

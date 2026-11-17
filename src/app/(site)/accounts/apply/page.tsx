@@ -17,12 +17,12 @@ const STEPS: [string, string][] = [
 export default function Apply() {
   return (
     <>
-      <div className="hero-motif px-4 pb-10 pt-12 md:px-20">
+      <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">For companies</p>
         <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Apply for a credit account</h1>
         <p className="max-w-[720px] text-[17px] leading-relaxed text-white/80">Book any course for your team and pay one invoice at the end of each month.</p>
       </div>
-      <div className="flex flex-col gap-8 px-4 py-10 md:px-20 lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
         <div className="relative min-w-0 flex-1"><AccountApplicationForm industries={INDUSTRIES} /></div>
         <aside className="flex w-full flex-col gap-4 rounded-card bg-white p-6 shadow-card lg:sticky lg:top-6 lg:w-[340px]">
           <h2 className="text-lg font-extrabold text-ink">How it works</h2>

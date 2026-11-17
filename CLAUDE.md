@@ -4,6 +4,8 @@ Booking website, customer portal, trainer app, admin back office and CRM for ECI
 
 ## Read before building anything
 
+0. `docs/handover.md`: current state, open decisions and how we work with Jon. Start here.
+
 1. `docs/spec.md`: the build specification. It is the source of truth. If the spec and a design disagree, the spec wins.
 2. `docs/build-plan.md`: the phases and the task order. Work on one task at a time, in order.
 3. `docs/design-system.md`: tokens, components and rules.

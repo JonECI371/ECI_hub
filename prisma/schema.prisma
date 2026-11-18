@@ -395,6 +395,7 @@ model Payment {
   refundedPence    Int      @default(0)
   status           String
   xeroPaymentId    String?
+  note             String?  // for payments recorded by Admin: how and when it was paid
   createdAt        DateTime @default(now())
 }
 

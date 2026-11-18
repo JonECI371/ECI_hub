@@ -79,6 +79,8 @@ describe('Admin add booking (ADM-12)', async () => {
     expect(pay.amountPence).toBe(22200);
     const log = await db.auditLog.findFirstOrThrow({ where: { action: 'ADMIN_BOOKING_CREATED', recordId: booking.id } });
     expect(log.after).toMatchObject({ paidHow: 'CASH', note: 'Cash taken at the desk' });
+    expect(pay.note).toBe('Cash: Cash taken at the desk');
+    expect(await db.xeroJob.count({ where: { kind: 'CARD_INVOICE', recordId: booking.id } })).toBe(1); // the paid invoice is queued for Xero
   });
 
   it('adds a new person when the email is not known', async () => {

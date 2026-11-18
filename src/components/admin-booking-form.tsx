@@ -54,7 +54,7 @@ export function AdminBookingForm({ slots }: { slots: SlotOption[] }) {
           <div className="grid gap-3 sm:grid-cols-2">
             <label className={label}>Paid by<select name="paidHow" defaultValue={v.paidHow ?? 'BANK'} className={input}><option value="BANK">Bank transfer</option><option value="CASH">Cash</option></select></label>
             <label className={`${label} sm:col-span-2`}>Note <span className="font-normal">(how and when it was paid)</span><input name="note" defaultValue={v.note} className={input} /></label>
-            <p className="text-sm sm:col-span-2">This is recorded as paid, with the confirmation email and Teams invite sent as normal. It does not go to Xero by itself yet, and a refund has to be made by hand.</p>
+            <p className="text-sm sm:col-span-2">This is recorded as paid, with the confirmation email and Teams invite sent as normal. An invoice marked as paid is sent to Xero, against the cash and bank account set in Settings. A refund has to be made by hand.</p>
           </div>
         )}
       </fieldset>

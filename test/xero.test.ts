@@ -69,7 +69,7 @@ describe('Xero sync (against a simulated Xero)', async () => {
     await confirmCardBooking(b.id, `pi_${b.id}`);
     return b;
   }
-  const setClearing = (code: string) => db.setting.update({ where: { key: 'xero' }, data: { value: { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: code } } });
+  const setClearing = (code: string) => db.setting.update({ where: { key: 'xero' }, data: { value: { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: code, manualPaymentCode: '090' } } });
 
   it('waits, without losing anything, until the Stripe clearing account is set', async () => {
     const b = await cardBooking();
@@ -204,6 +204,25 @@ describe('Xero sync (against a simulated Xero)', async () => {
     expect([done.status, done.xeroInvoiceNo]).toEqual(['PAID', 'INV-900']);
     expect(await availableCredit(db, await live())).toBe(500000);
     void statementMonth;
+  });
+
+  it('an Admin booking that is already paid goes to Xero as an invoice marked paid, with the note on the payment', async () => {
+    await setClearing('090');
+    const { createAdminBooking } = await import('@/lib/admin-booking');
+    const { course: c, session } = await course({ capacity: 5 });
+    const person = await db.person.create({ data: { email: `paid.${Date.now()}@example.com`, firstName: 'Pat', lastName: 'Paid' } });
+    const admin = await db.person.create({ data: { email: `adm.${Date.now()}@example.com`, firstName: 'Ann', lastName: 'Admin', roles: ['ADMIN'] } });
+    const { booking } = await createAdminBooking({ actorId: admin.id, person: { id: person.id }, courseId: c.id, sessionId: session!.id, places: 2, bookerAttends: true, method: 'PAID', paidHow: 'BANK', note: 'Received 17 Nov, ref ACME' });
+    await settle();
+    const inv = sent('/Invoices').find((x) => x.body.Invoices[0].Reference === booking.reference)!.body.Invoices[0];
+    expect(inv).toMatchObject({ Type: 'ACCREC', Status: 'AUTHORISED' });
+    expect(inv.LineItems[0]).toMatchObject({ Quantity: 2, UnitAmount: 185, AccountCode: '200', TaxType: 'OUTPUT2' });
+    const row = await db.booking.findUniqueOrThrow({ where: { id: booking.id }, include: { payments: true } });
+    expect(row.xeroInvoiceId).toMatch(/^inv-/);
+    expect(row.payments[0].xeroPaymentId).toMatch(/^pay-/); // the invoice shows as paid
+    const pay = sent('/Payments').find((x) => x.body.Payments[0].Invoice?.InvoiceID === row.xeroInvoiceId)!.body.Payments[0];
+    expect(pay.Amount).toBe(444);
+    expect(pay.Reference).toBe('Bank transfer: Received 17 Nov, ref ACME');
   });
 
   it('checks the codes in Settings against Xero, and says what is wrong', async () => {

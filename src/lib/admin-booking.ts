@@ -9,6 +9,8 @@ import { placesOnOffer } from '@/lib/waitlist';
 import { upsertPurchaseOrder } from '@/lib/purchase-orders';
 import { sendBookingConfirmation } from '@/lib/notifications';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { enqueueXero } from '@/lib/xero-queue';
+import { kickXero } from '@/lib/xero-sync';
 import { sendEmail } from '@/lib/integrations/email';
 import type { PoRule } from '@/lib/accounts';
 
@@ -105,7 +107,8 @@ export async function createAdminBooking(input: AdminBookingInput) {
       await addStatementLine(tx, accountId, booking.id, `${course.title}, ${when}, ${input.places} ${input.places === 1 ? 'place' : 'places'} (${booking.reference}${po ? `, ${/^po\b/i.test(po) ? po : `PO ${po}`}` : ''})`, price.subtotalPence, price.vatPence);
     }
     if (input.method === 'PAID') {
-      await tx.payment.create({ data: { bookingId: booking.id, stripeIntentId: `manual-${booking.reference}`, amountPence: price.totalPence, status: 'succeeded' } });
+      await tx.payment.create({ data: { bookingId: booking.id, stripeIntentId: `manual-${booking.reference}`, amountPence: price.totalPence, status: 'succeeded', note: `${input.paidHow === 'CASH' ? 'Cash' : 'Bank transfer'}: ${(input.note ?? '').slice(0, 200)}` } });
+      await enqueueXero(tx, 'CARD_INVOICE', 'Booking', booking.id, `CARD_INVOICE:${booking.id}`); // an invoice marked paid goes to Xero
     }
     await tx.auditLog.create({
       data: {
@@ -132,6 +135,7 @@ export async function createAdminBooking(input: AdminBookingInput) {
       ],
     });
   } else {
+    if (input.method === 'PAID') kickXero();
     await sendBookingConfirmation(result.booking.id);
     if (result.booking.sessionId) await syncSessionMeeting(result.booking.sessionId);
   }

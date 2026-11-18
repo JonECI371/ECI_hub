@@ -6,9 +6,9 @@ import { enqueueXero } from '@/lib/xero-queue';
 /** Last day of a statement month (YYYY-MM): the date on the invoice, so "invoiced on 30 November" is true. */
 export function monthEnd(ym: string): Date { const [y, m] = ym.split('-').map(Number); return new Date(Date.UTC(y, m, 0, 12)); }
 
-export type XeroSettings = { accountCode: string; taxType: string; invoicePrefix: string; taxCode: string; stripeClearingCode: string };
+export type XeroSettings = { accountCode: string; taxType: string; invoicePrefix: string; taxCode: string; stripeClearingCode: string; manualPaymentCode: string };
 /** accountCode and taxType feed the CSV; taxCode (a Xero tax code such as OUTPUT2) and the Stripe clearing account feed the live connection. */
-const XERO_DEFAULTS: XeroSettings = { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: '' };
+const XERO_DEFAULTS: XeroSettings = { accountCode: '200', taxType: '20% (VAT on Income)', invoicePrefix: 'ECI-', taxCode: 'OUTPUT2', stripeClearingCode: '', manualPaymentCode: '' };
 
 /** Xero import settings from Settings (key "xero"). Defaults are Xero's standard Sales account and UK VAT rate. */
 export async function xeroSettings(): Promise<XeroSettings> {

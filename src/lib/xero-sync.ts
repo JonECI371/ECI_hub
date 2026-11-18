@@ -111,8 +111,13 @@ type CreditNoteResult = { CreditNotes: { CreditNoteID: string }[] };
 
 /** A card booking: the invoice (authorised) and the Stripe payment against the clearing account, so it reconciles. */
 async function cardInvoice(bookingId: string): Promise<string> {
-  const { accountCode, taxCode, clearing } = await needClearing();
   const b = await db.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { course: true, session: true, booker: true, payments: true } });
+  // Admin's "already paid" bookings (cash or bank transfer) are paid into their own account, not the Stripe clearing account.
+  const manual = b.method === 'MANUAL';
+  const x = await xeroSettings();
+  if (manual && !x.manualPaymentCode) throw new Wait('Set the account for cash and bank payments in Settings, Credit accounts and Xero.');
+  const { accountCode, taxCode, clearing: cardClearing } = manual ? { accountCode: x.accountCode, taxCode: x.taxCode, clearing: '' } : await needClearing();
+  const clearing = manual ? x.manualPaymentCode : cardClearing;
   let invoiceId = b.xeroInvoiceId;
   if (!invoiceId) {
     const contact = await ensurePersonContact(b.bookerId);
@@ -124,7 +129,7 @@ async function cardInvoice(bookingId: string): Promise<string> {
   }
   const pay = b.payments.find((p) => p.status !== 'failed');
   if (pay && !pay.xeroPaymentId) {
-    const r = await paymentsPut(clearing, { Payments: [{ Invoice: { InvoiceID: invoiceId }, Account: { Code: clearing }, Date: ukDay(b.createdAt), Amount: pounds(pay.amountPence), Reference: pay.stripeIntentId.slice(0, 255) }] }, `pay:${pay.id}`);
+    const r = await paymentsPut(clearing, { Payments: [{ Invoice: { InvoiceID: invoiceId }, Account: { Code: clearing }, Date: ukDay(b.createdAt), Amount: pounds(pay.amountPence), Reference: manual ? (pay.note ?? `Paid ${b.reference}`).slice(0, 255) : pay.stripeIntentId.slice(0, 255) }] }, `pay:${pay.id}`);
     await db.payment.update({ where: { id: pay.id }, data: { xeroPaymentId: r.Payments[0].PaymentID } });
   }
   return invoiceId;
@@ -235,6 +240,14 @@ export async function xeroSetupCheck(): Promise<SetupCheck[]> {
     else if (c.Status !== 'ACTIVE') out.push({ ok: false, text: `Stripe clearing account ${x.stripeClearingCode} (${c.Name}) is not active.` });
     else if (c.Type !== 'BANK' && !c.EnablePaymentsToAccount) out.push({ ok: false, text: `Stripe clearing account ${x.stripeClearingCode} (${c.Name}) exists but "Enable payments to this account" is not ticked. Tick it in Xero, Chart of accounts.` });
     else out.push({ ok: true, text: `Stripe clearing account ${x.stripeClearingCode}: ${c.Name} accepts payments` });
+  }
+  if (!x.manualPaymentCode) out.push({ ok: false, text: 'Account for cash and bank payments is not set (needed for Admin bookings that are already paid).' });
+  else {
+    const c = byCode.get(x.manualPaymentCode.toLowerCase());
+    if (!c) out.push({ ok: false, text: `Cash and bank account ${x.manualPaymentCode} was not found in this Xero organisation.` });
+    else if (c.Status !== 'ACTIVE') out.push({ ok: false, text: `Cash and bank account ${x.manualPaymentCode} (${c.Name}) is not active.` });
+    else if (c.Type !== 'BANK' && !c.EnablePaymentsToAccount) out.push({ ok: false, text: `Cash and bank account ${x.manualPaymentCode} (${c.Name}) exists but "Enable payments to this account" is not ticked.` });
+    else out.push({ ok: true, text: `Cash and bank account ${x.manualPaymentCode}: ${c.Name} accepts payments` });
   }
   const tax = await xero<{ TaxRates?: { TaxType?: string; Name?: string; Status?: string }[] }>('GET', '/TaxRates');
   const rate = (tax.TaxRates ?? []).find((t) => t.TaxType?.toLowerCase() === x.taxCode.toLowerCase());

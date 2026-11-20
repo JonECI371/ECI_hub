@@ -1,0 +1,29 @@
+# AWS CodeBuild: builds the ECI-Hub images natively on ARM (no emulation), pushes them to ECR and restarts the test server.
+# See docs/build-in-aws.md. Not used by `cdk deploy` (that builds from the Dockerfile itself).
+version: 0.2
+
+env:
+  variables:
+    AWS_REGION: eu-north-1
+    ECR_REPO: eci-hub
+    TEST_SITE_URL: https://test.eci-hub.co.uk
+    TEST_INSTANCE_ID: i-0567b0e02843cb540
+    DOCKER_BUILDKIT: "1"
+    NODE_IMAGE: public.ecr.aws/docker/library/node:22-bookworm-slim
+
+phases:
+  pre_build:
+    commands:
+      - export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+      - export ECR_REGISTRY=$ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REGISTRY
+  build:
+    commands:
+      - docker build --build-arg NODE_IMAGE=$NODE_IMAGE -t $ECR_REGISTRY/$ECR_REPO:app .
+      - docker build --build-arg NODE_IMAGE=$NODE_IMAGE --target build -t $ECR_REGISTRY/$ECR_REPO:tools .
+  post_build:
+    commands:
+      - if [ "$CODEBUILD_BUILD_SUCCEEDING" != "1" ]; then echo "Build failed, nothing pushed or restarted"; exit 1; fi
+      - docker push $ECR_REGISTRY/$ECR_REPO:app
+      - docker push $ECR_REGISTRY/$ECR_REPO:tools
+      - bash scripts/restart-test-server.sh

@@ -1,5 +1,7 @@
 # Production image for AWS Fargate. Built and pushed by `cdk deploy` (infra/).
-FROM node:22-bookworm-slim AS deps
+# NODE_IMAGE lets CodeBuild use the same image from ECR Public (Docker Hub limits shared build machines).
+ARG NODE_IMAGE=node:22-bookworm-slim
+FROM ${NODE_IMAGE} AS deps
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json* ./
@@ -14,12 +16,12 @@ RUN npm run build
 
 # Prisma CLI with its own dependencies, for `migrate deploy` at start-up.
 # (Copying only node_modules/prisma misses packages it needs, such as effect.)
-FROM node:22-bookworm-slim AS prismacli
+FROM ${NODE_IMAGE} AS prismacli
 WORKDIR /cli
 COPY package.json /tmp/app-package.json
 RUN npm init -y >/dev/null && npm install --no-package-lock --no-fund --no-audit "prisma@$(node -p "require('/tmp/app-package.json').devDependencies.prisma")"
 
-FROM node:22-bookworm-slim AS run
+FROM ${NODE_IMAGE} AS run
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0

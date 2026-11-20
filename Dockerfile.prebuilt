@@ -1,0 +1,35 @@
+# Stopgap: the site is built natively on the workspace (fast); only packaging and the ARM-only native pieces happen here for linux/arm64.
+FROM eci-base:node22 AS prismacli
+USER root
+WORKDIR /cli
+COPY proxy-ca.crt /proxy-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/proxy-ca.crt
+COPY package.json /tmp/app-package.json
+RUN npm init -y >/dev/null && npm install --no-package-lock --no-fund --no-audit "prisma@$(node -p "require('/tmp/app-package.json').devDependencies.prisma")"
+
+FROM eci-base:node22 AS sharp
+USER root
+WORKDIR /s
+COPY proxy-ca.crt /proxy-ca.crt
+ENV NODE_EXTRA_CA_CERTS=/proxy-ca.crt
+RUN npm init -y >/dev/null && npm install --no-package-lock --no-fund --no-audit sharp@0.35.5
+
+FROM eci-base:node22 AS run
+USER root
+RUN rm -rf /app /opt/prisma-cli /proxy-ca.crt && mkdir /app
+WORKDIR /app
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 NODE_EXTRA_CA_CERTS=
+COPY standalone ./
+COPY static/static ./.next/static
+COPY public ./public
+COPY prisma ./prisma
+COPY pc/@prisma ./node_modules/@prisma
+COPY pc/.prisma ./node_modules/.prisma
+RUN rm -rf node_modules/@img/sharp-linux-x64 node_modules/@img/sharp-libvips-linux-x64 node_modules/@img/sharp-linuxmusl-x64 node_modules/@img/sharp-libvips-linuxmusl-x64
+COPY --from=sharp /s/node_modules/@img ./node_modules/@img
+COPY --from=prismacli /cli/node_modules /opt/prisma-cli/node_modules
+COPY scripts/docker-entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh && (id app >/dev/null 2>&1 || useradd -m app) && chown -R app /app && mkdir -p /data/uploads && chown app /data/uploads
+USER app
+EXPOSE 3000
+CMD ["./entrypoint.sh"]

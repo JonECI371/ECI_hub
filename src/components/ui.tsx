@@ -51,7 +51,7 @@ export type Crumb = [label: string, href?: string];
 export function Breadcrumbs({ items, variant = 'bar', className = '' }: { items: Crumb[]; variant?: 'bar' | 'inline'; className?: string }) {
   const bar = variant === 'bar';
   return (
-    <nav aria-label="Breadcrumb" className={`text-[13px] text-slate ${bar ? 'border-b border-hairline bg-white px-4 py-2.5 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]' : ''} ${className}`}>
+    <nav aria-label="Breadcrumb" className={`text-[13px] text-slate ${bar ? 'border-b border-hairline bg-white px-4 py-2.5 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]' : ''} ${className}`}>
       <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {items.map(([label, href], i) => {
           const last = i === items.length - 1;
@@ -70,7 +70,7 @@ export function Breadcrumbs({ items, variant = 'bar', className = '' }: { items:
 /** Dark hero band with the zone-hatch motif. Marketing and confirmation pages only. */
 export function Hero({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (
-    <div className="hero-motif px-4 py-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+    <div className="hero-motif px-4 py-12 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
       <p className="mb-3 text-xs font-extrabold uppercase tracking-widest text-cyan">{eyebrow}</p>
       <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-5xl">{title}</h1>
       {sub && <p className="max-w-3xl text-lg leading-relaxed text-white/80">{sub}</p>}

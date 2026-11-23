@@ -49,7 +49,7 @@ const QUOTES = [
 const PARTNERS = ['CompEx', 'EUSR', 'Cogent Skills', 'Trainor', 'Achilles UVDB'];
 
 const H2 = 'text-3xl font-bold tracking-tight text-ink md:text-[38px] md:leading-tight';
-const SECTION = 'px-4 py-14 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] md:py-20';
+const SECTION = 'px-4 py-14 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] md:py-20';
 
 export default async function Home() {
   const now = new Date();
@@ -69,7 +69,7 @@ export default async function Home() {
   return (
     <>
       {/* Hero: thesis, search and live next dates */}
-      <section className="hero-motif flex flex-col gap-12 px-4 pb-16 pt-14 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] md:pb-[72px] md:pt-[88px] lg:flex-row lg:items-start lg:gap-16">
+      <section className="hero-motif flex flex-col gap-12 px-4 pb-16 pt-14 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] md:pb-[72px] md:pt-[88px] lg:flex-row lg:items-start lg:gap-16">
         <div className="max-w-[620px] flex-1">
           <p className="mb-5 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">EC&I safety engineering</p>
           <h1 className="mb-6 text-4xl font-extrabold leading-[1.08] tracking-tight text-white [text-wrap:balance] md:text-[58px]">Stories that stay with you, skills that protect</h1>
@@ -107,7 +107,7 @@ export default async function Home() {
       </section>
 
       {/* The two ways to book */}
-      <section className="border-b border-hairline bg-white px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+      <section className="border-b border-hairline bg-white px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
         <Eyebrow>Ready to book?</Eyebrow>
         <div className="grid gap-px border border-hairline bg-hairline md:grid-cols-2">
           <Link href="/courses" className="block bg-white px-6 py-[26px] no-underline hover:bg-page">
@@ -124,7 +124,7 @@ export default async function Home() {
       </section>
 
       {/* Accreditation partners */}
-      <section className="flex flex-col gap-4 bg-[#E6E6E6] px-4 py-[26px] md:flex-row md:items-center md:justify-between md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+      <section className="flex flex-col gap-4 bg-[#E6E6E6] px-4 py-[26px] md:flex-row md:items-center md:justify-between md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
         <span className="text-[13px] text-slate">Accredited and delivered in partnership with</span>
         <ul className="flex flex-wrap gap-2.5">
           {PARTNERS.map((p) => (
@@ -159,7 +159,7 @@ export default async function Home() {
       </section>
 
       {/* Figures */}
-      <section className="bg-slate px-4 py-14 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+      <section className="bg-slate px-4 py-14 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
         <dl className="grid grid-cols-2 gap-8 lg:grid-cols-4">
           {STATS.map(([value, label]) => (
             <div key={label} className="flex flex-col-reverse">
@@ -218,7 +218,7 @@ export default async function Home() {
       </section>
 
       {/* On-site delivery */}
-      <section id="contact" className="flex flex-col gap-8 bg-ink px-4 py-14 md:flex-row md:items-center md:justify-between md:gap-[60px] md:px-[max(4.1667%,calc((100%_-_1536px)/2))] md:py-[72px]">
+      <section id="contact" className="flex flex-col gap-8 bg-ink px-4 py-14 md:flex-row md:items-center md:justify-between md:gap-[60px] md:px-[max(4.1667%,calc((100%_-_1280px)/2))] md:py-[72px]">
         <div className="max-w-[620px]">
           <h2 className="mb-3.5 text-[28px] font-bold tracking-tight text-white md:text-[34px]">Training twelve people or more?</h2>
           <p className="text-base leading-[1.7] text-white/70">On-site delivery at your own plant, tailored to your processes and hazards. Usually cheaper than sending everyone away, and the examples are yours.</p>

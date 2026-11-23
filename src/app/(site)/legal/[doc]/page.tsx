@@ -20,7 +20,7 @@ export default async function Legal({ params }: { params: Promise<{ doc: string 
   return (
     <>
     <Breadcrumbs items={[['Home', '/'], [d.title]]} />
-    <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
       <aside className="w-full rounded-card bg-white p-6 shadow-card lg:sticky lg:top-6 lg:w-[300px]">
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-ink">Contents</p>
         <ol className="flex flex-col gap-2 text-sm">{d.sections.map((s, i) => <li key={s.heading}><a href={`#${id(s.heading)}`}>{i + 1}. {s.heading}</a></li>)}</ol>

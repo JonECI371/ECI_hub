@@ -24,12 +24,12 @@ export default async function Claim({ params, searchParams }: { params: Promise<
     const slug = e?.session.course.slug;
     return (
       <>
-        <div className="bg-ink px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <div className="bg-ink px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-[#FFB59A]">Offer ended</p>
           <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">This place has gone to the next person</h1>
           <p className="text-[17px] text-white/80">{e?.offerExpiresAt ? `The 24-hour window ended at ${until.format(e.offerExpiresAt).replace(' at', ' on')}. ` : ''}You can still book another date.</p>
         </div>
-        <div className="flex flex-wrap gap-3 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <div className="flex flex-wrap gap-3 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
           <Link href={slug ? `/courses/${slug}#dates` : '/courses'} className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 font-bold text-ink no-underline">See other dates</Link>
           {e && <Link href={`/waitlist/${e.sessionId}`} className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 font-bold text-ink no-underline">Join the waitlist again</Link>}
         </div>
@@ -43,12 +43,12 @@ export default async function Claim({ params, searchParams }: { params: Promise<
   const hours = Math.max(1, Math.round((e.offerExpiresAt!.getTime() - Date.now()) / 3600000));
   return (
     <>
-      <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+      <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">A place has come up</p>
         <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Your {e.places === 1 ? 'place is' : 'places are'} ready to claim</h1>
         <p className="text-[17px] text-white/80">Held for you until {until.format(e.offerExpiresAt!)} ({hours} {hours === 1 ? 'hour' : 'hours'} left). After that it goes to the next person.</p>
       </div>
-      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
         <section className="flex-1 rounded-card bg-white p-6 shadow-card md:p-8">
           <h2 className="mb-2 text-[22px] font-extrabold text-ink">Confirm and pay</h2>
           <p className="mb-5 text-sm">You came here from the link in your email, so there is no code to enter.</p>

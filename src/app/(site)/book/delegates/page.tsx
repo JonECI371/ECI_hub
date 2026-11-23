@@ -21,7 +21,7 @@ const MSG: Record<string, [string, boolean]> = {
 };
 const input = 'box-border h-11 w-full rounded-control border border-field bg-white px-3 text-[15px] text-ink';
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold no-underline';
-const pad = 'px-4 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]';
+const pad = 'px-4 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]';
 
 export default async function Delegates({ searchParams }: { searchParams: Promise<{ ref?: string; msg?: string }> }) {
   const { ref, msg } = await searchParams;

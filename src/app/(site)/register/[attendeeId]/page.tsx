@@ -73,12 +73,12 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     return (
       <>
         <Breadcrumbs items={[['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration complete']]} />
-        <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Registration complete</p>
           <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Thanks {a.person.firstName}, you&apos;re all set</h1>
           <p className="text-[17px] text-white/80">{pending ? 'We check registrations for this course before the first day. We will email you once it is approved.' : 'Nothing else to do before the day.'}</p>
         </div>
-        <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
+        <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
           <div className="flex flex-1 flex-col gap-6">
             <section className="rounded-card bg-white p-6 shadow-card md:p-8">
               <h2 className="mb-5 text-[22px] font-extrabold text-ink">What happens next</h2>
@@ -108,7 +108,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
   return (
     <>
     <Breadcrumbs items={(byBooker ? [['Home', '/'], [c.title, `/courses/${c.slug}`], ['Delegate details', delegatesPath(b.reference)], [`Details for ${a.person.firstName}`]] : [['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration']]) as import('@/components/ui').Crumb[]} />
-    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
+    <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
           <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-ink">Registration</p>

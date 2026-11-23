@@ -61,7 +61,7 @@ export function CheckoutForm(p: CheckoutProps) {
   const vat = Math.round((sub * p.vatRate) / 100);
 
   return (
-    <form action={action} className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start" noValidate>
+    <form action={action} className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start" noValidate>
       <TestSignals />
       <input type="hidden" name="courseId" value={p.courseId} />
       <input type="hidden" name="sessionId" value={p.sessionId ?? ''} />

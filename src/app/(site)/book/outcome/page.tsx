@@ -36,7 +36,7 @@ function Message({ eyebrow, title, children, tone = 'ok', crumbs }: { eyebrow: s
   return (
     <>
     {crumbs && <Breadcrumbs items={crumbs} />}
-    <div className={`${tone === 'ok' ? 'hero-motif' : 'bg-ink'} px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]`}>
+    <div className={`${tone === 'ok' ? 'hero-motif' : 'bg-ink'} px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]`}>
       <p className={`mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] ${tone === 'ok' ? 'text-cyan' : 'text-[#FFB59A]'}`}>{eyebrow}</p>
       <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">{title}</h1>
       <div className="max-w-[720px] text-[17px] leading-relaxed text-white/80">{children}</div>
@@ -58,7 +58,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
         <Message eyebrow="Payment not taken" title="Your payment didn't go through" tone="bad">
           <p>Your card was declined. Nothing has been charged{live ? ' and your places are still held' : ''}.</p>
         </Message>
-        <div className="flex flex-col gap-4 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <div className="flex flex-col gap-4 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
           <p>Try another card, or Apple Pay or Google Pay. If it keeps failing, call us on +44 (0) 1932 963463.</p>
           <div className="flex flex-wrap gap-3">
             <Link href={live ? '/book/pay' : b ? `/courses/${b.course.slug}` : '/courses'} className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 font-bold text-ink no-underline">Try again</Link>
@@ -83,7 +83,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
         <Message eyebrow="Booking" title={state === 'expired' ? 'Your hold has ended' : 'We could not find that booking'} tone="bad">
           <p>{state === 'expired' ? 'Places are held for 5 minutes. Nothing has been charged. Start again to check what is still available.' : 'Log in to see your bookings.'}</p>
         </Message>
-        <div className="flex flex-wrap gap-3 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <div className="flex flex-wrap gap-3 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
           <Link href="/courses" className="inline-flex min-h-11 items-center rounded-chip bg-cyan px-5 font-bold text-ink no-underline">Choose a course</Link>
           <Link href="/login" className="inline-flex min-h-11 items-center rounded-chip border border-field bg-white px-5 font-bold text-ink no-underline">Log in</Link>
         </div>
@@ -123,7 +123,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
         {Number(pofail) > 0 && <p className="rounded-control border border-warn-line bg-warn-bg p-3 text-warn-fg">Your booking is confirmed, but {Number(pofail) === 1 ? '1 of your PO files was' : `${Number(pofail)} of your PO files were`} not saved. Please email {Number(pofail) === 1 ? 'it' : 'them'} to us, quoting your booking reference.</p>}
         <p>Reference <strong className="text-white">{b.reference}</strong>. {b.method === 'ACCOUNT' ? `Confirmed on account. Your confirmation is on its way to ${b.booker.email}.` : `Your receipt is on its way to ${b.booker.email}.`}</p>
       </Message>
-      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
           {regLink && (
             <section className="flex flex-col gap-4 rounded-card bg-cyan-soft p-6 md:flex-row md:items-center md:justify-between md:p-8">

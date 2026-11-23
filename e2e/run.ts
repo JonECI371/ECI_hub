@@ -48,6 +48,16 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     for (const [p, l] of paths) await step(l, page, () => pageOk(page, errors, p, l, phone, !['home', 'login'].includes(l)));
     await ctx.close();
   }
+  await step('wide screen', null, async () => {
+    const { page, ctx } = await newPage(br, 1920, 1000);
+    for (const [p, label] of [['/', 'home'], ['/courses', 'courses'], [`/courses/${f.open.slug}`, 'course page'], ['/contact', 'contact']] as const) {
+      await page.goto(BASE + p);
+      const x = (await page.locator('h1').first().boundingBox())?.x ?? 0;
+      const wide = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1);
+      check(x >= 300 && x <= 345 && !wide, `on a 1920px screen the ${label} content stops at 1280px, centred`, `heading starts ${Math.round(x)}px from the left`);
+    }
+    await ctx.close();
+  });
   await step('machine files', null, async () => {
     const { page, ctx } = await newPage(br);
     for (const p of ['/sitemap.xml', '/robots.txt', '/api/health']) {

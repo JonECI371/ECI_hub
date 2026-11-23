@@ -12,7 +12,7 @@ async function main() {
       { name: 'EUSR', slug: 'eusr', placesLeftDisplay: 'NEVER', registrationSet: 'eusr' },
       { name: 'Process safety', slug: 'process-safety', changeCutoffHours: 168 },
       { name: 'DSEAR', slug: 'dsear', changeCutoffHours: 168 },
-    ].map((s) => db.subject.upsert({ where: { slug: s.slug }, update: s, create: s })),
+    ].map((s) => db.subject.upsert({ where: { slug: s.slug }, update: {}, create: s })),
   );
   const sub = Object.fromEntries(subjects.map((s) => [s.slug, s.id]));
 
@@ -74,7 +74,8 @@ async function main() {
       status: CourseStatus.PUBLISHED,
       defaultVenueId: c.deliveryType === DeliveryType.IN_PERSON ? summit.id : null,
     };
-    await db.course.upsert({ where: { slug: c.slug }, update: data, create: data });
+    // Create only. Updating here would put every edited course (price, wording, status) back to the sample values.
+    await db.course.upsert({ where: { slug: c.slug }, update: {}, create: data });
   }
 
   // A few sessions so the Courses and course pages have dates.

@@ -12,7 +12,7 @@ C0=$(aws ssm send-command --region "$REGION" --instance-ids "$INSTANCE" --docume
 aws ssm wait command-executed --region "$REGION" --command-id "$C0" --instance-id "$INSTANCE" || true
 HOST="${SITE#https://}"
 CID=$(aws ssm send-command --region "$REGION" --instance-ids "$INSTANCE" --document-name AWS-RunShellScript --timeout-seconds 1800 \
-  --parameters "commands=[\"SEED_ADMIN_EMAIL=jon@ecfio.co.uk /opt/eci/run.sh $REGISTRY $SITE seed 2>&1 | tail -3\",\"sleep 25; for p in / /courses /login /api/health; do echo \\\"\$p \$(curl -sk -o /dev/null -w %{http_code} --resolve $HOST:443:127.0.0.1 $SITE\$p)\\\"; done\"],executionTimeout=[\"1800\"]" \
+  --parameters "commands=[\"SEED_ADMIN_EMAIL=jon@ecfio.co.uk /opt/eci/run.sh $REGISTRY $SITE 2>&1 | tail -3\",\"sleep 25; for p in / /courses /login /api/health; do echo \\\"\$p \$(curl -sk -o /dev/null -w %{http_code} --resolve $HOST:443:127.0.0.1 $SITE\$p)\\\"; done\"],executionTimeout=[\"1800\"]" \
   --query Command.CommandId --output text)
 for i in $(seq 1 80); do
   ST=$(aws ssm get-command-invocation --region "$REGION" --command-id "$CID" --instance-id "$INSTANCE" --query Status --output text 2>/dev/null || true)

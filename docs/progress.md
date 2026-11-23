@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-24 (late): deploy 2 and a seed pitfall
+
+- Course page template, POA, simpler checkout deployed to the test site (overlay method as below; rollback tags app-previous and app-before-2026-11-24b, backups before-2026-11-24-deploy and before-2026-11-24b-deploy in /opt/eci/backups).
+- Pitfall found and fixed: passing `seed` to run.sh runs prisma/seed.ts, which upserted every sample course with `update: data`, so each deploy reset prices, wording and status of those courses to the sample values (it reverted Jon's price list once; a comparison of the two backups showed nothing else was lost). Prices re-applied. Fixed in the repo: seed.ts creates only, and the deploy scripts no longer pass `seed`. The `tools` image in ECR still holds the old seed script, so never pass `seed` to run.sh on the existing database. Subject edits (approval, places display) were also overwritten before this fix.
+
 ## 2026-11-24 (later): course page template, POA, prices (built, not deployed; prices changed on the test site)
 
 - Branch course-page-template (includes booking-flow-step3). Admin > Course form has a Course page wording section (label, who it is for, what you will cover x6, before you book, assessment, certificate, Q and A x8, related courses); [Check: ...] or [YOUR ANSWER ...] text blocks publishing. The course page opens with an answer-first "In short" summary and fuller facts; Course markup adds teaches, prerequisites, audience, language, price specification; Organization and LocalBusiness markup on every public page; each course as Markdown at /llms/courses/<slug>, linked from llms.txt. Blank price shows POA. Wording drafts for the courses are in the Claude Doc "Course page wording (draft)" awaiting Jon's checks; nothing from them is entered on the site.

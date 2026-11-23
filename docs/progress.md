@@ -10,7 +10,14 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
-## 2026-11-24: Tasks page provider filter (built, not deployed)
+## 2026-11-24: deployed to the test site (booking flow steps 1 and 2, staff authenticator sign-in, Tasks provider filter, 1280px page width)
+
+- Live on https://test.eci-hub.co.uk from about 22:15 UTC, with Jon's agreement. Branch site-max-width (contains browser-checks, staff-authenticator-signin, booking-flow-2-10, tasks-provider-filter). Three migrations applied: staff_totp_lockout, registration_entered_by (both additive). 117 browser checks and 88 tests passed locally before deploying; after deploying only simple page and wording checks were done (home, courses, login, delegates, breadcrumb bar, 1280px, migrations 17 applied, no errors in the log). Nothing has been clicked through on the live site yet.
+- Method used (no Docker or ARM emulation needed): native `npm run build`; one extra image layer with the changed files (standalone output without .env, .uploads and node_modules/@img, plus .next/static, public, prisma, entrypoint.sh) built with Python and uploaded to ECR as tag `overlay`; the existing image's config was read from the server (`docker save ... | tar -xO`), the layer appended, and the combined manifest pushed to ECR as tag `app` through the ECR API (the server's role cannot push). The previous image is kept as tag `app-previous`: to roll back, put its manifest back on tag `app` and rerun /opt/eci/run.sh. A database backup is at /opt/eci/backups/before-2026-11-24-deploy.sql.gz on the server. The server /tmp is a small memory disk: never `docker save` to a file there, stream it.
+- Found: the image from the 20 Nov quick deploy contains a blank `/app/.env` template and old test PO files in `/app/.uploads` (test data, no secrets). Not changed. The proper build (CodeBuild from git) will not include them.
+- Staff now sign in with the authenticator app only (no email code). Jon and Kirsty already have authenticators. The sample trainers (aisha.khan and dan.hughes at example.co.uk) have none and cannot sign in until a Super Admin creates a setup link.
+
+## 2026-11-24: Tasks page provider filter (built)
 
 - Jon asked for a filter per course type on the enrolment tasks (EUSR QuartzWeb, Trainor, SkillGuard for Thames Water, others later). Built as a second row of buttons on Tasks > Enrolment, one per e-learning provider taken from the courses' Provider field, with open counts; SkillGuard or any new provider appears once a course uses it. Also a Provider selector on the Done tab. Branch tasks-provider-filter.
 

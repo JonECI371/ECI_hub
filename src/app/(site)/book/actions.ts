@@ -30,7 +30,8 @@ export async function startCheckout(_prev: CheckoutState, form: FormData): Promi
   const values: Record<string, string> = {};
   for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$') && k !== '_sig') values[k] = v;
   const places = Number(get('places'));
-  const mode = get('mode') === 'later' ? 'later' : 'now';
+  // Delegates are added after booking (Delegate details page), so the form no longer asks for them; older forms that still send mode=now keep working.
+  const mode = get('mode') === 'now' ? 'now' : 'later';
   const bookerAttends = get('bookerAttends') === 'on';
   const courseId = get('courseId');
   const sessionId = get('sessionId') || null;

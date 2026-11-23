@@ -190,7 +190,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   await step('delegate details', null, async () => {
     const { page, ctx, errors } = await newPage(br); await customerLogin(page, f.booker.email, `/book/${openSession.id}`);
     await page.click('button:has-text("+")'); await page.click('button:has-text("+")');
-    await page.locator('input[name=modeRadio]').nth(1).check();
+    check((await page.locator('[data-testid=delegates-next]').count()) === 1 && (await page.locator('input[name^=other_name_]').count()) === 0, 'checkout no longer asks for the other delegates; it says they come next');
     await page.fill('input[name=poNumber]', 'PO-E2E-DEL');
     await page.check('input[name=terms]'); if (await page.locator('input[name=waiver]').count()) await page.check('input[name=waiver]');
     await page.click('button:has-text("Confirm booking")'); await page.waitForURL(/\/book\/outcome/, { timeout: 25000 });

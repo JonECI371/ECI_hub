@@ -38,7 +38,6 @@ export function CheckoutForm(p: CheckoutProps) {
   const [state, action, pending] = useActionState<CheckoutState, FormData>(startCheckout, {});
   const [places, setPlaces] = useState(1);
   const [bookerAttends, setBookerAttends] = useState(!p.addTo);
-  const [mode, setMode] = useState<'now' | 'later'>('now');
   const [pay, setPay] = useState<'account' | 'card'>(p.account && !p.account.onHold ? 'account' : 'card');
   const onAccount = pay === 'account' && !!p.account;
   // Keep the stepper and choices in step with what was submitted (React resets uncontrolled fields after an action).
@@ -47,7 +46,6 @@ export function CheckoutForm(p: CheckoutProps) {
     setSeen(state);
     if (state.values?.places) setPlaces(Number(state.values.places));
     if (state.values) setBookerAttends(state.values.bookerAttends === 'on');
-    if (state.values?.mode === 'later' || state.values?.mode === 'now') setMode(state.values.mode);
     if (state.values?.method === 'account' || state.values?.method === 'card') setPay(state.values.method);
   }
   const f = state.fields ?? {};
@@ -66,7 +64,6 @@ export function CheckoutForm(p: CheckoutProps) {
       <input type="hidden" name="courseId" value={p.courseId} />
       <input type="hidden" name="sessionId" value={p.sessionId ?? ''} />
       <input type="hidden" name="places" value={places} />
-      <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="needsWaiver" value={p.needsWaiver ? '1' : '0'} />
       <input type="hidden" name="method" value={onAccount ? 'account' : 'card'} />
       {p.addTo && <input type="hidden" name="addTo" value={p.addTo} />}
@@ -94,30 +91,9 @@ export function CheckoutForm(p: CheckoutProps) {
           </label>
 
           {others > 0 && (
-            <fieldset className="mt-6 border-t border-hairline pt-5">
-              <legend className="sr-only">Who else is attending?</legend>
-              <h3 className="mb-1 text-lg font-bold text-ink">Who else is attending?</h3>
-              <p className="mb-4 text-sm">Everyone needs their own email address for their joining details and certificate. Personal addresses are fine.</p>
-              <div className="mb-5 grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label="When to add attendees">
-                {([['now', 'Add their details now', 'Each person gets their own joining details'], ['later', 'Add them later', 'From your dashboard. We remind you 5 days before.']] as const).map(([v, t, d]) => (
-                  <label key={v} className={`flex cursor-pointer gap-3 rounded-control border p-4 ${mode === v ? 'border-2 border-ink bg-cyan-soft' : 'border-hairline'}`}>
-                    <input type="radio" name="modeRadio" checked={mode === v} onChange={() => setMode(v)} className="mt-1 accent-ink" />
-                    <span><span className="block font-bold text-ink">{t}</span><span className="text-[13px]">{d}</span></span>
-                  </label>
-                ))}
-              </div>
-              {mode === 'now' && (
-                <ol className="flex flex-col gap-4">
-                  {Array.from({ length: others }, (_, i) => (
-                    <li key={i} className="grid gap-3 rounded-control bg-page p-4 sm:grid-cols-2">
-                      <p className="text-sm font-bold text-ink sm:col-span-2">Attendee {i + (bookerAttends ? 2 : 1)}</p>
-                      <label className={labelCls}>Full name<input name={`other_name_${i}`} defaultValue={val(`other_name_${i}`)} autoComplete="off" className={input} {...err(`other_name_${i}`)} /><FieldError id={`other_name_${i}-err`} msg={f[`other_name_${i}`]} /></label>
-                      <label className={labelCls}>Email<input name={`other_email_${i}`} defaultValue={val(`other_email_${i}`)} type="email" autoComplete="off" className={input} {...err(`other_email_${i}`)} /><FieldError id={`other_email_${i}-err`} msg={f[`other_email_${i}`]} /></label>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </fieldset>
+            <p className="mt-6 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink" data-testid="delegates-next">
+              <strong>Delegates come next.</strong> After you {onAccount ? 'confirm' : 'pay'}, you add the other {others === 1 ? 'delegate' : `${others} delegates`}: fill their details in yourself, or email them a link. Nothing to type about them now.
+            </p>
           )}
         </section>
 

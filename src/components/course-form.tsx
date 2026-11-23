@@ -54,7 +54,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={`${label} sm:col-span-2`}>Course name<input name="title" defaultValue={v.title} className={input} {...err('title')} /><E k="title" /></label>
             <label className={label}>Subject<select name="subjectId" defaultValue={v.subjectId} className={input}>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
-            <label className={label}>Price per place (excl. VAT, £)<input name="pricePounds" inputMode="decimal" defaultValue={v.pricePounds} className={input} {...err('pricePounds')} /><span className={hint}>Leave at 0 to show &ldquo;Price on request&rdquo;. Online booking needs a price.</span><E k="pricePounds" /></label>
+            <label className={label}>Price per place (excl. VAT, £)<input name="pricePounds" inputMode="decimal" defaultValue={v.pricePounds} className={input} {...err('pricePounds')} /><span className={hint}>Leave at 0 to show POA (price on application). Online booking needs a price.</span><E k="pricePounds" /></label>
             <label className={label}>VAT rate (%)<input name="vatRatePercent" inputMode="numeric" defaultValue={v.vatRatePercent} className={input} /></label>
             <div className={label}>
               <span>Duration</span>

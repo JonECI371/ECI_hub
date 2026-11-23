@@ -10,6 +10,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-23: browser checks (e2e)
+
+- `npm run e2e` plays the main journeys in a real browser against a running local copy (`npm run dev` first; Playwright comes with the Claude Code environment, the project does not depend on it). About 90 checks: public pages at desktop and 390 px, access rules, customer, staff and trainer sign-in (lockout, setup link), booking on account with PO, Admin Add booking, every admin, booker and trainer page, credit account application, full session. Local copies only: it creates e2e.* test records and never contacts Stripe, Xero, Teams or email. Failures save a screenshot in e2e/out. Not covered: card payment (needs Stripe test keys), real email delivery, how pages look. Those stay with Kirsty.
+
 ## 2026-11-23: staff sign-in by authenticator only (built locally, not deployed)
 
 - Jon decided: Admins, Super Admins and trainers sign in with the authenticator app alone; customers keep the email code or link. Built: no email for staff; lock for 15 minutes after 5 wrong codes (new Person fields totpFailures and totpLockedUntil, migration 20261123210000_staff_totp_lockout); a new authenticator only from a Super Admin's one-time setup link (People page, Access, Create setup link, 24 hours, dead once used); clearer authenticator wording; trainers keep the 30 day device option. Super Admin only creates setup links (an Admin could otherwise take over a Super Admin account that has no authenticator). Existing authenticators keep working, so Jon and Kirsty set up nothing again. 86 tests pass; checked in a local browser (staff, trainer, lockout, setup link, customer). Not deployed.

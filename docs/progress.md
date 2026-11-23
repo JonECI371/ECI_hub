@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-24 (later): course page template, POA, prices (built, not deployed; prices changed on the test site)
+
+- Branch course-page-template (includes booking-flow-step3). Admin > Course form has a Course page wording section (label, who it is for, what you will cover x6, before you book, assessment, certificate, Q and A x8, related courses); [Check: ...] or [YOUR ANSWER ...] text blocks publishing. The course page opens with an answer-first "In short" summary and fuller facts; Course markup adds teaches, prerequisites, audience, language, price specification; Organization and LocalBusiness markup on every public page; each course as Markdown at /llms/courses/<slug>, linked from llms.txt. Blank price shows POA. Wording drafts for the courses are in the Claude Doc "Course page wording (draft)" awaiting Jon's checks; nothing from them is entered on the site.
+- Prices set on the test site from Jon's list (audit logged, action COURSE_PRICE_SET): CompEx ExA Awareness classroom 175, ExA Awareness eLearning 250, ExF Foundation 500 (was 450), Ex12 Application Design Engineer 2,050, all plus VAT. Not on the site yet: Ex14 at 1,850 and ExF eLearning at 650 (no such courses exist); DSEAR and Process Safety Awareness stay blank (POA).
+
 ## 2026-11-24: deployed to the test site (booking flow steps 1 and 2, staff authenticator sign-in, Tasks provider filter, 1280px page width)
 
 - Live on https://test.eci-hub.co.uk from about 22:15 UTC, with Jon's agreement. Branch site-max-width (contains browser-checks, staff-authenticator-signin, booking-flow-2-10, tasks-provider-filter). Three migrations applied: staff_totp_lockout, registration_entered_by (both additive). 117 browser checks and 88 tests passed locally before deploying; after deploying only simple page and wording checks were done (home, courses, login, delegates, breadcrumb bar, 1280px, migrations 17 applied, no errors in the log). Nothing has been clicked through on the live site yet.

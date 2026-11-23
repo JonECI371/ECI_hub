@@ -227,7 +227,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
             <h2 id="det-h" className="mb-3 text-lg font-extrabold text-ink">Course details</h2>
             <dl className="flex flex-col gap-2 text-sm">
               {[
-                ['Duration', c.durationText], ['Price', c.pricePence ? `${gbp(c.pricePence)} + VAT per place` : 'Price on request'], ['Places', c.placesPerSession ? `${c.placesPerSession} per session` : 'Unlimited'],
+                ['Duration', c.durationText], ['Price', c.pricePence ? `${gbp(c.pricePence)} + VAT per place` : 'POA (price on application)'], ['Places', c.placesPerSession ? `${c.placesPerSession} per session` : 'Unlimited'],
                 ['Where', c.deliveryType === 'ELEARNING' ? c.provider ?? 'Provider platform' : c.deliveryType === 'VIRTUAL_CLASSROOM' ? (c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams') : c.defaultVenue?.name ?? 'Client site'],
                 ['Cancellation cut-off', `${c.subject.changeCutoffHours} hours`], ['Registration approval', c.subject.approvalRequired ? 'On' : 'Off'],
               ].map(([k, v]) => <div key={k} className="flex justify-between gap-4 border-b border-hairline pb-2"><dt>{k}</dt><dd className="text-right font-semibold text-ink">{v}</dd></div>)}

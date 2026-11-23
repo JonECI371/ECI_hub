@@ -8,13 +8,13 @@ export const DELIVERY_LABEL: Record<DeliveryType, string> = {
   IN_PERSON: 'In person',
 };
 
-/** A money amount, including £0 (gbp() shows 0 as "Price on request", for prices). */
+/** A money amount, including £0 (gbp() shows 0 as "POA", price on application, for prices). */
 export function money(pence: number): string {
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: pence % 100 === 0 ? 0 : 2, maximumFractionDigits: 2 }).format(pence / 100);
 }
 
 export function gbp(pence: number): string {
-  if (!pence) return 'Price on request';
+  if (!pence) return 'POA';
   const whole = pence % 100 === 0;
   return new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'GBP', minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: whole ? 0 : 2 }).format(pence / 100);
 }
@@ -40,5 +40,5 @@ export function fmtSessionDates(start: Date, end: Date): string {
 
 /** Price with VAT note, or the placeholder while a price is not set. */
 export function priceExVat(pence: number): { amount: string; vatNote: boolean } {
-  return pence ? { amount: gbp(pence), vatNote: true } : { amount: 'Price on request', vatNote: false };
+  return pence ? { amount: gbp(pence), vatNote: true } : { amount: 'POA', vatNote: false };
 }

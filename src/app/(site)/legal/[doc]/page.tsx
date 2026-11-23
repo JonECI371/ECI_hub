@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { LEGAL } from '@/lib/legal';
 import { loadPolicy, policyLines } from '@/lib/cancellation-policy';
+import { Breadcrumbs } from '@/components/ui';
 
 // Rendered on each request: the cancellation section comes from the policy in Settings, and the page carries the security nonce.
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,8 @@ export default async function Legal({ params }: { params: Promise<{ doc: string 
   const policy = d.slug === 'terms' ? await loadPolicy() : null;
   const id = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
+    <>
+    <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], [d.title]]} />
     <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <aside className="w-full rounded-card bg-white p-6 shadow-card lg:sticky lg:top-6 lg:w-[300px]">
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-ink">Contents</p>
@@ -55,5 +58,6 @@ export default async function Legal({ params }: { params: Promise<{ doc: string 
         )}
       </article>
     </div>
+    </>
   );
 }

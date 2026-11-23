@@ -106,7 +106,6 @@ export default async function BookingDetail({ params, searchParams }: { params: 
   return (
     <>
       <div>
-        <p className="mb-1.5 text-xs"><Link href="/account/bookings">My bookings</Link> › {b.reference}</p>
         <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Booking {b.reference}</h1>
       </div>
       {notice && <p role="status" className={`rounded-control px-4 py-3 text-sm font-semibold ${notice[1] ? 'bg-cyan-soft text-ink' : 'bg-bad-bg text-bad-fg'}`}>{notice[0]}</p>}

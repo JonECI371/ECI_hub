@@ -45,6 +45,28 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
   return <section className={`rounded-card bg-card p-6 shadow-card ${className}`}>{children}</section>;
 }
 
+export type Crumb = [label: string, href?: string];
+
+/** Trail of where the person is. The last item is the current page and is not a link. `dark` is for use inside a dark hero band. */
+export function Breadcrumbs({ items, tone = 'light', className = '' }: { items: Crumb[]; tone?: 'light' | 'dark'; className?: string }) {
+  const dark = tone === 'dark';
+  return (
+    <nav aria-label="Breadcrumb" className={`text-[13px] ${dark ? 'text-white/70' : 'text-slate'} ${className}`}>
+      <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
+        {items.map(([label, href], i) => {
+          const last = i === items.length - 1;
+          return (
+            <li key={`${label}-${i}`} className="flex items-center gap-1.5">
+              {href && !last ? <Link href={href} className={dark ? 'text-white/80' : undefined}>{label}</Link> : <span aria-current={last ? 'page' : undefined} className={last && !dark ? 'font-semibold text-ink' : undefined}>{label}</span>}
+              {!last && <span aria-hidden="true">›</span>}
+            </li>
+          );
+        })}
+      </ol>
+    </nav>
+  );
+}
+
 /** Dark hero band with the zone-hatch motif. Marketing and confirmation pages only. */
 export function Hero({ eyebrow, title, sub }: { eyebrow: string; title: string; sub?: string }) {
   return (

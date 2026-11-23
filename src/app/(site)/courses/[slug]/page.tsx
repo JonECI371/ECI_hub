@@ -6,7 +6,7 @@ import { fmtTime, priceExVat } from '@/lib/format';
 import { breadcrumbJsonLd, courseJsonLd, faqJsonLd } from '@/lib/seo';
 import { readContent, readFaqs } from '@/lib/course-content';
 import { placesLeft, placesLabel } from '@/lib/sessions';
-import { Chip, DeliveryChip, Eyebrow } from '@/components/ui';
+import { Breadcrumbs, Chip, DeliveryChip, Eyebrow } from '@/components/ui';
 import { DatePicker, type PickerSession } from '@/components/date-picker';
 
 export const dynamic = 'force-dynamic';
@@ -96,9 +96,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <div className="hero-motif px-4 pb-12 pt-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
-        <nav aria-label="Breadcrumb" className="mb-4 text-[13px] text-white/70">
-          <Link href="/" className="text-white/80">Home</Link> / <Link href="/courses" className="text-white/80">Training</Link> / {c.title}
-        </nav>
+        <Breadcrumbs tone="dark" className="mb-4" items={[['Home', '/'], ['Courses', '/courses'], [c.title]]} />
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">{content.eyebrow ?? c.subject.name}</p>
         <h1 className="mb-4 max-w-[820px] text-4xl font-extrabold leading-tight tracking-tight text-white [text-wrap:balance] md:text-[48px]">{c.title}</h1>
         <p className="mb-8 max-w-[720px] text-[17px] leading-relaxed text-white/80">{c.description}</p>

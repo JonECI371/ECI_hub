@@ -9,6 +9,7 @@ import { bookingAccount } from '@/lib/credit';
 import { loadPolicy } from '@/lib/cancellation-policy';
 import { addToBookingId } from '@/lib/booking';
 import { CheckoutForm } from '@/components/checkout-form';
+import { Breadcrumbs } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Book your places', robots: { index: false } };
@@ -32,5 +33,10 @@ export default async function BookSession({ params, searchParams }: { params: Pr
     );
   }
   const me = await currentPerson();
-  return <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null, await loadPolicy(), me && add && (await addToBookingId(me.id, add, sessionId)) ? add : null)} />;
+  return (
+    <>
+      <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], ['Courses', '/courses'], [session.course.title, `/courses/${session.course.slug}`], ['Book']]} />
+      <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null, await loadPolicy(), me && add && (await addToBookingId(me.id, add, sessionId)) ? add : null)} />
+    </>
+  );
 }

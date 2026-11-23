@@ -5,7 +5,7 @@ import { currentPerson } from '@/lib/auth';
 import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
 import { holdLive } from '@/lib/booking';
 import { registrationLink } from '@/lib/registration-link';
-import { DeliveryChip, Chip } from '@/components/ui';
+import { Breadcrumbs, DeliveryChip, Chip, type Crumb } from '@/components/ui';
 import { checkoutBookingId } from '../actions';
 import { statementText } from '@/lib/credit';
 
@@ -31,9 +31,10 @@ function Steps({ items }: { items: [string, string][] }) {
   );
 }
 
-function Message({ eyebrow, title, children, tone = 'ok' }: { eyebrow: string; title: string; children: React.ReactNode; tone?: 'ok' | 'bad' }) {
+function Message({ eyebrow, title, children, tone = 'ok', crumbs }: { eyebrow: string; title: string; children: React.ReactNode; tone?: 'ok' | 'bad'; crumbs?: Crumb[] }) {
   return (
     <div className={`${tone === 'ok' ? 'hero-motif' : 'bg-ink'} px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]`}>
+      {crumbs && <Breadcrumbs tone="dark" className="mb-3" items={crumbs} />}
       <p className={`mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] ${tone === 'ok' ? 'text-cyan' : 'text-[#FFB59A]'}`}>{eyebrow}</p>
       <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">{title}</h1>
       <div className="max-w-[720px] text-[17px] leading-relaxed text-white/80">{children}</div>
@@ -113,7 +114,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
 
   return (
     <>
-      <Message eyebrow="Booking confirmed" title={elearn ? `You're enrolled, ${b.booker.firstName}` : b.places > 1 ? `${b.places} places booked on ${c.title}` : `You're booked, ${b.booker.firstName}`}>
+      <Message crumbs={[['Home', '/'], ['Courses', '/courses'], [c.title, `/courses/${c.slug}`], ['Book'], ...(b.method === 'ACCOUNT' ? [] : [['Pay'] as Crumb]), ['Confirmed']]} eyebrow="Booking confirmed" title={elearn ? `You're enrolled, ${b.booker.firstName}` : b.places > 1 ? `${b.places} places booked on ${c.title}` : `You're booked, ${b.booker.firstName}`}>
         {Number(pofail) > 0 && <p className="rounded-control border border-warn-line bg-warn-bg p-3 text-warn-fg">Your booking is confirmed, but {Number(pofail) === 1 ? '1 of your PO files was' : `${Number(pofail)} of your PO files were`} not saved. Please email {Number(pofail) === 1 ? 'it' : 'them'} to us, quoting your booking reference.</p>}
         <p>Reference <strong className="text-white">{b.reference}</strong>. {b.method === 'ACCOUNT' ? `Confirmed on account. Your confirmation is on its way to ${b.booker.email}.` : `Your receipt is on its way to ${b.booker.email}.`}</p>
       </Message>

@@ -4,7 +4,7 @@ import { DeliveryType } from '@prisma/client';
 import { db } from '@/lib/db';
 import { DELIVERY_LABEL, fmtTime, priceExVat } from '@/lib/format';
 import { placesLeft, placesLabel } from '@/lib/sessions';
-import { DeliveryChip, Chip } from '@/components/ui';
+import { Breadcrumbs, DeliveryChip, Chip } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = {
@@ -120,9 +120,7 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
-        <nav aria-label="Breadcrumb" className="mb-3 text-[13px] text-white/70">
-          <Link href="/" className="text-white/80">Home</Link> / Courses
-        </nav>
+        <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Courses']]} />
         <h1 className="mb-2.5 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Courses</h1>
         <p className="max-w-[760px] text-[17px] leading-relaxed text-white/80">Filter by how you want to learn, then pick a course or a date. eLearning starts the day you book.</p>
       </div>

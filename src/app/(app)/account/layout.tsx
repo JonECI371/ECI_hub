@@ -2,6 +2,7 @@ import { requirePerson } from '@/lib/auth';
 import { myMembership } from '@/lib/booker';
 import { ICONS } from '@/lib/icons';
 import { AppShell } from '@/components/app-shell';
+import { PortalCrumbs } from '@/components/portal-crumbs';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,7 @@ export default async function AccountLayout({ children }: { children: React.Reac
         { href: '/courses', label: 'Book a course', icon: ICONS.courses },
       ]}
     >
+      <PortalCrumbs area="account" />
       {children}
     </AppShell>
   );

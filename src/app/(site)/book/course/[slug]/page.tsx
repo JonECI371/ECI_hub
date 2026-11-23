@@ -6,6 +6,7 @@ import { checkoutProps } from '@/lib/checkout-props';
 import { bookingAccount } from '@/lib/credit';
 import { loadPolicy } from '@/lib/cancellation-policy';
 import { CheckoutForm } from '@/components/checkout-form';
+import { Breadcrumbs } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Book your places', robots: { index: false } };
@@ -18,5 +19,10 @@ export default async function BookCourse({ params }: { params: Promise<{ slug: s
   if (course.deliveryType !== 'ELEARNING') redirect(`/courses/${course.slug}#dates`);
   if (!course.pricePence) redirect('/contact');
   const me = await currentPerson();
-  return <CheckoutForm {...checkoutProps(course, null, null, me, me ? await bookingAccount(me.id) : null, await loadPolicy())} />;
+  return (
+    <>
+      <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], ['Courses', '/courses'], [course.title, `/courses/${course.slug}`], ['Book']]} />
+      <CheckoutForm {...checkoutProps(course, null, null, me, me ? await bookingAccount(me.id) : null, await loadPolicy())} />
+    </>
+  );
 }

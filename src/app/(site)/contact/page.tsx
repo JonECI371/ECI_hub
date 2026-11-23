@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { EnquiryForm } from '@/components/enquiry-form';
+import { Breadcrumbs } from '@/components/ui';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Contact us', description: 'Training for a team, on-site delivery or EC&I safety consultancy. One form, routed to the right person.', alternates: { canonical: '/contact' } };
@@ -11,6 +12,7 @@ export default async function Contact({ searchParams }: { searchParams: Promise<
   return (
     <>
       <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+        <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Contact us']]} />
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Contact us</p>
         <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Talk to us</h1>
         <p className="max-w-[720px] text-[17px] leading-relaxed text-white/80">Training for a team, on-site delivery or consultancy. One form, and we route it to the right person.</p>

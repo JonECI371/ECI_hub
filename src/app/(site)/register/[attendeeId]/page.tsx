@@ -3,7 +3,7 @@ import type { Metadata } from 'next';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { loadForRegistration } from '@/lib/registration';
 import { questionSet } from '@/lib/registration-sets';
-import { DeliveryChip, Chip } from '@/components/ui';
+import { Breadcrumbs, DeliveryChip, Chip } from '@/components/ui';
 import { RegistrationForm } from '@/components/registration-form';
 
 export const dynamic = 'force-dynamic';
@@ -71,6 +71,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     return (
       <>
         <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+          <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration complete']]} />
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Registration complete</p>
           <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Thanks {a.person.firstName}, you&apos;re all set</h1>
           <p className="text-[17px] text-white/80">{pending ? 'We check registrations for this course before the first day. We will email you once it is approved.' : 'Nothing else to do before the day.'}</p>
@@ -106,6 +107,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
+          <Breadcrumbs className="mb-3" items={[['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration']]} />
           <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-ink">Registration</p>
           <h1 className="mb-2 text-[32px] font-extrabold tracking-tight text-ink">{c.title}</h1>
           <p className="text-[15px]">About {set.minutes} minutes.{set.intro ? ` ${set.intro}` : ''}</p>

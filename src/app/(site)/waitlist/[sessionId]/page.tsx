@@ -5,7 +5,7 @@ import { db } from '@/lib/db';
 import { currentPerson, verify } from '@/lib/auth';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
 import { queuePosition } from '@/lib/waitlist';
-import { DeliveryChip, Chip } from '@/components/ui';
+import { Breadcrumbs, DeliveryChip, Chip } from '@/components/ui';
 import { joinWaitlistAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,7 @@ export default async function WaitlistJoin({ params, searchParams }: { params: P
     return (
       <>
         <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
+          <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Courses', '/courses'], [s.course.title, `/courses/${s.course.slug}`], ['Waitlist']]} />
           <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Waitlist</p>
           <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">You&apos;re number {pos} on the waitlist</h1>
           <p className="text-[17px] text-white/80">This date is full. Nothing has been charged.</p>
@@ -63,6 +64,7 @@ export default async function WaitlistJoin({ params, searchParams }: { params: P
     <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
+          <Breadcrumbs className="mb-3" items={[['Home', '/'], ['Courses', '/courses'], [s.course.title, `/courses/${s.course.slug}`], ['Waitlist']]} />
           <Link href={`/courses/${s.course.slug}#dates`} className="text-sm">← Back to dates</Link>
           <h1 className="mt-3 text-[32px] font-extrabold tracking-tight text-ink">Join the waitlist</h1>
           <p className="mt-1 text-[15px]">If a place comes up, we email you a link to claim it. You have 24 hours to pay and confirm. Nothing is charged now.</p>

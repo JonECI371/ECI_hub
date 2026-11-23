@@ -10,15 +10,18 @@ import { BASE, OUT, authCode, bodyText, check, chromium, customerLogin, newPage,
 const BROKEN = /Something went wrong|Application error|Internal Server Error|This page could not be found/i;
 
 /** A page loads, shows a heading, has no error text, no console errors and (at phone width) no sideways scrolling. */
-async function pageOk(page: Page, errors: string[], path: string, label = path, phone = false) {
+async function pageOk(page: Page, errors: string[], path: string, label = path, phone = false, crumbs = false) {
   errors.length = 0;
   const res = await page.goto(BASE + path);
   const status = res?.status() ?? 0;
   const text = await bodyText(page);
   const h1 = await page.locator('h1').count();
+  const trail = crumbs ? await page.locator('nav[aria-label="Breadcrumb"]').count() : 1;
+  const current = crumbs && trail === 1 ? await page.locator('nav[aria-label="Breadcrumb"] [aria-current=page]').count() : 1;
   const overflow = phone ? await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1) : false;
   const problems = [
     status >= 400 && `status ${status}`, BROKEN.test(text) && 'error text on page', h1 === 0 && 'no heading',
+    trail !== 1 && `${trail} breadcrumb trails (should be 1)`, current !== 1 && 'breadcrumb has no current page marked',
     errors.length > 0 && `console: ${errors[0]}`, overflow && 'scrolls sideways at 390px',
   ].filter(Boolean);
   check(problems.length === 0, `${phone ? 'phone ' : ''}${label} loads cleanly`, problems.join('; '));
@@ -40,7 +43,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
       ['/', 'home'], ['/courses', 'courses'], [`/courses/${f.open.slug}`, 'course page'], ['/about', 'about'], ['/contact', 'contact'],
       ['/accounts/apply', 'credit account application'], ['/tools', 'free tools'], ['/login', 'login'], ['/legal/terms', 'terms'], ['/legal/privacy', 'privacy'],
     ];
-    for (const [p, l] of paths) await step(l, page, () => pageOk(page, errors, p, l, phone));
+    for (const [p, l] of paths) await step(l, page, () => pageOk(page, errors, p, l, phone, !['home', 'login'].includes(l)));
     await ctx.close();
   }
   await step('machine files', null, async () => {
@@ -137,6 +140,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   await step('book on account', null, async () => {
     const { page, ctx, errors } = await newPage(br); await customerLogin(page, f.booker.email, `/book/${openSession.id}`);
     check(new RegExp(`/book/${openSession.id}`).test(page.url()), 'booker lands back on the checkout after signing in');
+    check((await page.locator('nav[aria-label="Breadcrumb"]').innerText()).replace(/\s+/g, ' ').includes('Courses › ') && /Book$/.test((await page.locator('nav[aria-label="Breadcrumb"]').innerText()).trim()), 'checkout shows the trail Home › Courses › course › Book');
     await page.check('input[name=terms]');
     if (await page.locator('input[name=waiver]').count()) await page.check('input[name=waiver]');
     const before = await db.booking.count({ where: { bookerId: f.booker.id } });
@@ -151,6 +155,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await page.waitForURL(/\/book\/outcome/, { timeout: 25000 });
     const t = await bodyText(page);
     check(/confirmed|booked/i.test(t) && !BROKEN.test(t), 'booking on account is confirmed on the outcome page');
+    check(/Confirmed$/.test((await page.locator('nav[aria-label="Breadcrumb"]').innerText()).trim()), 'the outcome page shows the trail ending in Confirmed');
     const b = await db.booking.findFirst({ where: { bookerId: f.booker.id }, orderBy: { createdAt: 'desc' }, include: { attendees: true } });
     bookingRef = b?.reference ?? '';
     check(b?.status === 'CONFIRMED' && b.method === 'ACCOUNT', 'the booking is saved as confirmed, on account');
@@ -163,8 +168,8 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   });
   await step('customer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br); await customerLogin(page, f.booker.email);
-    for (const p of ['/account', '/account/bookings', '/account/billing', '/account/team', '/account/settings', '/account/certificates']) await pageOk(page, errors, p, 'booker ' + p);
-    if (bookingRef) await pageOk(page, errors, `/account/bookings/${bookingRef}`, 'booking detail');
+    for (const p of ['/account', '/account/bookings', '/account/billing', '/account/team', '/account/settings', '/account/certificates']) await pageOk(page, errors, p, 'booker ' + p, false, true);
+    if (bookingRef) await pageOk(page, errors, `/account/bookings/${bookingRef}`, 'booking detail', false, true);
     await ctx.close();
   });
 
@@ -181,7 +186,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);
-    for (const p of ['/trainer', '/trainer/availability', '/trainer/profile']) await pageOk(page, errors, p, 'trainer ' + p, true);
+    for (const p of ['/trainer', '/trainer/availability', '/trainer/profile']) await pageOk(page, errors, p, 'trainer ' + p, true, true);
     await ctx.close();
   });
   await step('add booking', null, async () => {

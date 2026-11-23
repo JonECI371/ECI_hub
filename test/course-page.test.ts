@@ -40,7 +40,8 @@ describe('course page wording', () => {
     expect(facts.map(([k]) => k)).toEqual(['Delivery', 'Duration', 'Price', 'Awarded by', 'Valid for', 'Assessment']);
     expect(facts.find(([k]) => k === 'Price')?.[1]).toBe('£145 plus VAT');
     const s = courseSummary(course, { audience: 'Anyone who works on clean water assets. More text.' });
-    expect(s).toContain('EUSR Test Course is a self-paced online course');
+    expect(s).toContain('EUSR Test Course is a self-paced online course from ECI-Hub (ECFIO Engineering Ltd), with 28 days to finish.');
+    expect(s).not.toContain('lasting');
     expect(s).toContain('costs £145 plus 20% VAT');
     expect(s).toContain('valid for 3 years');
     expect(s).toContain('Anyone who works on clean water assets.');

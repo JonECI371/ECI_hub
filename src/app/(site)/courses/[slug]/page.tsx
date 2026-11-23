@@ -191,7 +191,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
               <span className="text-[32px] font-bold text-ink">{price.amount}</span>
               {price.vatNote && <span className="ml-1.5 text-sm">per place + VAT</span>}
             </p>
-            <p className="text-sm leading-relaxed">{c.durationText} · {deliveryLine}</p>
+            <p className="text-sm leading-relaxed">{isElearning ? deliveryLine : `${c.durationText} · ${deliveryLine}`}</p>
             {!isElearning && picker.length > 0 && (
               <p className="text-sm">
                 <strong className="text-ink">{picker.length} upcoming {picker.length === 1 ? 'date' : 'dates'}</strong>

@@ -31,7 +31,9 @@ export function courseFacts(c: C, content: CourseContent): [string, string][] {
 /** An answer-first summary for the top of the page, for search results and AI assistants. Built only from what the course record says. */
 export function courseSummary(c: C, content: CourseContent): string {
   const mode = c.deliveryType === 'ELEARNING' ? 'self-paced online course' : c.deliveryType === 'VIRTUAL_CLASSROOM' ? `live online course on ${platform(c)}` : 'classroom course';
-  const parts = [`${c.title} is a ${mode} from ECI-Hub (ECFIO Engineering Ltd) lasting ${c.durationText.toLowerCase()}.`];
+  const selfPaced = /self-paced/i.test(c.durationText);
+  const length = c.deliveryType === 'ELEARNING' ? (c.daysToComplete ? `, with ${c.daysToComplete} days to finish` : '') : selfPaced ? '' : `, lasting ${c.durationText.toLowerCase()}`;
+  const parts = [`${c.title} is a ${mode} from ECI-Hub (ECFIO Engineering Ltd)${length}.`];
   parts.push(c.pricePence ? `It costs ${gbp(c.pricePence)} plus ${c.vatRatePercent}% VAT per place.` : 'The price is on application (POA): contact ECI-Hub for a quote.');
   if (c.accreditation) parts.push(`It is awarded by ${c.accreditation}.`);
   if (c.validityYears) parts.push(`The certificate is valid for ${c.validityYears} years.`);

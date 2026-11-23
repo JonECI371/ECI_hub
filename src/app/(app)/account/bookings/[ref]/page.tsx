@@ -128,6 +128,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
       <section className="overflow-hidden rounded-card bg-white shadow-card" aria-labelledby="att-h">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline px-6 py-4">
           <h2 id="att-h" className="text-lg font-extrabold text-ink">Attendees ({visible.filter((a) => a.status !== 'CANCELLED').length})</h2>
+          {isBooker && live && b.places > 1 && <Link href={`/book/delegates?ref=${b.reference}`} className={`${btn} bg-cyan text-ink no-underline`}>Delegate details</Link>}
           {isBooker && live && b.attendees.some((a) => a.person && !a.registration && a.personId !== me.id) && (
             <form action={sendReminders}><input type="hidden" name="ref" value={b.reference} /><button type="submit" className={`${btn} border border-field bg-white text-ink`}>Send registration reminder</button></form>
           )}

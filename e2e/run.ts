@@ -173,6 +173,54 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await ctx.close();
   });
 
+  // ---------- 4b. Delegate details ----------
+  console.log('\n# Delegate details');
+  await step('delegate details', null, async () => {
+    const { page, ctx, errors } = await newPage(br); await customerLogin(page, f.booker.email, `/book/${openSession.id}`);
+    await page.click('button:has-text("+")'); await page.click('button:has-text("+")');
+    await page.locator('input[name=modeRadio]').nth(1).check();
+    await page.fill('input[name=poNumber]', 'PO-E2E-DEL');
+    await page.check('input[name=terms]'); if (await page.locator('input[name=waiver]').count()) await page.check('input[name=waiver]');
+    await page.click('button:has-text("Confirm booking")'); await page.waitForURL(/\/book\/outcome/, { timeout: 25000 });
+    check(/Add your delegates/.test(await bodyText(page)), 'the outcome page asks the booker to add delegate details when places are unnamed');
+    await page.click('a:has-text("Delegate details")'); await page.waitForURL(/\/book\/delegates/);
+    const crumbs = (await page.locator('nav[aria-label="Breadcrumb"]').innerText()).trim();
+    check(/Delegate details$/.test(crumbs) && /Book/.test(crumbs), 'the Delegate details page shows the trail ending in Delegate details');
+    check((await page.locator('[role=progressbar]').getAttribute('aria-valuenow')) === '0' && /0 of 3 complete/.test(await bodyText(page)), 'it starts at 0 of 3 complete');
+    await pageOk(page, errors, page.url().replace(BASE, ''), 'delegate details page');
+    const fillRow = async (idx: number, first: string, email: string, intent: 'now' | 'link') => {
+      const row = page.locator('li[data-testid^=delegate-]').nth(idx);
+      await row.locator('input[name=firstName]').fill(first); await row.locator('input[name=lastName]').fill('Delegate'); await row.locator('input[name=email]').fill(email);
+      await row.locator(`button[value=${intent}]`).click();
+    };
+    // the booker's own place is first; the two others follow
+    const rows = page.locator('li[data-testid^=delegate-]');
+    check((await rows.count()) === 3, 'every place has a card');
+    const linkEmail = f.mail('linkdel'); const nowEmail = f.mail('nowdel');
+    await fillRow(1, 'Linda', linkEmail, 'link'); await page.waitForURL(/msg=linked/); await page.waitForSelector('text=Link sent');
+    check(/Link sent/.test(await bodyText(page)) && /0 of 3 complete/.test(await bodyText(page)), 'emailing a link marks that delegate as Link sent');
+    const linked = await db.person.findUnique({ where: { email: linkEmail } });
+    const att = linked ? await db.attendee.findFirst({ where: { personId: linked.id, bookingId: { not: undefined } } }) : null;
+    check(att?.status === 'INVITED', 'the emailed delegate is saved as invited');
+    check(!!linked && (await db.emailLog.count({ where: { personId: linked.id, trigger: 'ATTENDEE_ADDED' } })) > 0, 'the delegate is emailed their joining details and link');
+    await fillRow(2, 'Nora', nowEmail, 'now'); await page.waitForURL(/\/register\//);
+    check(/entering the details for Nora/i.test(await bodyText(page)), 'fill in now opens their form and says whose details these are');
+    check((await page.locator('input[name=authority]').count()) === 1, 'the booker sees the authority tick');
+    await page.fill('input[name=mobile]', '07700 900123'); await page.fill('input[name=employer]', 'E2E Co');
+    await page.locator('input[placeholder=DD]').fill('14'); await page.locator('select').first().selectOption('3'); await page.locator('input[placeholder=YYYY]').fill('1990');
+    await page.click('button:has-text("Submit registration")'); await page.waitForSelector('text=Tick the box');
+    check(true, 'submitting without the authority tick is refused');
+    await page.check('input[name=authority]'); await page.click('button:has-text("Submit registration")'); await page.waitForURL(/\/book\/delegates/, { timeout: 20000 });
+    check(/Entered by you/.test(await bodyText(page)) && /1 of 3 complete/.test(await bodyText(page)), 'the delegate shows as Entered by you and progress moves to 1 of 3');
+    const nora = await db.person.findUnique({ where: { email: nowEmail } });
+    const reg = nora ? await db.registration.findFirst({ where: { attendee: { personId: nora.id } } }) : null;
+    check(!!reg?.enteredById && !!reg.authorityAt, 'who entered it and when they confirmed their authority are saved');
+    check(!!nora && (await db.emailLog.count({ where: { personId: nora.id, trigger: 'REGISTRATION_ENTERED_FOR' } })) > 0, 'the delegate is emailed a copy to check');
+    const out = await newPage(br); await out.page.goto(`${BASE}/register/${reg!.attendeeId}`);
+    check(/link has expired/i.test(await bodyText(out.page)), 'the delegate form cannot be opened by a stranger');
+    await ctx.close(); await out.ctx.close();
+  });
+
   // ---------- 5. Admin ----------
   console.log('\n# Admin');
   await step('admin tour', null, async () => {

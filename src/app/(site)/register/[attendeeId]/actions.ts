@@ -10,6 +10,9 @@ import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets
 import { storeFile, storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
 import { sendEnrolmentPack, sendVenueReleased } from '@/lib/notifications';
+import { currentPerson } from '@/lib/auth';
+import { delegatesPath, enteringForOther } from '@/lib/delegates';
+import { registrationLink } from '@/lib/registration-link';
 
 export type RegState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -47,6 +50,8 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     const r = schema.safeParse(get(k));
     if (!r.success) fields[k] = r.error.issues[0].message;
   }
+  const byBooker = await enteringForOther(a);
+  if (byBooker && form.get('authority') !== 'on') fields.authority = 'Tick the box to confirm you are authorised to give these details';
   const dob = parseDob(get('dob'));
   if (!dob) fields.dob = 'Enter your full date of birth: day, month and year';
 
@@ -90,11 +95,11 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     });
     await tx.registration.upsert({
       where: { attendeeId: a.id },
-      update: { answers, fileKeys, approval, submittedAt: new Date() },
-      create: { attendeeId: a.id, answers, fileKeys, approval },
+      update: { answers, fileKeys, approval, submittedAt: new Date(), enteredById: byBooker ? a.booking.bookerId : null, authorityAt: byBooker ? new Date() : null },
+      create: { attendeeId: a.id, answers, fileKeys, approval, enteredById: byBooker ? a.booking.bookerId : null, authorityAt: byBooker ? new Date() : null },
     });
     await tx.attendee.update({ where: { id: a.id }, data: { status: 'REGISTERED' } });
-    await tx.auditLog.create({ data: { actorId: person.id, action: 'REGISTRATION_SUBMITTED', recordType: 'Attendee', recordId: a.id, before, after: { approval, files: files.length } } });
+    await tx.auditLog.create({ data: { actorId: byBooker ? ((await currentPerson())?.id ?? a.booking.bookerId) : person.id, action: byBooker ? 'REGISTRATION_ENTERED_FOR' : 'REGISTRATION_SUBMITTED', recordType: 'Attendee', recordId: a.id, before, after: { approval, files: files.length } } });
     if (approval === 'PENDING') {
       await tx.task.create({
         data: { type: 'REGISTRATION_APPROVAL', title: `Approve registration: ${get('firstName')} ${get('lastName')}`, detail: `${course.title}${a.booking.session ? `, ${a.booking.session.startsAt.toISOString().slice(0, 10)}` : ''}`, recordType: 'Attendee', recordId: a.id, dueAt: a.booking.session?.startsAt },
@@ -113,5 +118,18 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   if (course.deliveryType === 'ELEARNING' && course.fulfilment === 'EMAIL_PROVIDER' && course.providerEmail && !hadRegistration) await sendEnrolmentPack(a.id);
   // Address held back until registration, and no approval step: release it now.
   if (course.deliveryType === 'IN_PERSON' && course.venueRelease === 'AFTER_APPROVAL' && !course.subject.approvalRequired && !hadRegistration) await sendVenueReleased(a.id);
+  if (byBooker) {
+    // The delegate gets a copy to check, with a link to correct anything.
+    await sendEmail({
+      to: person.email, personId: person.id, trigger: 'REGISTRATION_ENTERED_FOR', subject: `Please check your details for ${course.title}`,
+      blocks: [
+        { type: 'heading', text: `Please check your details, ${get('firstName')}` },
+        { type: 'text', text: `${a.booking.booker.firstName} ${a.booking.booker.lastName} has entered your registration details for ${course.title}. Please check them and correct anything that is wrong.` },
+        { type: 'summary', rows: [['Name', `${get('firstName')} ${get('lastName')}`], ['Mobile', get('mobile')], ['Employer', get('employer')], ['Booking', a.booking.reference]] },
+        { type: 'button', label: 'Check my details', href: registrationLink(a.id) },
+      ],
+    });
+    redirect(delegatesPath(a.booking.reference));
+  }
   redirect(`/register/${a.id}?done=1${token ? `&t=${encodeURIComponent(token)}` : ''}`);
 }

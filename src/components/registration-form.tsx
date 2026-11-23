@@ -13,6 +13,8 @@ type Props = {
   set: QuestionSet;
   prefill: Record<string, string>;
   filesOnFile: string[];
+  byBooker?: boolean;
+  forName?: string;
 };
 
 const input = 'box-border h-[46px] w-full rounded-control border border-field bg-white px-3.5 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
@@ -20,7 +22,7 @@ const area = 'box-border min-h-[88px] w-full rounded-control border border-field
 const labelCls = 'flex flex-col gap-1.5 text-sm font-bold text-ink';
 const hintCls = 'text-[13px] font-normal text-slate';
 
-export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile }: Props) {
+export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile, byBooker = false, forName = '' }: Props) {
   const [state, action, pending] = useActionState<RegState, FormData>(submitRegistration, {});
   const f = state.fields ?? {};
   const v = state.values ?? {};
@@ -77,6 +79,17 @@ export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile 
             )}
           </div>
           {set.note && <p className="mt-5 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">{set.note}</p>}
+        </section>
+      )}
+
+      {byBooker && (
+        <section className="rounded-card bg-white p-6 shadow-card md:p-8" aria-labelledby="auth-h">
+          <h2 id="auth-h" className="mb-3 text-[22px] font-extrabold text-ink">Your authority</h2>
+          <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-normal text-ink">
+            <input type="checkbox" name="authority" className="mt-0.5 size-[22px] shrink-0 accent-ink" {...err('authority')} />
+            <span>I am authorised to give these details{forName ? ` for ${forName}` : ''}. I understand they will be emailed a copy to check.</span>
+          </label>
+          <E k="authority" />
         </section>
       )}
 

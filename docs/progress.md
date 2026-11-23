@@ -10,6 +10,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-24: booking flow 2.10, steps 1 and 2 built (not deployed)
+
+- Approved by Jon: delegate details option "I have their full details" lives on the Delegate details page, not in checkout. Step 1: breadcrumbs on every public and portal page (Breadcrumbs in ui.tsx, PortalCrumbs for the portal and trainer app). Step 2: new page /book/delegates?ref=... listing every delegate with status (Complete, Entered by you, Link sent, Details needed) and a progress bar; per delegate Fill in now or Email them a link; the booker ticks "I am authorised to give these details" when filling in for someone else and the delegate is emailed a copy to check (trigger REGISTRATION_ENTERED_FOR); outcome page and booking detail link to it. Additive migration 20261124090000_registration_entered_by (Registration.enteredById, authorityAt). The 5 day reminders already existed (jobs.ts, sendRegistrationReminders) for named attendees who have not registered and for bookers with unnamed places. Step 3 (quicker checkout without the attendee entry) not started. Branch booking-flow-2-10; 105 browser checks and 86 tests pass.
+
 ## 2026-11-23: browser checks (e2e)
 
 - `npm run e2e` plays the main journeys in a real browser against a running local copy (`npm run dev` first; Playwright comes with the Claude Code environment, the project does not depend on it). About 90 checks: public pages at desktop and 390 px, access rules, customer, staff and trainer sign-in (lockout, setup link), booking on account with PO, Admin Add booking, every admin, booker and trainer page, credit account application, full session. Local copies only: it creates e2e.* test records and never contacts Stripe, Xero, Teams or email. Failures save a screenshot in e2e/out. Not covered: card payment (needs Stripe test keys), real email delivery, how pages look. Those stay with Kirsty.

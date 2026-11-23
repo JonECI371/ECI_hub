@@ -362,6 +362,8 @@ model Registration {
   fileKeys    String[]       // S3 keys in the ID bucket (auto-deleted after 30 days)
   approval    ApprovalStatus @default(NOT_REQUIRED)
   submittedAt DateTime       @default(now())
+  enteredById String?        // set when someone else (the booker) filled the form in for the delegate
+  authorityAt DateTime?      // when they ticked "I am authorised to give these details"
 }
 
 model Enrolment {

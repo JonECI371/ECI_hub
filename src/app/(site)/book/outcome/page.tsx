@@ -5,6 +5,7 @@ import { currentPerson } from '@/lib/auth';
 import { fmtSessionDates, fmtTime, gbp } from '@/lib/format';
 import { holdLive } from '@/lib/booking';
 import { registrationLink } from '@/lib/registration-link';
+import { delegateState, delegatesPath } from '@/lib/delegates';
 import { Breadcrumbs, DeliveryChip, Chip, type Crumb } from '@/components/ui';
 import { checkoutBookingId } from '../actions';
 import { statementText } from '@/lib/credit';
@@ -110,6 +111,8 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
           ['Trainer notified', 'Your trainer sees the class list, plus any dietary or access needs.'],
           ['Your certificate', `Issued once you complete the course${c.validityYears ? `, valid for ${c.validityYears} years` : ''}.`],
         ];
+  const others = b.attendees.filter((a) => a.status !== 'CANCELLED' && a.personId !== b.bookerId);
+  const othersTodo = others.filter((a) => !delegateState(a, b.bookerId).done).length;
   const missing = b.attendees.filter((a) => !a.personId).length;
 
   return (
@@ -123,15 +126,22 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
           {regLink && (
             <section className="flex flex-col gap-4 rounded-card bg-cyan-soft p-6 md:flex-row md:items-center md:justify-between md:p-8">
               <div>
-                <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">One more thing · 2 minutes</p>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">{othersTodo > 0 ? 'Your own details · 2 minutes' : 'One more thing · 2 minutes'}</p>
                 <h2 className="mb-1 text-[22px] font-extrabold text-ink">Complete your registration now</h2>
                 <p className="text-[15px]">We have filled in what we know.</p>
               </div>
               <Link href={regLink} className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-chip bg-ink px-6 font-bold text-white no-underline hover:text-white">Complete registration</Link>
             </section>
           )}
-          {missing > 0 && (
-            <p className="rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">{missing} {missing === 1 ? 'place still needs' : 'places still need'} attendee details. Add them from your dashboard; we remind you 5 days before.</p>
+          {othersTodo > 0 && (
+            <section className="flex flex-col gap-4 rounded-card bg-cyan-soft p-6 md:flex-row md:items-center md:justify-between md:p-8">
+              <div>
+                <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">{othersTodo} of {others.length} still to do</p>
+                <h2 className="mb-1 text-[22px] font-extrabold text-ink">Add your delegates&apos; details</h2>
+                <p className="text-[15px]">Fill each person in now, or email them a link. We remind anyone still incomplete 5 days before.</p>
+              </div>
+              <Link href={delegatesPath(b.reference)} className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-chip bg-ink px-6 font-bold text-white no-underline hover:text-white">Delegate details</Link>
+            </section>
           )}
           <Steps items={steps} />
           <div className="flex flex-wrap gap-3">

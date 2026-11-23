@@ -5,6 +5,7 @@ import { loadForRegistration } from '@/lib/registration';
 import { questionSet } from '@/lib/registration-sets';
 import { Breadcrumbs, DeliveryChip, Chip } from '@/components/ui';
 import { RegistrationForm } from '@/components/registration-form';
+import { delegatesPath, enteringForOther } from '@/lib/delegates';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Registration', robots: { index: false } };
@@ -33,6 +34,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
 
   const b = a.booking;
   const c = b.course;
+  const byBooker = await enteringForOther(a);
   const set = questionSet(c.subject.registrationSet, c.deliveryType, c.subject.approvalRequired, c.subject.name);
   const scheme = (a.person.schemeIds ?? {}) as Record<string, string>;
   const answers = (a.registration?.answers ?? {}) as Record<string, string>;
@@ -107,14 +109,15 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
-          <Breadcrumbs className="mb-3" items={[['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration']]} />
+          <Breadcrumbs className="mb-3" items={(byBooker ? [['Home', '/'], [c.title, `/courses/${c.slug}`], ['Delegate details', delegatesPath(b.reference)], [`Details for ${a.person.firstName}`]] : [['Home', '/'], [c.title, `/courses/${c.slug}`], ['Registration']]) as import('@/components/ui').Crumb[]} />
           <p className="mb-2 text-xs font-extrabold uppercase tracking-[0.1em] text-ink">Registration</p>
           <h1 className="mb-2 text-[32px] font-extrabold tracking-tight text-ink">{c.title}</h1>
           <p className="text-[15px]">About {set.minutes} minutes.{set.intro ? ` ${set.intro}` : ''}</p>
           <p className="mt-1 text-[15px]">We&apos;ve filled in what we already know. Check it and add the rest. Everything is required unless it says optional.</p>
           {a.registration && <p className="mt-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You have already registered. You can update your answers and submit again.</p>}
         </div>
-        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} />
+        {byBooker && <p className="rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You are entering the details for {a.person.firstName}. We email them a copy afterwards so they can check it and correct anything.</p>}
+        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} byBooker={byBooker} forName={a.person.firstName} />
       </div>
       {aside}
     </div>

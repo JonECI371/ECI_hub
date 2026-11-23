@@ -38,6 +38,17 @@ export async function makeFixtures(db: PrismaClient) {
   const full = await mkCourse('full', 1);
   await db.session.update({ where: { id: full.sessions[0].id }, data: { capacity: 1 } });
 
-  return { tag, mail, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
+  // Two e-learning courses from different providers, each with one open enrolment task, for the Tasks page provider filter.
+  const providers: { name: string; taskTitle: string }[] = [];
+  for (const [i, name] of [`E2E Provider A ${tag}`, `E2E Provider B ${tag}`].entries()) {
+    const c = await db.course.create({ data: { slug: `e2e-elearn-${i}-${tag}`, title: `E2E eLearning ${i} ${tag}`, subjectId: subject.id, deliveryType: 'ELEARNING', status: 'PUBLISHED', shortDescription: 'x', description: 'x', durationText: 'Self-paced', pricePence: 5000, provider: name, fulfilment: 'ADMIN_TASK' } });
+    const b = await db.booking.create({ data: { reference: `E2E-${tag}-${i}`, bookerId: booker.id, courseId: c.id, places: 1, method: 'ACCOUNT', accountId: account.id, subtotalPence: 5000, vatPence: 1000, totalPence: 6000, status: 'CONFIRMED' } });
+    const a = await db.attendee.create({ data: { bookingId: b.id, personId: booker.id, status: 'INVITED' } });
+    const taskTitle = `Enrol E2E person ${i} on ${name}`;
+    await db.task.create({ data: { type: 'ELEARNING_ENROLMENT', title: taskTitle, detail: c.title, recordType: 'Attendee', recordId: a.id } });
+    providers.push({ name, taskTitle });
+  }
+
+  return { tag, mail, providers, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
 }
 export type Fixtures = Awaited<ReturnType<typeof makeFixtures>>;

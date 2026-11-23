@@ -23,7 +23,7 @@ async function done(taskId: string, actorId: string, note: string) {
   await audit(actorId, 'TASK_DONE', 'Task', taskId, undefined, { note });
   revalidatePath('/admin', 'layout');
 }
-const back = (form: FormData, msg: string): never => redirect(`/admin/tasks?${form.get('filter') ? `type=${form.get('filter')}&` : ''}msg=${msg}`);
+const back = (form: FormData, msg: string): never => redirect(`/admin/tasks?${form.get('filter') ? `type=${form.get('filter')}&` : ''}${form.get('provider') ? `provider=${encodeURIComponent(String(form.get('provider')))}&` : ''}msg=${msg}`);
 
 /** Generic "mark done" for tasks with nothing else to change here. */
 export async function markDone(form: FormData) {

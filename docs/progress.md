@@ -10,6 +10,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-24: Tasks page provider filter (built, not deployed)
+
+- Jon asked for a filter per course type on the enrolment tasks (EUSR QuartzWeb, Trainor, SkillGuard for Thames Water, others later). Built as a second row of buttons on Tasks > Enrolment, one per e-learning provider taken from the courses' Provider field, with open counts; SkillGuard or any new provider appears once a course uses it. Also a Provider selector on the Done tab. Branch tasks-provider-filter.
+
 ## 2026-11-24: booking flow 2.10, steps 1 and 2 built (not deployed)
 
 - Approved by Jon: delegate details option "I have their full details" lives on the Delegate details page, not in checkout. Step 1: breadcrumbs on every public and portal page (Breadcrumbs in ui.tsx, PortalCrumbs for the portal and trainer app). Step 2: new page /book/delegates?ref=... listing every delegate with status (Complete, Entered by you, Link sent, Details needed) and a progress bar; per delegate Fill in now or Email them a link; the booker ticks "I am authorised to give these details" when filling in for someone else and the delegate is emailed a copy to check (trigger REGISTRATION_ENTERED_FOR); outcome page and booking detail link to it. Additive migration 20261124090000_registration_entered_by (Registration.enteredById, authorityAt). The 5 day reminders already existed (jobs.ts, sendRegistrationReminders) for named attendees who have not registered and for bookers with unnamed places. Step 3 (quicker checkout without the attendee entry) not started. Branch booking-flow-2-10; 105 browser checks and 86 tests pass.

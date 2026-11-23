@@ -239,6 +239,21 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     for (const p of paths) await pageOk(page, errors, p, 'admin ' + p);
     await ctx.close();
   });
+  await step('provider filter', null, async () => {
+    const { page, ctx } = await newPage(br); await staffLogin(page, f.superAdmin.email);
+    const [a, b] = f.providers;
+    await page.goto(`${BASE}/admin/tasks?type=ELEARNING_ENROLMENT`);
+    const t0 = await bodyText(page);
+    check(t0.includes(a.name) && t0.includes(b.name) && t0.includes(a.taskTitle) && t0.includes(b.taskTitle), 'the Tasks page shows a button per e-learning provider, and both providers\' tasks');
+    await page.click(`nav[aria-label="E-learning providers"] a:has-text("${a.name}")`); await page.waitForURL(/provider=/);
+    const t1 = await bodyText(page);
+    check(t1.includes(a.taskTitle) && !t1.includes(b.taskTitle), 'choosing a provider shows only that provider\'s enrolment tasks');
+    check(/Filter on:.*Enrolment.*only/s.test(t1) || t1.includes(`· ${a.name}`), 'the page says which filter is on');
+    await page.goto(`${BASE}/admin/tasks?type=ELEARNING_ENROLMENT&provider=${encodeURIComponent('not a provider')}`);
+    check((await bodyText(page)).includes(a.taskTitle), 'an unknown provider in the address is ignored, not an error');
+    await page.goto(`${BASE}/admin/tasks?view=done`); check((await page.locator('select[name=provider]').count()) === 1, 'the Done tab has a provider filter too');
+    await ctx.close();
+  });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);
     for (const p of ['/trainer', '/trainer/availability', '/trainer/profile']) await pageOk(page, errors, p, 'trainer ' + p, true, true);

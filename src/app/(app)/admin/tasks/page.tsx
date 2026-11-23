@@ -12,6 +12,7 @@ import { PO_RULES, creditDefaults } from '@/lib/accounts';
 import { loadPolicy, steer } from '@/lib/cancellation-policy';
 import { xeroLink, xeroStatus } from '@/lib/integrations/xero';
 import { money } from '@/lib/format';
+import { attendeeIdsForProvider, enrolmentProviders } from '@/lib/task-providers';
 import { companiesHouseConfigured, companiesHouseLink, type CompanyCheck } from '@/lib/integrations/companies-house';
 
 export const dynamic = 'force-dynamic';
@@ -35,18 +36,23 @@ function age(d: Date) {
   return h < 1 ? 'Just now' : h < 24 ? `${h} ${h === 1 ? 'hour' : 'hours'}` : `${Math.floor(h / 24)} ${Math.floor(h / 24) === 1 ? 'day' : 'days'}`;
 }
 
-export default async function Tasks({ searchParams }: { searchParams: Promise<{ type?: string; msg?: string; detail?: string; view?: string; q?: string; page?: string }> }) {
+export default async function Tasks({ searchParams }: { searchParams: Promise<{ type?: string; msg?: string; detail?: string; view?: string; q?: string; page?: string; provider?: string }> }) {
   const me = await requireAdmin('/admin/tasks');
-  const { type, msg, detail, view, q, page } = await searchParams;
-  const filter = type && type in TASK_LABEL ? (type as TaskType) : undefined;
+  const { type, msg, detail, view, q, page, provider } = await searchParams;
+  const providers = await enrolmentProviders();
+  // Choosing a provider means enrolment tasks only; the provider has to be one that a course really uses.
+  const providerName = provider && providers.some((x) => x.provider === provider) ? provider : undefined;
+  const filter = providerName ? ('ELEARNING_ENROLMENT' as TaskType) : type && type in TASK_LABEL ? (type as TaskType) : undefined;
+  const providerIds = providerName ? await attendeeIdsForProvider(providerName) : undefined;
+  const providerWhere = providerIds ? { recordId: { in: providerIds } } : {};
 
   if (view === 'done') {
     const term = (q ?? '').trim().slice(0, 80);
     const p = Math.max(1, Number(page) || 1);
-    const where = { status: { in: ['DONE', 'DISMISSED'] as ('DONE' | 'DISMISSED')[] }, type: filter, ...(term ? { OR: [{ title: { contains: term, mode: 'insensitive' as const } }, { detail: { contains: term, mode: 'insensitive' as const } }] } : {}) };
+    const where = { status: { in: ['DONE', 'DISMISSED'] as ('DONE' | 'DISMISSED')[] }, type: filter, ...providerWhere, ...(term ? { OR: [{ title: { contains: term, mode: 'insensitive' as const } }, { detail: { contains: term, mode: 'insensitive' as const } }] } : {}) };
     const [rows, total] = await Promise.all([db.task.findMany({ where, orderBy: { doneAt: 'desc' }, skip: (p - 1) * 50, take: 50 }), db.task.count({ where })]);
     const who = new Map((await db.person.findMany({ where: { id: { in: [...new Set(rows.map((r) => r.assigneeId).filter(Boolean) as string[])] } }, select: { id: true, firstName: true, lastName: true } })).map((x) => [x.id, `${x.firstName} ${x.lastName}`]));
-    const qs = (extra: Record<string, string | number | undefined>) => { const u = new URLSearchParams({ view: 'done' }); for (const [k, v] of Object.entries({ q: term, type: filter, ...extra })) if (v) u.set(k, String(v)); return u.toString(); };
+    const qs = (extra: Record<string, string | number | undefined>) => { const u = new URLSearchParams({ view: 'done' }); for (const [k, v] of Object.entries({ q: term, type: filter, provider: providerName, ...extra })) if (v) u.set(k, String(v)); return u.toString(); };
     const when = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London' });
     return (
       <>
@@ -55,8 +61,9 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
           <input type="hidden" name="view" value="done" />
           <label className="flex flex-col gap-1 text-xs font-bold">Search<input name="q" defaultValue={term} placeholder="Name, course, reference" className="h-11 w-[280px] max-w-full rounded-control border border-field bg-card px-3 text-sm text-ink" /></label>
           <label className="flex flex-col gap-1 text-xs font-bold">Type<select name="type" defaultValue={filter ?? ''} className="h-11 rounded-control border border-field bg-card px-3 text-sm text-ink"><option value="">All types</option>{Object.entries(TASK_LABEL).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></label>
+          {providers.length > 0 && <label className="flex flex-col gap-1 text-xs font-bold">Provider<select name="provider" defaultValue={providerName ?? ''} className="h-11 rounded-control border border-field bg-card px-3 text-sm text-ink"><option value="">All providers</option>{providers.map((x) => <option key={x.provider} value={x.provider}>{x.provider}</option>)}</select></label>}
           <button type="submit" className="inline-flex min-h-11 items-center rounded-chip bg-strong px-5 text-sm font-bold text-strong-fg">Search</button>
-          {(term || filter) && <Link href="/admin/tasks?view=done" className="inline-flex min-h-11 items-center text-sm">Clear all filters</Link>}
+          {(term || filter || providerName) && <Link href="/admin/tasks?view=done" className="inline-flex min-h-11 items-center text-sm">Clear all filters</Link>}
         </form>
         <section className="overflow-hidden rounded-card bg-card shadow-card">
           <p aria-live="polite" className="border-b border-hairline px-6 py-3 text-sm font-bold text-ink">{total} done {total === 1 ? 'task' : 'tasks'}, newest first</p>
@@ -73,7 +80,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
     );
   }
   const [tasks, counts] = await Promise.all([
-    db.task.findMany({ where: { status: 'OPEN', type: filter }, orderBy: { createdAt: 'asc' }, take: 100 }),
+    db.task.findMany({ where: { status: 'OPEN', type: filter, ...providerWhere }, orderBy: { createdAt: 'asc' }, take: 100 }),
     db.task.groupBy({ by: ['type'], where: { status: 'OPEN' }, _count: true }),
   ]);
   const attendeeIds = tasks.filter((t) => t.recordType === 'Attendee').map((t) => t.recordId);
@@ -124,9 +131,19 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
         ))}
       </nav>
 
+      {filter === 'ELEARNING_ENROLMENT' && providers.length > 0 && (
+        <nav aria-label="E-learning providers" className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-[0.08em]">Provider</span>
+          <Link href="/admin/tasks?type=ELEARNING_ENROLMENT" className={pill(!providerName)} aria-current={!providerName ? 'true' : undefined}>All providers <span className="text-xs opacity-75">{providers.reduce((n, x) => n + x.open, 0)}</span></Link>
+          {providers.map((x) => (
+            <Link key={x.provider} href={`/admin/tasks?type=ELEARNING_ENROLMENT&provider=${encodeURIComponent(x.provider)}`} className={pill(providerName === x.provider)} aria-current={providerName === x.provider ? 'true' : undefined}>{x.provider} <span className="text-xs opacity-75">{x.open}</span></Link>
+          ))}
+        </nav>
+      )}
+
       {filter && (
         <p className="flex flex-wrap items-center gap-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">
-          <span><strong>Filter on:</strong> {TASK_LABEL[filter]} only{total > tasks.length ? ` · ${total - tasks.length} ${total - tasks.length === 1 ? 'task' : 'tasks'} of other types are hidden` : ''}</span>
+          <span><strong>Filter on:</strong> {TASK_LABEL[filter]}{providerName ? ` · ${providerName}` : ''} only{total > tasks.length ? ` · ${total - tasks.length} ${total - tasks.length === 1 ? 'task' : 'tasks'} of other types are hidden` : ''}</span>
           <Link href="/admin/tasks" className="font-bold">Clear all filters</Link>
         </p>
       )}
@@ -140,6 +157,7 @@ export default async function Tasks({ searchParams }: { searchParams: Promise<{ 
             <>
               <input type="hidden" name="taskId" value={t.id} />
               <input type="hidden" name="filter" value={filter ?? ''} />
+              <input type="hidden" name="provider" value={providerName ?? ''} />
             </>
           );
           let body: React.ReactNode = <p className="text-sm">{t.detail}</p>;

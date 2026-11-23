@@ -18,9 +18,11 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   const h1 = await page.locator('h1').count();
   const trail = crumbs ? await page.locator('nav[aria-label="Breadcrumb"]').count() : 1;
   const current = crumbs && trail === 1 ? await page.locator('nav[aria-label="Breadcrumb"] [aria-current=page]').count() : 1;
+  const box = crumbs && trail === 1 ? await page.locator('nav[aria-label="Breadcrumb"]').boundingBox() : null;
   const overflow = phone ? await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1) : false;
   const problems = [
     status >= 400 && `status ${status}`, BROKEN.test(text) && 'error text on page', h1 === 0 && 'no heading',
+    box && box.y > 200 && `breadcrumbs are ${Math.round(box.y)}px down the page, not along the top`,
     trail !== 1 && `${trail} breadcrumb trails (should be 1)`, current !== 1 && 'breadcrumb has no current page marked',
     errors.length > 0 && `console: ${errors[0]}`, overflow && 'scrolls sideways at 390px',
   ].filter(Boolean);
@@ -186,6 +188,11 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await page.click('a:has-text("Delegate details")'); await page.waitForURL(/\/book\/delegates/);
     const crumbs = (await page.locator('nav[aria-label="Breadcrumb"]').innerText()).trim();
     check(/Delegate details$/.test(crumbs) && /Book/.test(crumbs), 'the Delegate details page shows the trail ending in Delegate details');
+    check(/Booked by/.test(await bodyText(page)) && /Place 1: You/.test(await bodyText(page)), 'the page shows who booked, and the booker as place 1 when they are a delegate');
+    await page.click('button:has-text("I am not attending")'); await page.waitForSelector('text=Place 1: not named yet');
+    check(/Yes, use my details for place 1/.test(await bodyText(page)), 'the booker can say they are not a delegate, which frees place 1');
+    await page.click('button:has-text("Yes, use my details for place 1")'); await page.waitForSelector('text=Place 1: You');
+    check(true, 'the booker can add themselves back using their own details');
     check((await page.locator('[role=progressbar]').getAttribute('aria-valuenow')) === '0' && /0 of 3 complete/.test(await bodyText(page)), 'it starts at 0 of 3 complete');
     await pageOk(page, errors, page.url().replace(BASE, ''), 'delegate details page');
     const fillRow = async (idx: number, first: string, email: string, intent: 'now' | 'link') => {

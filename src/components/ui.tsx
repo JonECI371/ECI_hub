@@ -47,17 +47,17 @@ export function Card({ children, className = '' }: { children: React.ReactNode; 
 
 export type Crumb = [label: string, href?: string];
 
-/** Trail of where the person is. The last item is the current page and is not a link. `dark` is for use inside a dark hero band. */
-export function Breadcrumbs({ items, tone = 'light', className = '' }: { items: Crumb[]; tone?: 'light' | 'dark'; className?: string }) {
-  const dark = tone === 'dark';
+/** Where the person is. By default a thin bar across the top of the page, under the site header, in the same place on every page. The last item is the current page and is not a link. `inline` is for inside the portal's own content area. */
+export function Breadcrumbs({ items, variant = 'bar', className = '' }: { items: Crumb[]; variant?: 'bar' | 'inline'; className?: string }) {
+  const bar = variant === 'bar';
   return (
-    <nav aria-label="Breadcrumb" className={`text-[13px] ${dark ? 'text-white/70' : 'text-slate'} ${className}`}>
+    <nav aria-label="Breadcrumb" className={`text-[13px] text-slate ${bar ? 'border-b border-hairline bg-white px-4 py-2.5 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]' : ''} ${className}`}>
       <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1">
         {items.map(([label, href], i) => {
           const last = i === items.length - 1;
           return (
             <li key={`${label}-${i}`} className="flex items-center gap-1.5">
-              {href && !last ? <Link href={href} className={dark ? 'text-white/80' : undefined}>{label}</Link> : <span aria-current={last ? 'page' : undefined} className={last && !dark ? 'font-semibold text-ink' : undefined}>{label}</span>}
+              {href && !last ? <Link href={href}>{label}</Link> : <span aria-current={last ? 'page' : undefined} className={last ? 'font-semibold text-ink' : undefined}>{label}</span>}
               {!last && <span aria-hidden="true">›</span>}
             </li>
           );

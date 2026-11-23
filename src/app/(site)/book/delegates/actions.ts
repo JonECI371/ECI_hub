@@ -45,3 +45,32 @@ export async function assignDelegate(form: FormData) {
   }
   redirect(`${registrationLink(a.id)}&for=1`);
 }
+
+/** The booker says whether they are one of the delegates. Yes: they take the first empty place and use their own details. No: they leave it (until they have registered). */
+export async function setBookerAttends(form: FormData) {
+  const ref = String(form.get('ref') ?? '');
+  const on = form.get('on') === '1';
+  const b = await bookingForDelegates(ref);
+  if (!b) redirect('/no-access');
+  const bounce = (msg: string): never => redirect(`${delegatesPath(ref)}&msg=${msg}`);
+  const me = await currentPerson();
+  const own = b.attendees.find((a) => a.personId === b.bookerId && a.status !== 'CANCELLED');
+  if (on) {
+    if (own) return bounce('self');
+    const free = b.attendees.find((a) => !a.personId && a.status !== 'CANCELLED');
+    if (!free) return bounce('nofree');
+    await db.$transaction([
+      db.attendee.update({ where: { id: free.id }, data: { personId: b.bookerId, status: 'INVITED' } }),
+      db.auditLog.create({ data: { actorId: me?.id ?? b.bookerId, action: 'ATTENDEE_ADDED', recordType: 'Booking', recordId: b.id, after: { personId: b.bookerId, how: 'booker' } } }),
+    ]);
+  } else {
+    if (!own) return bounce('self');
+    if (own.registration) return bounce('registered');
+    await db.$transaction([
+      db.attendee.update({ where: { id: own.id }, data: { personId: null, status: 'DETAILS_MISSING' } }),
+      db.auditLog.create({ data: { actorId: me?.id ?? b.bookerId, action: 'ATTENDEE_SWAPPED', recordType: 'Booking', recordId: b.id, before: { personId: b.bookerId }, after: { personId: null } } }),
+    ]);
+  }
+  if (b.sessionId) await syncSessionMeeting(b.sessionId);
+  return bounce(on ? 'self' : 'removed');
+}

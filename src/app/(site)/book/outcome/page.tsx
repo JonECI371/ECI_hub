@@ -34,12 +34,14 @@ function Steps({ items }: { items: [string, string][] }) {
 
 function Message({ eyebrow, title, children, tone = 'ok', crumbs }: { eyebrow: string; title: string; children: React.ReactNode; tone?: 'ok' | 'bad'; crumbs?: Crumb[] }) {
   return (
+    <>
+    {crumbs && <Breadcrumbs items={crumbs} />}
     <div className={`${tone === 'ok' ? 'hero-motif' : 'bg-ink'} px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]`}>
-      {crumbs && <Breadcrumbs tone="dark" className="mb-3" items={crumbs} />}
       <p className={`mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] ${tone === 'ok' ? 'text-cyan' : 'text-[#FFB59A]'}`}>{eyebrow}</p>
       <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">{title}</h1>
       <div className="max-w-[720px] text-[17px] leading-relaxed text-white/80">{children}</div>
     </div>
+    </>
   );
 }
 

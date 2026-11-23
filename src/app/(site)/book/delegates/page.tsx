@@ -4,7 +4,7 @@ import { Breadcrumbs, Chip } from '@/components/ui';
 import { bookingForDelegates, delegateState } from '@/lib/delegates';
 import { registrationLink } from '@/lib/registration-link';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
-import { assignDelegate } from './actions';
+import { assignDelegate, setBookerAttends } from './actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Delegate details', robots: { index: false } };
@@ -14,6 +14,10 @@ const MSG: Record<string, [string, boolean]> = {
   invalid: ['Enter a first name, last name and a valid email address.', false],
   duplicate: ['That person is already on this booking.', false],
   error: ['That place cannot be changed here.', false],
+  self: ['You are now one of the delegates, using your own details for place 1.', true],
+  removed: ['You are no longer a delegate. Place 1 is free for someone else.', true],
+  nofree: ['Every place already has someone named. Change one of the delegates first.', false],
+  registered: ['You have already registered, so you cannot be removed here. Contact us if you need to change this.', false],
 };
 const input = 'box-border h-11 w-full rounded-control border border-field bg-white px-3 text-[15px] text-ink';
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold no-underline';
@@ -34,19 +38,42 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
     );
   }
   const c = b.course;
-  const live = b.attendees.filter((a) => a.status !== 'CANCELLED');
+  const all = b.attendees.filter((a) => a.status !== 'CANCELLED');
+  const live = [...all.filter((a) => a.personId === b.bookerId), ...all.filter((a) => a.personId !== b.bookerId)];
+  const bookerIsDelegate = live.some((a) => a.personId === b.bookerId);
+  const hasFree = live.some((a) => !a.personId);
+  const bookerState = live.find((a) => a.personId === b.bookerId);
   const states = live.map((a) => delegateState(a, b.bookerId));
   const done = states.filter((s) => s.done).length;
   const notice = msg ? MSG[msg] : null;
   const when = b.session ? `${fmtSessionDates(b.session.startsAt, b.session.endsAt)} · ${fmtTime(b.session.startsAt)} to ${fmtTime(b.session.endsAt)} UK time` : 'Self-paced';
 
   return (
+    <>
+    <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [c.title, `/courses/${c.slug}`], ['Book'], ...(b.method === 'ACCOUNT' ? [] : [['Pay'] as [string]]), ['Delegate details']]} />
     <div className={`${pad} flex flex-col gap-6 pb-16 pt-6`}>
-      <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [c.title, `/courses/${c.slug}`], ['Book'], ...(b.method === 'ACCOUNT' ? [] : [['Pay'] as [string]]), ['Delegate details']]} />
       <div>
         <h1 className="text-[32px] font-extrabold tracking-tight text-ink">Delegate details</h1>
         <p className="mt-1 max-w-[720px] text-[15px]">{c.title} · {when} · Booking {b.reference}. Add each person&apos;s details now, or email them a link to do it themselves. We remind anyone still incomplete 5 days before the course.</p>
       </div>
+      <section className="rounded-card bg-white p-5 shadow-card md:p-6" aria-labelledby="by-h">
+        <h2 id="by-h" className="mb-3 text-lg font-extrabold text-ink">Booked by</h2>
+        <p className="font-semibold text-ink">{b.booker.firstName} {b.booker.lastName === '-' ? '' : b.booker.lastName}</p>
+        <p className="text-sm">{b.booker.email}{b.booker.mobile ? ` · ${b.booker.mobile}` : ''}{b.account ? ` · ${b.account.company}` : b.booker.employer ? ` · ${b.booker.employer}` : ''}</p>
+        {bookerIsDelegate ? (
+          <form action={setBookerAttends} className="mt-4 flex flex-wrap items-center gap-3">
+            <input type="hidden" name="ref" value={b.reference} /><input type="hidden" name="on" value="0" />
+            <p className="text-sm">You are one of the delegates (place 1 below).</p>
+            {!bookerState?.registration && <button type="submit" className={`${btn} border border-field bg-white text-ink`}>I am not attending</button>}
+          </form>
+        ) : (
+          <form action={setBookerAttends} className="mt-4 flex flex-wrap items-center gap-3">
+            <input type="hidden" name="ref" value={b.reference} /><input type="hidden" name="on" value="1" />
+            <p className="text-sm">Are you one of the delegates?</p>
+            {hasFree ? <button type="submit" className={`${btn} bg-cyan text-ink`}>Yes, use my details for place 1</button> : <p className="text-sm font-semibold">Every place is named already.</p>}
+          </form>
+        )}
+      </section>
       <div>
         <div className="mb-1 flex justify-between text-sm font-semibold text-ink"><span>{done} of {live.length} complete</span></div>
         <div role="progressbar" aria-valuemin={0} aria-valuemax={live.length} aria-valuenow={done} aria-label="Delegate details complete" className="h-2.5 overflow-hidden rounded-full bg-hairline">
@@ -63,7 +90,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
           return (
             <li key={a.id} className="rounded-card bg-white p-5 shadow-card md:p-6" data-testid={`delegate-${st.key}`}>
               <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                <h2 className="text-lg font-extrabold text-ink">{own ? 'Your own details' : `Place ${i + 1}${who ? `: ${who}` : ''}`}</h2>
+                <h2 className="text-lg font-extrabold text-ink">{`Place ${i + 1}: ${own ? 'You' : who ?? 'not named yet'}`}</h2>
                 <Chip tone={st.tone}>{own && !st.done ? 'Details needed' : st.label}</Chip>
               </div>
               {a.person && !own && <p className="mb-3 text-sm">{a.person.email}</p>}
@@ -97,5 +124,6 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
         <Link href={`/book/outcome?ref=${b.reference}`} className={`${btn} border border-field bg-white text-ink`}>Back to my booking</Link>
       </div>
     </div>
+    </>
   );
 }

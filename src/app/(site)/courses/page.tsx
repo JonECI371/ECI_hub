@@ -119,8 +119,8 @@ export default async function CoursesPage({ searchParams }: { searchParams: Prom
 
   return (
     <>
+      <Breadcrumbs items={[['Home', '/'], ['Courses']]} />
       <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
-        <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Courses']]} />
         <h1 className="mb-2.5 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Courses</h1>
         <p className="max-w-[760px] text-[17px] leading-relaxed text-white/80">Filter by how you want to learn, then pick a course or a date. eLearning starts the day you book.</p>
       </div>

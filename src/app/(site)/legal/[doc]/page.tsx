@@ -19,7 +19,7 @@ export default async function Legal({ params }: { params: Promise<{ doc: string 
   const id = (h: string) => h.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <>
-    <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], [d.title]]} />
+    <Breadcrumbs items={[['Home', '/'], [d.title]]} />
     <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <aside className="w-full rounded-card bg-white p-6 shadow-card lg:sticky lg:top-6 lg:w-[300px]">
         <p className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-ink">Contents</p>

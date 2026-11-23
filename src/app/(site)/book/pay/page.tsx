@@ -25,10 +25,11 @@ export default async function PayPage() {
   const testMode = !stripeEnabled();
   const clientSecret = testMode ? null : await paymentIntentFor(b);
   return (
+    <>
+    <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [b.course.title, `/courses/${b.course.slug}`], ['Book', b.sessionId ? `/book/${b.sessionId}` : `/book/course/${b.course.slug}`], ['Pay']]} />
     <div className="flex flex-col gap-8 px-4 pb-16 pt-8 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
       <div className="flex min-w-0 flex-1 flex-col gap-6">
         <div>
-          <Breadcrumbs className="mb-3" items={[['Home', '/'], ['Courses', '/courses'], [b.course.title, `/courses/${b.course.slug}`], ['Book', b.sessionId ? `/book/${b.sessionId}` : `/book/course/${b.course.slug}`], ['Pay']]} />
           <Link href={b.sessionId ? `/book/${b.sessionId}` : `/book/course/${b.course.slug}`} className="text-sm">← Change details</Link>
           <h1 className="mt-3 text-[32px] font-extrabold tracking-tight text-ink">Payment</h1>
         </div>
@@ -76,5 +77,6 @@ export default async function PayPage() {
         </div>
       </aside>
     </div>
+    </>
   );
 }

@@ -11,8 +11,8 @@ export default async function Contact({ searchParams }: { searchParams: Promise<
   const courses = await db.course.findMany({ where: { status: 'PUBLISHED' }, select: { title: true }, orderBy: { title: 'asc' } });
   return (
     <>
+      <Breadcrumbs items={[['Home', '/'], ['Contact us']]} />
       <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
-        <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Contact us']]} />
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">Contact us</p>
         <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Talk to us</h1>
         <p className="max-w-[720px] text-[17px] leading-relaxed text-white/80">Training for a team, on-site delivery or consultancy. One form, and we route it to the right person.</p>

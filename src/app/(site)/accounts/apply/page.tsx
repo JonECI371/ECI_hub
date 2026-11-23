@@ -18,8 +18,8 @@ const STEPS: [string, string][] = [
 export default function Apply() {
   return (
     <>
+      <Breadcrumbs items={[['Home', '/'], ['Credit account application']]} />
       <div className="hero-motif px-4 pb-10 pt-12 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]">
-        <Breadcrumbs tone="dark" className="mb-3" items={[['Home', '/'], ['Credit account application']]} />
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">For companies</p>
         <h1 className="mb-3 text-4xl font-extrabold tracking-tight text-white md:text-[44px]">Apply for a credit account</h1>
         <p className="max-w-[720px] text-[17px] leading-relaxed text-white/80">Book any course for your team and pay one invoice at the end of each month.</p>

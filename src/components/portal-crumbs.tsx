@@ -16,5 +16,5 @@ export function PortalCrumbs({ area }: { area: 'account' | 'trainer' }) {
     if (area === 'account' && parts[0] === 'bookings' && parts[1]) items.push([parts[1]]);
   } else if (area === 'trainer' && parts[0] === 'sessions' && parts[1]) items.push(['Attendance']);
   items = items.map((c, i) => (i === items.length - 1 ? [c[0]] : c));
-  return <Breadcrumbs items={items} className="mb-1" />;
+  return <Breadcrumbs variant="inline" items={items} className="mb-1" />;
 }

@@ -21,7 +21,7 @@ export default async function BookCourse({ params }: { params: Promise<{ slug: s
   const me = await currentPerson();
   return (
     <>
-      <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], ['Courses', '/courses'], [course.title, `/courses/${course.slug}`], ['Book']]} />
+      <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [course.title, `/courses/${course.slug}`], ['Book']]} />
       <CheckoutForm {...checkoutProps(course, null, null, me, me ? await bookingAccount(me.id) : null, await loadPolicy())} />
     </>
   );

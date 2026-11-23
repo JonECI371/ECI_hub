@@ -35,7 +35,7 @@ export default async function BookSession({ params, searchParams }: { params: Pr
   const me = await currentPerson();
   return (
     <>
-      <Breadcrumbs className="px-4 pt-6 md:px-[max(4.1667%,calc((100%_-_1536px)/2))]" items={[['Home', '/'], ['Courses', '/courses'], [session.course.title, `/courses/${session.course.slug}`], ['Book']]} />
+      <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [session.course.title, `/courses/${session.course.slug}`], ['Book']]} />
       <CheckoutForm {...checkoutProps(session.course, session, left, me, me ? await bookingAccount(me.id) : null, await loadPolicy(), me && add && (await addToBookingId(me.id, add, sessionId)) ? add : null)} />
     </>
   );

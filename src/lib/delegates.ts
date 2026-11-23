@@ -25,6 +25,7 @@ export async function bookingForDelegates(reference: string) {
     where: { reference },
     include: {
       booker: true,
+      account: true,
       course: { include: { subject: true } },
       session: true,
       attendees: { include: { person: true, registration: true }, orderBy: { id: 'asc' } },

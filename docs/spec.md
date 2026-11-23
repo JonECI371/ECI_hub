@@ -39,9 +39,9 @@ One person has one account and can hold several roles; a booker can also be a de
 | Delegate | Person attending | See own bookings, join links, venue, registration forms and certificates; change or cancel own card bookings before the cut-off | Email code or link |
 | Booker | Company staff on a credit account | Book on account or by card for others, add attendees, send reminders, see team bookings, certificates and statements | Email code or link |
 | Main booker | Account owner | Everything a booker can, plus invite or remove bookers (ECI approves) and request company detail changes | Email code or link |
-| Trainer | Employed or associate trainer | See assigned sessions and class lists, mark attendance, set availability, upload qualifications | Email code plus authenticator app |
-| Admin | ECI-Hub team | Courses, sessions, bookings, people, accounts, Tasks, emails, pipelines and reports | Email code plus authenticator app |
-| Super Admin | Directors | Everything, plus payment settings, credit limits above the default, integrations, legal documents and admin users | Email code plus authenticator app |
+| Trainer | Employed or associate trainer | See assigned sessions and class lists, mark attendance, set availability, upload qualifications | Authenticator app (no email code) |
+| Admin | ECI-Hub team | Courses, sessions, bookings, people, accounts, Tasks, emails, pipelines and reports | Authenticator app (no email code) |
+| Super Admin | Directors | Everything, plus payment settings, credit limits above the default, integrations, legal documents and admin users | Authenticator app (no email code) |
 
 Every change to a booking, person, account or setting is written to an audit log: who, what, when, before and after.
 
@@ -132,7 +132,7 @@ Each screen is built from the canvas artboard of the same name using Design syst
 | PUB-04 | Public | Book (Checkout) | Places stepper; attendee details now or later; card, Apple Pay, Google Pay; each delegate row takes name and email, with an optional "I have their full details" option that opens the course's registration questions in place (authority tick once; delegates are emailed a copy to check); signed-in bookers pay on account with a PO number (required if the account's PO rule says so), an optional PO amount and optional PO files (PDF or image, up to 5, 10 MB each); no password or email verification step; places held 5 minutes with a countdown, and no more than two open checkouts per person |
 | PUB-05 | Public | Outcome (Outcome) | One template for confirmed by card, confirmed on account, eLearning, waitlist and payment failed; "Complete registration now" shown when needed |
 | PUB-06 | Public | Registration (Registration) | Questions from the subject's set; known answers prefilled; file uploads for photo and ID; saves on submit; approval routed to Tasks where on |
-| PUB-07 | Public | Log in (Login) | Email code or magic link; 30-day trusted device; staff and trainers also need an authenticator code |
+| PUB-07 | Public | Log in (Login) | Customers: email code or magic link, 30-day trusted device. Admins, Super Admins and trainers: authenticator code only, no email sent; 5 wrong codes lock the sign-in for 15 minutes; a new authenticator can only be set up from a Super Admin's one-time link (24 hours) |
 | PUB-08 | Public | Waitlist claim (WaitlistClaim) | Opens from the email link with no code; pay and confirm in one step; expired state offers other dates |
 | PUB-09 | Public | Contact (Enquiry) | One form; topic changes the extra fields; creates a Deal in the right pipeline |
 | PUB-10 | Public | Credit account application (CorporateRequest) | Company (registered and invoice addresses), booker, other bookers, billing, credit requested (any amount), terms; required fields marked with an asterisk; creates an approval task with a Companies House check |
@@ -283,7 +283,7 @@ The recommended stack is TypeScript end to end on AWS in the UK region (eu-west-
 
 **Security and sign-in**
 
-- Passwordless sign-in by 6-digit email code or magic link, 15-minute expiry, 5 attempts. Staff and trainers add TOTP (authenticator app).
+- Passwordless sign-in for customers by 6-digit email code or magic link, 15-minute expiry, 5 attempts. Admins, Super Admins and trainers sign in with TOTP (authenticator app) alone, with a 15-minute lock after 5 wrong codes; a Super Admin creates a one-time setup link (24 hours, dead once used) for anyone setting up or resetting an authenticator.
 - Admin and Super Admin sessions last 12 hours and never use a trusted device; delegates, bookers and trainers can stay signed in for 30 days on a trusted device. Anyone can sign out of all devices, and sessions are revoked when roles change or an authenticator is reset.
 - Role-based access checked on the server for every request; customers only ever see their own or their account's records.
 - No card data stored; Stripe handles it. All traffic over HTTPS; secrets in AWS Secrets Manager.
@@ -385,3 +385,4 @@ Newest first. Each change is approved by Jon before it is built. "Tests" lists t
 | 2026-11-11b | 11 Nov 2026 | Cancellation policy in Settings and Admin cancellation review (refund, charge, part charge, waive, move); checkout hold 15 to 5 minutes with two open checkouts per person; Add places as a linked booking; Tasks filter banner and Done tab; courses have a duration with number and unit and usual times. | Test Log 1 sign-off and Jon's answers | Jon Wallis | PUB-04, POR-02, ADM-02, ADM-10, ADM-05 |
 | 2026-11-11 | 11 Nov 2026 | Security standard: built to OWASP ASVS Level 2 with a penetration test before go-live. Admin and Super Admin sessions limited to 12 hours with no trusted device. | ISO 27001 readiness and penetration testing | Jon Wallis | PUB-07, ADM-04 (sign-in and sessions) |
 | 2026-11-10 | 10 Nov 2026 | Baseline. Added version table, requirement IDs on the acceptance criteria and this change log. No requirement changed. | Version control and test traceability | Jon Wallis | None |
+| 2026-11-23 | 23 Nov 2026 | Admins, Super Admins and trainers sign in with the authenticator app alone (no email code). Customers keep the email code or link. Lockout after 5 wrong codes; a new authenticator needs a Super Admin's one-time setup link. Proposed by Jon, trainers included at his request. | Email code plus authenticator was confusing (two different codes) and Jon prefers staff to use the authenticator only | Jon Wallis | PUB-07, ADM-04 (sign-in) |

@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-23: staff sign-in by authenticator only (built locally, not deployed)
+
+- Jon decided: Admins, Super Admins and trainers sign in with the authenticator app alone; customers keep the email code or link. Built: no email for staff; lock for 15 minutes after 5 wrong codes (new Person fields totpFailures and totpLockedUntil, migration 20261123210000_staff_totp_lockout); a new authenticator only from a Super Admin's one-time setup link (People page, Access, Create setup link, 24 hours, dead once used); clearer authenticator wording; trainers keep the 30 day device option. Super Admin only creates setup links (an Admin could otherwise take over a Super Admin account that has no authenticator). Existing authenticators keep working, so Jon and Kirsty set up nothing again. 86 tests pass; checked in a local browser (staff, trainer, lockout, setup link, customer). Not deployed.
+- Same day: Mail.Send added to the ECI Booking Platform app and admin consent granted (it had not been on the app); the app was restarted so it picked it up; a test email reached Jon. Mail.Send is tenant wide (can send as anyone); Jon accepts this for the test site, go-live checklist still limits or removes it.
+
 ## 2026-11-16: fixes from Kirsty's Round 2 and Round 3 testing
 
 - Signed off by Jon one by one. Built: bad PO files no longer vanish (booking goes ahead, confirmation page warns which files were not saved); Log out link on checkout works (GET /logout, plain link; it had been a link to a POST-only route); "This course gives a certificate" tick per course (no certificate task when off); Change date or time for one session (emails everyone booked, moves the Teams invite, audit entry); test emails through Microsoft 365 (EMAIL_MODE=graph from /opt/eci/mail.env, only to allow-listed addresses, needs Mail.Send); application audit now records PO choice and other bookers; Test log (Super Admin only, Settings) of odd input on the booking, credit account and registration forms.

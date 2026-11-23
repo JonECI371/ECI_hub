@@ -8,6 +8,7 @@ import type { Prisma, Role } from '@prisma/client';
 import { db } from '@/lib/db';
 import { audit, requireAdmin } from '@/lib/admin';
 import { requirePerson } from '@/lib/auth';
+import { setupToken } from '@/lib/staff-login';
 import { readQuals } from '@/lib/trainers';
 import { EXT, storeFile } from '@/lib/integrations/files';
 
@@ -61,6 +62,16 @@ export async function resetAuthenticator(form: FormData) {
   await db.person.update({ where: { id }, data: { totpSecret: null, sessionsValidFrom: new Date() } }); // a lost authenticator may mean a lost device
   await audit(me.id, 'AUTHENTICATOR_RESET', 'Person', id);
   go(id, 'reset');
+}
+
+/** Super Admin: make a one-time link (24 hours) for a staff member or trainer to set up their authenticator. Only works while they have none. */
+export async function createSetupLink(form: FormData) {
+  const me = await requireSuper();
+  const id = String(form.get('personId'));
+  const p = await db.person.findUniqueOrThrow({ where: { id } });
+  if (p.totpSecret || !p.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN' || r === 'TRAINER')) go(id, 'nosetup');
+  await audit(me.id, 'AUTHENTICATOR_SETUP_LINK', 'Person', id);
+  redirect(`/admin/people/${id}?msg=setuplink&t=${encodeURIComponent(setupToken(id))}`);
 }
 
 /** Admin: edit contact details. */

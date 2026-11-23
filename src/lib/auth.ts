@@ -119,10 +119,11 @@ export async function requirePerson(roles?: Role[], next = '/account'): Promise<
 
 // ---------- Staff second step ----------
 
-type MfaPayload = { pid: string; exp: number; trust: boolean; next: string };
+type MfaPayload = { pid: string; exp: number; trust: boolean; next: string; enrol?: boolean };
 
-export async function startMfa(personId: string, trust: boolean, next: string) {
-  (await cookies()).set(MFA_COOKIE, sign({ pid: personId, exp: Date.now() + 10 * 60000, trust, next }), {
+/** Starts the authenticator step. `enrol` is true only when a Super Admin's one-time setup link was used: nobody can set up an authenticator by themselves. */
+export async function startMfa(personId: string, trust: boolean, next: string, enrol = false) {
+  (await cookies()).set(MFA_COOKIE, sign({ pid: personId, exp: Date.now() + 10 * 60000, trust, next, ...(enrol ? { enrol: true } : {}) }), {
     httpOnly: true,
     sameSite: 'lax',
     secure: secure(),

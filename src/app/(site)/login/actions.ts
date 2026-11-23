@@ -6,9 +6,10 @@ import { z } from 'zod';
 import { db } from '@/lib/db';
 import { SITE_URL } from '@/lib/format';
 import {
-  CODE_TTL_MS, MAX_ATTEMPTS, clearMfa, enrolSecret, hashCode, linkToken, newCode, pendingMfa, safeNext, sign,
-  startSession, verify,
+  CODE_TTL_MS, MAX_ATTEMPTS, clearMfa, enrolSecret, hashCode, isStaff, linkToken, newCode, pendingMfa, safeNext, sign,
+  startMfa, startSession, verify,
 } from '@/lib/auth';
+import { afterWrongCode, isLocked } from '@/lib/staff-login';
 import { finishFirstStep } from '@/lib/login';
 import { verifyTotp } from '@/lib/totp';
 import { emailLive, sendEmail } from '@/lib/integrations/email';
@@ -29,6 +30,13 @@ export async function requestCode(form: FormData) {
   const email = parsed.data;
 
   const person = await db.person.findUnique({ where: { email } });
+  // Admins, Super Admins and trainers sign in with their authenticator app alone: no email is sent.
+  // Nobody can set an authenticator up by themselves, so someone without one asks a Super Admin for a setup link.
+  if (person && isStaff(person.roles)) {
+    if (!person.totpSecret) redirect(`/login?error=staffsetup&next=${encodeURIComponent(next)}`);
+    await startMfa(person.id, false, next);
+    redirect('/login?step=staff');
+  }
   let cid: string | null = null;
   let devCode: string | undefined;
   if (person) {
@@ -89,18 +97,38 @@ export async function verifyStaffCode(form: FormData) {
   if (!mfa) redirect('/login?error=expired');
   const code = String(form.get('code') ?? '').replace(/\D/g, '');
   const person = await db.person.findUniqueOrThrow({ where: { id: mfa.pid } });
+  if (!isStaff(person.roles)) redirect('/login?error=expired');
+  if (isLocked(person.totpLockedUntil)) redirect('/login?error=stafflocked');
 
   let secret = person.totpSecret;
+  let ok: boolean;
   if (!secret) {
+    // Only a Super Admin's one-time setup link may set up a new authenticator.
+    if (!mfa.enrol) redirect('/login?error=staffsetup');
     secret = enrolSecret(person.id, mfa.exp);
-    if (!verifyTotp(secret, code)) redirect('/login?step=staff&error=wrong');
-    await db.person.update({ where: { id: person.id }, data: { totpSecret: secret } });
-    await db.auditLog.create({ data: { actorId: person.id, action: 'TOTP_ENROLLED', recordType: 'Person', recordId: person.id } });
-  } else if (!verifyTotp(secret, code)) {
+    ok = verifyTotp(secret, code);
+  } else {
+    ok = verifyTotp(secret, code);
+  }
+  if (!ok) {
+    // After 5 wrong codes in a row the sign-in is locked for 15 minutes, so the code cannot be guessed.
+    const upd = afterWrongCode(person.totpFailures);
+    await db.person.update({ where: { id: person.id }, data: upd });
+    if (upd.totpLockedUntil) {
+      await clearMfa();
+      await db.auditLog.create({ data: { actorId: person.id, action: 'STAFF_SIGNIN_LOCKED', recordType: 'Person', recordId: person.id } });
+      redirect('/login?error=stafflocked');
+    }
     redirect('/login?step=staff&error=wrong');
   }
+  if (!person.totpSecret) {
+    await db.person.update({ where: { id: person.id }, data: { totpSecret: secret } });
+    await db.auditLog.create({ data: { actorId: person.id, action: 'TOTP_ENROLLED', recordType: 'Person', recordId: person.id } });
+  }
+  if (person.totpFailures) await db.person.update({ where: { id: person.id }, data: { totpFailures: 0 } });
   await clearMfa();
-  await startSession(person.id, mfa.trust);
+  // Trainers (not Admins) may keep the device trusted for 30 days; Admin sessions are always 12 hours.
+  await startSession(person.id, mfa.trust || form.get('trust') === 'on');
   // Staff land on their own area unless they were heading somewhere specific.
   const home = person.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN') ? '/admin' : person.roles.includes('TRAINER') ? '/trainer' : '/account';
   redirect(mfa.next.startsWith('/account') ? home : mfa.next);

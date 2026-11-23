@@ -7,14 +7,14 @@ import { db } from '@/lib/db';
 import { requireAdmin } from '@/lib/admin';
 import { assignBlock, qualState, readQuals } from '@/lib/trainers';
 import { Chip } from '@/components/ui';
-import { addQualification, removeQualification, resetAuthenticator, setRoles, setTrainerStatus, updateDetails, updateTrainer } from '../actions';
+import { addQualification, createSetupLink, removeQualification, resetAuthenticator, setRoles, setTrainerStatus, updateDetails, updateTrainer } from '../actions';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Person', robots: { index: false } };
 
 const MSG: Record<string, [string, boolean]> = {
-  added: ['Person added. They can log in with their email now.', true], saved: ['Saved.', true], roles: ['Roles updated.', true],
-  reset: ['Authenticator reset. They will scan a new QR code at their next log-in.', true], approved: ['Trainer approved. They can now be assigned to sessions.', true],
+  added: ['Person added. Staff and trainers need a one-time setup link for their authenticator: use Create setup link under Access.', true], setuplink: ['Setup link created. It is shown under Access below. Send it to them yourself. It works once, for 24 hours, and only until they have set up their authenticator.', true], nosetup: ['A setup link only works for staff or trainers who have no authenticator yet.', false], saved: ['Saved.', true], roles: ['Roles updated.', true],
+  reset: ['Authenticator reset. Create a setup link so they can scan a new QR code.', true], approved: ['Trainer approved. They can now be assigned to sessions.', true],
   suspended: ['Trainer suspended. They cannot be assigned to new sessions.', true], pending: ['Trainer set back to awaiting approval.', true],
   qualadded: ['Qualification added.', true], qualremoved: ['Qualification removed.', true],
   selflock: ['You cannot remove your own Super Admin role. Ask another Super Admin.', false], lastsuper: ['There must always be at least one Super Admin.', false],
@@ -28,11 +28,12 @@ const input = 'h-11 w-full rounded-control border border-field bg-card px-3 text
 const btn = 'inline-flex min-h-11 items-center justify-center rounded-chip px-4 text-sm font-bold';
 const card = 'rounded-card bg-card p-6 shadow-card';
 
-export default async function PersonRecord({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string }> }) {
+export default async function PersonRecord({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ msg?: string; t?: string }> }) {
   const me = await requireAdmin('/admin/people');
   const isSuper = me.roles.includes('SUPER_ADMIN');
   const { id } = await params;
-  const { msg } = await searchParams;
+  const { msg, t } = await searchParams;
+  const siteUrl = process.env.SITE_URL ?? '';
   const p = await db.person.findUnique({ where: { id }, include: { trainerProfile: true } });
   if (!p) notFound();
   const [made, attending, certs, emails, history, sessions] = await Promise.all([
@@ -183,6 +184,17 @@ export default async function PersonRecord({ params, searchParams }: { params: P
                 ))}
                 <button type="submit" className={`${btn} bg-cyan text-on-cyan`}>Save roles</button>
               </form>
+              {staff && !p.totpSecret && (
+                <div className="mb-3">
+                  <form action={createSetupLink}>{hidden}<button type="submit" className={`${btn} w-full bg-cyan text-on-cyan`}>Create setup link</button></form>
+                  {msg === 'setuplink' && t && (
+                    <div className="mt-3 rounded-control bg-page p-3 text-sm">
+                      <p className="mb-1 font-bold text-ink">One-time setup link</p>
+                      <code className="block break-all font-mono text-xs text-ink" data-testid="setup-link">{`${siteUrl}/login/setup?t=${t}`}</code>
+                    </div>
+                  )}
+                </div>
+              )}
               {staff && (
                 <form action={resetAuthenticator}>
                   {hidden}

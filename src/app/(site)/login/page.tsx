@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import QRCode from 'qrcode';
@@ -18,6 +19,9 @@ const ERRORS: Record<string, string> = {
   expired: 'That code or link has expired. Ask for a new code.',
   locked: 'Too many wrong codes. Ask for a new code.',
   toomany: 'You have asked for several codes in a short time. Wait 15 minutes, then try again.',
+  staffsetup: 'Your authenticator is not set up yet. Ask a Super Admin for a one-time setup link.',
+  stafflocked: 'Too many wrong codes. Wait 15 minutes, then try again.',
+  setuplink: 'That setup link has expired or was already used. Ask a Super Admin for a new one.',
 };
 
 const field = 'box-border h-[46px] w-full rounded-control border border-field bg-white px-3.5 text-[15px] text-ink';
@@ -49,16 +53,19 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
     const mfa = await pendingMfa();
     if (mfa) {
       const person = await db.person.findUnique({ where: { id: mfa.pid } });
+      // A new authenticator can only be set up from a Super Admin's one-time link.
+      if (person && !person.totpSecret && !mfa.enrol) redirect('/login?error=staffsetup');
       const setup = person && !person.totpSecret;
+      const canTrust = !!person && !person.roles.some((r) => r === 'ADMIN' || r === 'SUPER_ADMIN');
       const secret = setup ? enrolSecret(person.id, mfa.exp) : null;
       const qr = secret && person ? await QRCode.toDataURL(otpauthUri(secret, person.email), { margin: 1, width: 180 }) : null;
       return (
         <Shell
           eyebrow="Staff and trainers"
-          title={setup ? 'Set up your authenticator' : 'One more step'}
+          title={setup ? 'Set up your authenticator' : 'Enter your authenticator code'}
           intro={setup
-            ? 'Admin and trainer accounts need an authenticator app, such as Microsoft Authenticator or Google Authenticator. Scan this code with the app, then enter the 6-digit code it shows.'
-            : 'Admin and trainer accounts also need a code from your authenticator app.'}
+            ? 'Admin and trainer accounts use an authenticator app, such as Microsoft Authenticator or Google Authenticator. Scan this code with the app, then enter the 6-digit code it shows.'
+            : 'Open your authenticator app and enter the 6-digit code it shows for ECI-Hub. This is not an email code: no email is sent to staff.'}
         >
           <ErrorMsg id="staff-error" code={error} />
           {setup && qr && secret && (
@@ -74,6 +81,12 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
               Authenticator code
               <input name="code" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" required autoFocus aria-describedby={error ? 'staff-error' : undefined} className={codeField} />
             </label>
+            {canTrust && (
+              <label className="flex cursor-pointer items-start gap-3 text-[15px] leading-normal text-ink">
+                <input type="checkbox" name="trust" defaultChecked className="mt-0.5 size-[22px] shrink-0 accent-ink" />
+                <span>Keep me logged in on this device for 30 days</span>
+              </label>
+            )}
             <button type="submit" className={primary}>Log in</button>
           </form>
           <p className="mt-5 text-sm">Lost your device? Ask a Super Admin to reset it.</p>
@@ -117,7 +130,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Search
   }
 
   return (
-    <Shell eyebrow="ECI-Hub account" title="Log in" intro="Enter your email and we'll send you a 6-digit code. No password to remember.">
+    <Shell eyebrow="ECI-Hub account" title="Log in" intro="Enter your email. Customers get a 6-digit code by email. Staff and trainers use their authenticator app. No password to remember.">
       <ErrorMsg id="email-error" code={error} />
       <form action={requestCode} className="flex flex-col gap-[18px]">
         <input type="hidden" name="next" value={safeNext(next)} />

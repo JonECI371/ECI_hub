@@ -241,6 +241,8 @@ model Person {
   roles           Role[]    @default([DELEGATE])
   marketingOptIn  Boolean   @default(false)
   totpSecret      String?   // staff and trainers only
+  totpFailures    Int       @default(0) // wrong authenticator codes in a row
+  totpLockedUntil DateTime? // staff sign-in locked until this time after too many wrong codes
   memberships     AccountMember[]
   bookingsMade    Booking[]  @relation("Booker")
   attendances     Attendee[]

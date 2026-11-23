@@ -42,7 +42,7 @@ export function courseSummary(c: C, content: CourseContent): string {
 }
 
 /** The whole course as Markdown, for AI assistants: /llms/courses/<slug>. */
-export function courseMarkdown(c: C, content: CourseContent, faqs: Faq[], sessions: (S & { left?: number })[]): string {
+export function courseMarkdown(c: C, content: CourseContent, faqs: Faq[], sessions: (S & { left?: number })[], formats: { slug: string; title: string; deliveryType: Course['deliveryType']; pricePence: number }[] = []): string {
   const url = `${SITE_URL}/courses/${c.slug}`;
   const lines: string[] = [`# ${c.title}`, '', `> ${courseSummary(c, content)}`, '', `Page: ${url}`, ''];
   lines.push('## Key facts', ...courseFacts(c, content).map(([k, v]) => `- ${k}: ${v}`), `- Provider: ECI-Hub, ECFIO Engineering Ltd, Summit House, 33 Hanworth Road, Sunbury-on-Thames TW16 5DA`, '');
@@ -51,6 +51,7 @@ export function courseMarkdown(c: C, content: CourseContent, faqs: Faq[], sessio
   if (content.cover?.length) lines.push('## What you will cover', ...content.cover.map((x) => `- ${x.title}: ${x.text}`), '');
   if (content.beforeYouBook) lines.push('## Before you book', '', content.beforeYouBook, '');
   if (content.completion) lines.push(`## ${content.completionHeading ?? 'Your certificate'}`, '', content.completion, '');
+  if (formats.length) lines.push('## Also available as', ...formats.map((f) => `- ${f.title} (${f.deliveryType === 'IN_PERSON' ? 'in the classroom' : f.deliveryType === 'VIRTUAL_CLASSROOM' ? 'live online' : 'online, self-paced'}), ${f.pricePence ? `${gbp(f.pricePence)} plus VAT` : 'POA'}: ${SITE_URL}/courses/${f.slug}`), '');
   if (faqs.length) lines.push('## Questions and answers', '', ...faqs.flatMap((f) => [`**${f.q}**`, f.a, '']));
   if (c.deliveryType === 'ELEARNING') lines.push('## Dates', '', 'No fixed dates. You can book and start at any time.', '');
   else if (sessions.length) lines.push('## Upcoming dates', ...sessions.map((s) => `- ${fmtSessionDates(s.startsAt, s.endsAt)}, ${fmtTime(s.startsAt)} to ${fmtTime(s.endsAt)} UK time, ${s.venue ? `${s.venue.name}, ${s.venue.postcode}` : `online on ${platform(c)}`}${s.left === 0 ? ' (full, waitlist open)' : ''}`), '');

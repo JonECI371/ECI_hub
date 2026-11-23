@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import { readContent, readFaqs } from '@/lib/course-content';
 import { courseMarkdown } from '@/lib/course-facts';
 import { placesLeft } from '@/lib/sessions';
+import { otherFormats } from '@/lib/course-formats';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +15,6 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
   });
   if (!c) return new Response('Not found', { status: 404, headers: { 'content-type': 'text/plain; charset=utf-8' } });
   const left = await placesLeft(c.sessions);
-  const body = courseMarkdown(c, readContent(c.content), readFaqs(c.faqs), c.sessions.map((s) => ({ ...s, left: left.get(s.id) ?? 0 })));
+  const body = courseMarkdown(c, readContent(c.content), readFaqs(c.faqs), c.sessions.map((s) => ({ ...s, left: left.get(s.id) ?? 0 })), await otherFormats(c));
   return new Response(body, { headers: { 'content-type': 'text/markdown; charset=utf-8', 'cache-control': 'public, max-age=300' } });
 }

@@ -293,6 +293,32 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await pub.page.goto(`${BASE}/courses/${f.open.slug}`); check(!(await bodyText(pub.page)).includes('[Check'), 'and it does not reach the public page');
     await ctx.close(); await pub.ctx.close();
   });
+  await step('format tabs and duplicate', null, async () => {
+    const pub = await newPage(br); await pub.page.goto(`${BASE}/courses/${f.open.slug}`);
+    const tabs = pub.page.locator('nav[aria-label="Course formats"] a');
+    check((await tabs.count()) === 2 && /Live online/.test(await tabs.nth(0).innerText()) && /Online, self-paced/.test(await tabs.nth(1).innerText()) && /£250/.test(await tabs.nth(1).innerText()), 'a course with another format shows tabs at the top: Live online and Online, self-paced, with prices');
+    check((await pub.page.locator('nav[aria-label="Course formats"] a[aria-current=page]').innerText()).includes('Live online'), 'the tab for the page you are on is marked');
+    await tabs.nth(1).click(); await pub.page.waitForURL(new RegExp(f.online.slug));
+    check((await pub.page.locator('h1').first().innerText()).includes(f.online.title) && (await pub.page.locator('nav[aria-label="Course formats"] a[aria-current=page]').innerText()).includes('Online, self-paced'), 'the other tab opens the other page, with its own tab marked');
+    check((await (await pub.page.request.get(`${BASE}/llms/courses/${f.open.slug}`)).text()).includes('## Also available as'), 'the AI version lists the other format');
+    await db.course.update({ where: { id: f.online.id }, data: { status: 'DRAFT' } });
+    await pub.page.goto(`${BASE}/courses/${f.open.slug}`); check((await pub.page.locator('nav[aria-label="Course formats"]').count()) === 0, 'an unpublished format is not offered');
+    await db.course.update({ where: { id: f.online.id }, data: { status: 'PUBLISHED' } });
+    const { page, ctx } = await newPage(br); await staffLogin(page, f.superAdmin.email);
+    await page.goto(`${BASE}/admin/courses/${f.open.id}`); await page.click('a:has-text("Duplicate course")'); await page.waitForURL(/courses\/new\?from=/);
+    check((await page.locator('[data-testid=duplicate-note]').count()) === 1 && (await page.locator('input[name=title]').inputValue()).endsWith('(copy)'), 'Duplicate course opens a prefilled form marked as a copy');
+    check((await page.locator('[name=audience]').inputValue()).length > 0, 'the course page wording is copied too');
+    check(await page.locator(`input[name=siblings][value="${f.open.id}"]`).isChecked(), 'the copy is linked to the original as another format');
+    const title = `E2E Copy ${f.tag}`; const slug = `e2e-copy-${f.tag}`;
+    await page.fill('input[name=title]', title); await page.fill('input[name=slug]', slug);
+    await page.locator('input[name=deliveryRadio]').nth(2).check(); // the third choice is eLearning
+    await page.click('button:has-text("Save course")'); await page.waitForURL(/msg=saved/, { timeout: 20000 });
+    const made = await db.course.findUnique({ where: { slug } });
+    check(!!made && made.status === 'DRAFT' && made.formatGroup === (await db.course.findUniqueOrThrow({ where: { id: f.open.id } })).formatGroup, 'the copy is saved as a draft in the same format group as the original');
+    check(!!made && JSON.stringify(made.content).includes('Anyone on site'), 'the copy carries the original wording');
+    check((await db.session.count({ where: { courseId: made?.id ?? 'none' } })) === 0, 'dates are not copied');
+    await ctx.close(); await pub.ctx.close();
+  });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);
     for (const p of ['/trainer', '/trainer/availability', '/trainer/profile']) await pageOk(page, errors, p, 'trainer ' + p, true, true);

@@ -62,6 +62,7 @@ export default async function AdminCourse({ params, searchParams }: { params: Pr
         </div>
         <div className="flex flex-wrap gap-2">
           {c.status === 'PUBLISHED' && <Link href={`/courses/${c.slug}`} className={`${btn} border border-field bg-card text-ink no-underline`}>View page</Link>}
+          <Link href={`/admin/courses/new?from=${c.id}`} className={`${btn} border border-field bg-card text-ink no-underline`}>Duplicate course</Link>
           <Link href={`/admin/courses/${c.id}/edit`} className={`${btn} bg-cyan text-on-cyan no-underline`}>Edit course</Link>
         </div>
       </div>

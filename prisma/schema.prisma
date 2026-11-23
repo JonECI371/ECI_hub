@@ -186,11 +186,14 @@ model Course {
   seoTitle         String?
   seoDescription   String?
   socialImageUrl   String?
+  formatGroup      String?             // courses sharing this key are the same course in another format (classroom, live online, eLearning)
   sessions         Session[]
   bookings         Booking[]
   certificates     Certificate[]
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
+
+  @@index([formatGroup])
 }
 
 model Venue {

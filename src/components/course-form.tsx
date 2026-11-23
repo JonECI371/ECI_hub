@@ -11,6 +11,7 @@ export type CourseFormValues = {
   deliveryType: DeliveryType; durationText: string; durationValue: string; durationUnit: string; defaultStartTime: string; defaultEndTime: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
   provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; issuesCertificate: boolean; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
   page: import('@/lib/course-content').ContentForm;
+  siblings: string[]; copyFrom?: string;
 };
 
 const input = 'box-border h-[44px] w-full rounded-control border border-field bg-card px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-line';
@@ -23,9 +24,9 @@ const DELIVERY: [DeliveryType, string, string][] = [
   ['IN_PERSON', 'In person', 'At our centre or a client site. Fixed dates and a place limit.'],
 ];
 
-export function CourseForm({ action, initial, subjects, venues, siteUrl, relatedOptions = [] }: {
+export function CourseForm({ action, initial, subjects, venues, siteUrl, relatedOptions = [], formatOptions = [] }: {
   action: (s: CourseFormState, f: FormData) => Promise<CourseFormState>;
-  initial: CourseFormValues; subjects: { id: string; name: string }[]; venues: { id: string; name: string }[]; siteUrl: string; relatedOptions?: { slug: string; title: string }[];
+  initial: CourseFormValues; subjects: { id: string; name: string }[]; venues: { id: string; name: string }[]; siteUrl: string; relatedOptions?: { slug: string; title: string }[]; formatOptions?: { id: string; title: string; deliveryType: DeliveryType }[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const v = { ...initial, ...(state.values ?? {}) } as CourseFormValues;
@@ -33,6 +34,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
   // After a refused save the page wording comes back from what was submitted, not from the stored course.
   const pv = (k: string, fallback: string) => state.values?.[k] ?? fallback;
   const relatedChosen = state.relatedChosen ?? [];
+  const siblingsChosen = state.siblingsChosen ?? initial.siblings;
   const [seoTitle, setSeoTitle] = useState(initial.seoTitle || initial.title);
   const [seoDesc, setSeoDesc] = useState(initial.seoDescription || initial.shortDescription);
   const [slug, setSlug] = useState(initial.slug);
@@ -43,6 +45,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
   return (
     <form action={formAction} className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start" noValidate>
       <input type="hidden" name="id" value={initial.id ?? ''} />
+      <input type="hidden" name="copyFrom" value={initial.copyFrom ?? ''} />
       <input type="hidden" name="deliveryType" value={delivery} />
       <div className="flex min-w-0 flex-col gap-6">
         {state.error && <p role="alert" className="rounded-control bg-bad-bg px-4 py-3 font-semibold text-bad-fg">{state.error}</p>}
@@ -145,6 +148,21 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
           </div>
           <p className="mt-3 text-[13px]">Registration questions and approval come from the subject, in Settings.</p>
         </section>
+
+        {formatOptions.length > 0 && (
+          <section className={card} aria-labelledby="formats-h">
+            <h2 id="formats-h" className="mb-1 text-lg font-extrabold text-ink">Other formats of this course</h2>
+            <p className="mb-3 text-sm">If this is the same course as another one in a different format (for example classroom and online), tick it. Each course page then shows tabs at the top to switch between them. Customers only see published courses.</p>
+            <div className="flex flex-wrap gap-2">
+              {formatOptions.map((o) => (
+                <label key={o.id} className="flex min-h-11 items-center gap-2 rounded-control border border-hairline px-3 text-sm text-ink">
+                  <input type="checkbox" name="siblings" value={o.id} defaultChecked={siblingsChosen.includes(o.id)} className="size-5 accent-ink" />
+                  {o.title} <span className="text-xs text-slate">({o.deliveryType === 'IN_PERSON' ? 'classroom' : o.deliveryType === 'VIRTUAL_CLASSROOM' ? 'live online' : 'eLearning'})</span>
+                </label>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className={card} aria-labelledby="page-h">
           <h2 id="page-h" className="mb-1 text-lg font-extrabold text-ink">Course page wording</h2>

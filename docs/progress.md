@@ -10,6 +10,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-25: format tabs and Duplicate course (built, not deployed)
+
+- Jon decided: the classroom and online versions of a course stay separate pages, with tabs at the top to switch between them, and a Duplicate course button in Admin. Built on branch course-formats-duplicate: Course.formatGroup (additive migration 20261124230000), an "Other formats of this course" section on the course form, format tabs under the breadcrumb bar (published formats only, label plus price), "Also available as" in the AI Markdown version, Admin > Course > Duplicate course (/admin/courses/new?from=id: copies details, wording and photo, draft, linked to the original, no dates). Also fixed: the contact form crashed its console with two courses of the same title. Ex14 Responsible Persons Training exists as a draft (price 1,850) awaiting its details.
+
 ## 2026-11-24 (late): deploy 2 and a seed pitfall
 
 - Course page template, POA, simpler checkout deployed to the test site (overlay method as below; rollback tags app-previous and app-before-2026-11-24b, backups before-2026-11-24-deploy and before-2026-11-24b-deploy in /opt/eci/backups).

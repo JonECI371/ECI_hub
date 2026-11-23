@@ -45,7 +45,7 @@ export function EnquiryForm({ courses, initialTopic }: { courses: string[]; init
         <div className="grid gap-4 sm:grid-cols-2">
           {(topic === 'team' || topic === 'onsite') && (
             <>
-              <label className={label}>Course<select name="course" defaultValue={v.course ?? ''} className={input}><option value="">Not sure yet</option>{courses.map((c) => <option key={c}>{c}</option>)}</select></label>
+              <label className={label}>Course<select name="course" defaultValue={v.course ?? ''} className={input}><option value="">Not sure yet</option>{courses.map((c, i) => <option key={`${i}-${c}`}>{c}</option>)}</select></label>
               <label className={label}>Number of people (approx.)<input name="people" type="number" min={1} defaultValue={v.people} className={input} /></label>
             </>
           )}

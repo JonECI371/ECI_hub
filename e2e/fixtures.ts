@@ -49,6 +49,11 @@ export async function makeFixtures(db: PrismaClient) {
     providers.push({ name, taskTitle });
   }
 
-  return { tag, mail, providers, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
+  // The same course online: linked to f.open as another format, for the format tabs.
+  const group = `e2e-group-${tag}`;
+  await db.course.update({ where: { id: open.id }, data: { formatGroup: group } });
+  const online = await db.course.create({ data: { slug: `e2e-online-${tag}`, title: `E2E Online ${tag}`, subjectId: subject.id, deliveryType: 'ELEARNING', status: 'PUBLISHED', shortDescription: 'x', description: 'x', durationText: 'Self-paced', pricePence: 25000, provider: `E2E Provider A ${tag}`, fulfilment: 'ADMIN_TASK', daysToComplete: 28, formatGroup: group } });
+
+  return { tag, mail, providers, online, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
 }
 export type Fixtures = Awaited<ReturnType<typeof makeFixtures>>;

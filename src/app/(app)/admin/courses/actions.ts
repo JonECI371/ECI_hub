@@ -20,12 +20,13 @@ import { creditCancelledAccountBooking } from '@/lib/credit';
 import { kickXero } from '@/lib/xero-sync';
 import { composeDuration, durationDays } from '@/lib/duration';
 
-export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string>; relatedChosen?: string[] };
+export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string>; relatedChosen?: string[]; siblingsChosen?: string[] };
 
 const DELIVERY: DeliveryType[] = ['ELEARNING', 'VIRTUAL_CLASSROOM', 'IN_PERSON'];
 const optInt = (v: string) => (v.trim() === '' ? null : Number(v));
 
 import { contentFromForm, hasPlaceholder } from '@/lib/course-content';
+import { applyFormatGroup } from '@/lib/course-formats';
 
 export async function saveCourse(_prev: CourseFormState, form: FormData): Promise<CourseFormState> {
   const me = await requireAdmin('/admin/courses');
@@ -33,6 +34,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$')) values[k] = v.trim();
   const get = (k: string) => values[k] ?? '';
   const relatedChosen = form.getAll('related').filter((x): x is string => typeof x === 'string');
+  const siblingsChosen = form.getAll('siblings').filter((x): x is string => typeof x === 'string');
   const fields: Record<string, string> = {};
   const delivery = DELIVERY.includes(get('deliveryType') as DeliveryType) ? (get('deliveryType') as DeliveryType) : 'VIRTUAL_CLASSROOM';
   const status = ['DRAFT', 'PUBLISHED', 'WITHDRAWN'].includes(get('status')) ? get('status') : 'DRAFT';
@@ -66,7 +68,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   if (status === 'PUBLISHED' && hasPlaceholder(page.content, page.faqs)) fields.page = 'Finish the course page wording before publishing: some text still says [Check: ...] or [YOUR ANSWER ...]';
   const clash = await db.course.findFirst({ where: { slug, NOT: get('id') ? { id: get('id') } : undefined } });
   if (clash) fields.slug = 'Another course already uses this web address';
-  if (Object.keys(fields).length) return { error: fields.page ?? 'Check the highlighted fields.', fields, values, relatedChosen };
+  if (Object.keys(fields).length) return { error: fields.page ?? 'Check the highlighted fields.', fields, values, relatedChosen, siblingsChosen };
 
   const data: Prisma.CourseUncheckedCreateInput = {
     title: get('title'), slug, subjectId: get('subjectId'), deliveryType: delivery, status: status as 'DRAFT' | 'PUBLISHED' | 'WITHDRAWN',
@@ -91,6 +93,11 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     const key = await storeFile('files', `courses/${slug.replace(/[^A-Za-z0-9_-]/g, '')}`, photo as File);
     data.photoUrl = `/media/${key.slice(key.indexOf(':') + 1)}`;
   }
+  // A duplicate keeps the original's photo unless a new one is uploaded.
+  if (!get('id') && get('copyFrom') && !hasPhoto && get('removePhoto') !== 'on') {
+    const src = await db.course.findUnique({ where: { id: get('copyFrom') }, select: { photoUrl: true, photoAlt: true } });
+    if (src?.photoUrl) { data.photoUrl = src.photoUrl; data.photoAlt = get('photoAlt').slice(0, 200) || src.photoAlt; }
+  }
   let id = get('id');
   if (id) {
     const before = await db.course.findUniqueOrThrow({ where: { id } });
@@ -100,6 +107,9 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     id = (await db.course.create({ data })).id;
     await audit(me.id, 'COURSE_CREATED', 'Course', id, undefined, data);
   }
+  const wasGroup = (await db.course.findUnique({ where: { id }, select: { formatGroup: true } }))?.formatGroup;
+  await db.$transaction((tx) => applyFormatGroup(tx, id, siblingsChosen.filter((s) => s !== id)));
+  if (siblingsChosen.length || wasGroup) await audit(me.id, 'COURSE_FORMATS_SET', 'Course', id, { group: wasGroup ?? null }, { siblings: siblingsChosen });
   revalidatePath('/', 'layout');
   redirect(`/admin/courses/${id}?msg=saved`);
 }

@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { db } from '@/lib/db';
-import { fmtTime, priceExVat } from '@/lib/format';
+import { fmtTime, gbp, priceExVat } from '@/lib/format';
 import { breadcrumbJsonLd, courseJsonLd, faqJsonLd } from '@/lib/seo';
 import { courseFacts, courseSummary } from '@/lib/course-facts';
+import { FORMAT_LABEL, otherFormats } from '@/lib/course-formats';
 import { readContent, readFaqs } from '@/lib/course-content';
 import { placesLeft, placesLabel } from '@/lib/sessions';
 import { Breadcrumbs, Chip, DeliveryChip, Eyebrow } from '@/components/ui';
@@ -50,6 +51,9 @@ export default async function CoursePage({ params, searchParams }: { params: Par
   const { waitlist } = await searchParams;
   const content = readContent(c.content);
   const faqs = readFaqs(c.faqs);
+  const formats = await otherFormats(c);
+  const tabs = [...formats.map((f) => ({ ...f, current: false })), { id: c.id, slug: c.slug, title: c.title, deliveryType: c.deliveryType, pricePence: c.pricePence, current: true }]
+    .sort((a, b) => ['IN_PERSON', 'VIRTUAL_CLASSROOM', 'ELEARNING'].indexOf(a.deliveryType) - ['IN_PERSON', 'VIRTUAL_CLASSROOM', 'ELEARNING'].indexOf(b.deliveryType));
   const price = priceExVat(c.pricePence);
   const isElearning = c.deliveryType === 'ELEARNING';
 
@@ -92,6 +96,20 @@ export default async function CoursePage({ params, searchParams }: { params: Par
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       <Breadcrumbs items={[['Home', '/'], ['Courses', '/courses'], [c.title]]} />
+      {formats.length > 0 && (
+        <nav aria-label="Course formats" className="border-b border-hairline bg-white px-4 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
+          <ul className="flex flex-wrap gap-2 py-3">
+            {tabs.map((t) => (
+              <li key={t.id}>
+                <Link href={`/courses/${t.slug}`} aria-current={t.current ? 'page' : undefined} className={`inline-flex min-h-11 items-center gap-2 rounded-full px-4 text-sm no-underline ${t.current ? 'bg-ink font-bold text-white hover:text-white' : 'border border-hairline bg-white font-semibold text-ink'}`}>
+                  {FORMAT_LABEL[t.deliveryType]}
+                  <span className="text-xs opacity-80">{t.pricePence ? `${gbp(t.pricePence)} + VAT` : 'POA'}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
       <div className="hero-motif px-4 pb-12 pt-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
         <p className="mb-3 text-[13px] font-semibold uppercase tracking-[0.08em] text-cyan">{content.eyebrow ?? c.subject.name}</p>
         <h1 className="mb-4 max-w-[820px] text-4xl font-extrabold leading-tight tracking-tight text-white [text-wrap:balance] md:text-[48px]">{c.title}</h1>

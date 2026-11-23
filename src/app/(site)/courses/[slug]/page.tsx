@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { db } from '@/lib/db';
 import { fmtTime, priceExVat } from '@/lib/format';
 import { breadcrumbJsonLd, courseJsonLd, faqJsonLd } from '@/lib/seo';
+import { courseFacts, courseSummary } from '@/lib/course-facts';
 import { readContent, readFaqs } from '@/lib/course-content';
 import { placesLeft, placesLabel } from '@/lib/sessions';
 import { Breadcrumbs, Chip, DeliveryChip, Eyebrow } from '@/components/ui';
@@ -38,7 +39,7 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   return {
     title: c.seoTitle ?? c.title,
     description: c.seoDescription ?? c.shortDescription,
-    alternates: { canonical: `/courses/${c.slug}` },
+    alternates: { canonical: `/courses/${c.slug}`, types: { 'text/markdown': `/llms/courses/${c.slug}` } },
     openGraph: { title: c.title, description: c.shortDescription, images: c.socialImageUrl ?? c.photoUrl ?? undefined },
   };
 }
@@ -76,14 +77,9 @@ export default async function CoursePage({ params, searchParams }: { params: Par
     : [];
 
   const crumbs: [string, string][] = [['Home', '/'], ['Courses', '/courses'], [c.title, `/courses/${c.slug}`]];
-  const jsonLd = [...courseJsonLd(c), breadcrumbJsonLd(crumbs), faqJsonLd(faqs)].filter(Boolean);
+  const jsonLd = [...courseJsonLd(c, content), breadcrumbJsonLd(crumbs), faqJsonLd(faqs)].filter(Boolean);
 
-  const facts: [string, string][] = [
-    ['Duration', c.durationText],
-    ...(c.accreditation ? [['Awarded by', c.accreditation] as [string, string]] : []),
-    ...(c.validityYears ? [['Valid for', `${c.validityYears} years`] as [string, string]] : []),
-    ...(content.assessment ? [['Assessment', content.assessment] as [string, string]] : []),
-  ];
+  const facts = courseFacts(c, content);
   const deliveryLine = isElearning
     ? `Self-paced online.${c.daysToComplete ? ` You have ${c.daysToComplete} days to finish.` : ''}`
     : c.deliveryType === 'VIRTUAL_CLASSROOM'
@@ -109,6 +105,11 @@ export default async function CoursePage({ params, searchParams }: { params: Par
           ))}
         </dl>
       </div>
+
+      <section aria-label="In short" className="border-b border-hairline bg-white px-4 py-6 md:px-[max(4.1667%,calc((100%_-_1280px)/2))]">
+        <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">In short</p>
+        <p data-testid="in-short" className="max-w-[820px] text-[17px] leading-relaxed text-ink">{courseSummary(c, content)}</p>
+      </section>
 
       <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-12">

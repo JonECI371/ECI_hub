@@ -264,6 +264,35 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await page.goto(`${BASE}/admin/tasks?view=done`); check((await page.locator('select[name=provider]').count()) === 1, 'the Done tab has a provider filter too');
     await ctx.close();
   });
+  await step('course page template', null, async () => {
+    const { page, ctx } = await newPage(br); await staffLogin(page, f.superAdmin.email);
+    const fill = async (extra: Record<string, string>) => {
+      await page.goto(`${BASE}/admin/courses/${f.open.id}/edit`);
+      const v: Record<string, string> = { eyebrow: 'E2E water card', audienceHeading: 'Who needs it', audience: 'Anyone on site. Second sentence.', assessment: 'Online test', cover_title_0: 'Hygiene basics', cover_text_0: 'Why hygiene matters.', cover_title_1: 'Reporting', cover_text_1: 'Who to tell.', beforeYouBook: 'Bring photo ID.', completionHeading: 'Your card', completion: 'Issued once you pass.', faq_q_0: 'How long is it?', faq_a_0: 'About a day.', ...extra };
+      for (const [k, val] of Object.entries(v)) await page.locator(`[name=${k}]`).fill(val);
+      await page.click('button:has-text("Save course")');
+    };
+    await fill({}); await page.waitForURL(/msg=saved/, { timeout: 20000 });
+    check(true, 'Admin can enter the course page wording and save it');
+    const pub = await newPage(br); await pub.page.goto(`${BASE}/courses/${f.open.slug}`);
+    const t = await bodyText(pub.page);
+    check(['E2E water card', 'Who needs it', 'Hygiene basics', 'Bring photo ID.', 'Your card', 'How long is it?'].every((s) => t.toLowerCase().includes(s.toLowerCase())), 'the course page shows the wording that was entered');
+    const inShort = await pub.page.locator('[data-testid=in-short]').innerText();
+    check(inShort.includes(f.open.title) && /costs £185 plus 20% VAT/.test(inShort) && /Anyone on site\./.test(inShort) && !/Second sentence/.test(inShort), 'the page opens with an answer-first summary built from the course facts');
+    const lds = (await pub.page.locator('script[type="application/ld+json"]').allTextContents()).flatMap((s) => { const j = JSON.parse(s); return Array.isArray(j) ? j : [j]; });
+    const types = lds.map((j: { '@type': string | string[] }) => [j['@type']].flat().join('+'));
+    check(['Course', 'FAQPage', 'BreadcrumbList', 'Organization+LocalBusiness'].every((x) => types.includes(x)), 'search markup includes Course, FAQ, breadcrumb and organisation', types.join(', '));
+    const course = lds.find((j: { '@type': string }) => j['@type'] === 'Course');
+    check(JSON.stringify(course.teaches) === JSON.stringify(['Hygiene basics', 'Reporting']) && course.coursePrerequisites === 'Bring photo ID.', 'the Course markup lists what it teaches and its prerequisites');
+    const md = await pub.page.request.get(`${BASE}/llms/courses/${f.open.slug}`); const mdt = await md.text();
+    check(md.status() === 200 && /markdown/.test(md.headers()['content-type'] ?? '') && mdt.includes('## Key facts') && mdt.includes('Hygiene basics') && mdt.includes('How long is it?'), 'an AI-readable Markdown version of the course is served');
+    check((await (await pub.page.request.get(`${BASE}/llms.txt`)).text()).includes(`/llms/courses/${f.open.slug}`), 'llms.txt links to it');
+    check((await pub.page.request.get(`${BASE}/llms/courses/no-such-course`)).status() === 404, 'an unknown course gives a 404 in the AI version');
+    await fill({ faq_a_0: '[Check: how long it takes]' }); await page.waitForSelector('text=Finish the course page wording');
+    check(true, 'unfinished [Check: ...] text stops a course being published');
+    await pub.page.goto(`${BASE}/courses/${f.open.slug}`); check(!(await bodyText(pub.page)).includes('[Check'), 'and it does not reach the public page');
+    await ctx.close(); await pub.ctx.close();
+  });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);
     for (const p of ['/trainer', '/trainer/availability', '/trainer/profile']) await pageOk(page, errors, p, 'trainer ' + p, true, true);
@@ -279,7 +308,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await page.click('button:has-text("Add booking")');
     await page.waitForTimeout(2500);
     const n = await db.booking.count({ where: { bookerId: f.booker.id, poNumber: 'PO-E2E-ADMIN' } });
-    check(n === 1, 'Admin Add booking on account creates the booking', (await bodyText(page)).slice(0, 200).replace(/\n/g, ' '));
+    check(n === 1, 'Admin Add booking on account creates the booking', (await bodyText(page)).slice(150, 900).replace(/\n+/g, ' | '));
     const a = await db.auditLog.count({ where: { action: { contains: 'BOOKING' }, actorId: f.admin.id } }); check(a > 0, 'Add booking is written to the audit log');
     await ctx.close();
   });

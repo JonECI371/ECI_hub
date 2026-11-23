@@ -1,6 +1,7 @@
 import { parseDuration } from '@/lib/duration';
 import type { Course } from '@prisma/client';
 import type { CourseFormValues } from '@/components/course-form';
+import { contentToForm } from '@/lib/course-content';
 
 export function courseFormValues(c: Course | null, defaultSubjectId: string): CourseFormValues {
   const s = (v: unknown) => (v === null || v === undefined ? '' : String(v));
@@ -11,5 +12,6 @@ export function courseFormValues(c: Course | null, defaultSubjectId: string): Co
     defaultVenueId: s(c?.defaultVenueId), venueRelease: s(c?.venueRelease ?? 'ON_CONFIRMATION'), provider: s(c?.provider), fulfilment: s(c?.fulfilment ?? 'ADMIN_TASK'),
     providerEmail: s(c?.providerEmail), daysToComplete: s(c?.daysToComplete), validityYears: s(c?.validityYears), issuesCertificate: c?.issuesCertificate ?? true, accreditation: s(c?.accreditation),
     seoTitle: s(c?.seoTitle), seoDescription: s(c?.seoDescription), status: c?.status ?? 'DRAFT', photoUrl: s(c?.photoUrl), photoAlt: s(c?.photoAlt),
+    page: contentToForm(c?.content, c?.faqs),
   };
 }

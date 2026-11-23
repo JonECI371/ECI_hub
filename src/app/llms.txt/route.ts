@@ -14,7 +14,7 @@ export async function GET() {
     'Delivery types: eLearning (self-paced), virtual classroom (live on Teams or Zoom), in person. Pay by card, or on a monthly-billed company credit account.',
     '',
     '## Courses',
-    ...courses.map((c) => `- [${c.title}](${SITE_URL}/courses/${c.slug}): ${DELIVERY_LABEL[c.deliveryType]}, ${c.durationText}, ${gbp(c.pricePence)}. ${c.shortDescription}`),
+    ...courses.map((c) => `- [${c.title}](${SITE_URL}/courses/${c.slug}): ${DELIVERY_LABEL[c.deliveryType]}, ${c.durationText}, ${gbp(c.pricePence)}. ${c.shortDescription} Full details for assistants: ${SITE_URL}/llms/courses/${c.slug}`),
     '',
     '## Contact',
     `- [Talk to us](${SITE_URL}/contact): support@eci-hub.co.uk, +44 (0) 1932 963463`,

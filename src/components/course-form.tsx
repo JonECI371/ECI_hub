@@ -4,11 +4,13 @@ import { DURATION_UNITS } from '@/lib/duration';
 import { useActionState, useState } from 'react';
 import type { DeliveryType } from '@prisma/client';
 import type { CourseFormState } from '@/app/(app)/admin/courses/actions';
+import { COVER_ROWS, FAQ_ROWS } from '@/lib/course-content';
 
 export type CourseFormValues = {
   id?: string; title: string; slug: string; subjectId: string; pricePounds: string; vatRatePercent: string; shortDescription: string; description: string;
   deliveryType: DeliveryType; durationText: string; durationValue: string; durationUnit: string; defaultStartTime: string; defaultEndTime: string; placesPerSession: string; meetingPlatform: string; meetingHost: string; defaultVenueId: string; venueRelease: string;
   provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; issuesCertificate: boolean; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
+  page: import('@/lib/course-content').ContentForm;
 };
 
 const input = 'box-border h-[44px] w-full rounded-control border border-field bg-card px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-line';
@@ -21,13 +23,16 @@ const DELIVERY: [DeliveryType, string, string][] = [
   ['IN_PERSON', 'In person', 'At our centre or a client site. Fixed dates and a place limit.'],
 ];
 
-export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
+export function CourseForm({ action, initial, subjects, venues, siteUrl, relatedOptions = [] }: {
   action: (s: CourseFormState, f: FormData) => Promise<CourseFormState>;
-  initial: CourseFormValues; subjects: { id: string; name: string }[]; venues: { id: string; name: string }[]; siteUrl: string;
+  initial: CourseFormValues; subjects: { id: string; name: string }[]; venues: { id: string; name: string }[]; siteUrl: string; relatedOptions?: { slug: string; title: string }[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const v = { ...initial, ...(state.values ?? {}) } as CourseFormValues;
   const [delivery, setDelivery] = useState<DeliveryType>(initial.deliveryType);
+  // After a refused save the page wording comes back from what was submitted, not from the stored course.
+  const pv = (k: string, fallback: string) => state.values?.[k] ?? fallback;
+  const relatedChosen = state.relatedChosen ?? [];
   const [seoTitle, setSeoTitle] = useState(initial.seoTitle || initial.title);
   const [seoDesc, setSeoDesc] = useState(initial.seoDescription || initial.shortDescription);
   const [slug, setSlug] = useState(initial.slug);
@@ -139,6 +144,47 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl }: {
             <label className={label}>Awarded by<input name="accreditation" defaultValue={v.accreditation} placeholder="CompEx, EUSR, Cogent Skills" className={input} /></label>
           </div>
           <p className="mt-3 text-[13px]">Registration questions and approval come from the subject, in Settings.</p>
+        </section>
+
+        <section className={card} aria-labelledby="page-h">
+          <h2 id="page-h" className="mb-1 text-lg font-extrabold text-ink">Course page wording</h2>
+          <p className="mb-4 text-sm">What people read on the course page. Leave a box empty and that part of the page is left out. Text in square brackets such as [Check: ...] stops the course being published.</p>
+          <div className="grid gap-4">
+            <label className={label}>Label above the title <span className={hint}>For example Water hygiene card</span><input name="eyebrow" maxLength={60} defaultValue={pv('eyebrow', initial.page.eyebrow)} className={input} /></label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className={label}>Who it is for: heading<input name="audienceHeading" maxLength={80} defaultValue={pv('audienceHeading', initial.page.audienceHeading)} className={input} /></label>
+              <label className={label}>How it is assessed <span className={hint}>For example An online test at the end</span><input name="assessment" maxLength={160} defaultValue={pv('assessment', initial.page.assessment)} className={input} /></label>
+            </div>
+            <label className={label}>Who it is for<textarea name="audience" rows={4} maxLength={800} defaultValue={pv('audience', initial.page.audience)} className={`${input} h-auto py-2`} /></label>
+            <fieldset className="grid gap-3"><legend className="mb-1 text-sm font-bold text-ink">What you will cover <span className={hint}>Up to {COVER_ROWS} items, a short title and one or two sentences each</span></legend>
+              {Array.from({ length: COVER_ROWS }, (_, i) => (
+                <div key={i} className="grid gap-2 rounded-control bg-page p-3 sm:grid-cols-[220px_1fr]">
+                  <label className={label}>Title {i + 1}<input name={`cover_title_${i}`} maxLength={80} defaultValue={pv(`cover_title_${i}`, initial.page.cover[i]?.title ?? '')} className={input} /></label>
+                  <label className={label}>Text<input name={`cover_text_${i}`} maxLength={400} defaultValue={pv(`cover_text_${i}`, initial.page.cover[i]?.text ?? '')} className={input} /></label>
+                </div>
+              ))}
+            </fieldset>
+            <label className={label}>Before you book <span className={hint}>Prerequisites, what to bring, what the employer must do first</span><textarea name="beforeYouBook" rows={3} maxLength={800} defaultValue={pv('beforeYouBook', initial.page.beforeYouBook)} className={`${input} h-auto py-2`} /></label>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <label className={label}>Certificate: heading <span className={hint}>For example Your card</span><input name="completionHeading" maxLength={80} defaultValue={pv('completionHeading', initial.page.completionHeading)} className={input} /></label>
+              <label className={label}>Certificate: what people receive and when<textarea name="completion" rows={3} maxLength={600} defaultValue={pv('completion', initial.page.completion)} className={`${input} h-auto py-2`} /></label>
+            </div>
+            <fieldset className="grid gap-3"><legend className="mb-1 text-sm font-bold text-ink">Questions and answers <span className={hint}>Up to {FAQ_ROWS}. They also appear in search results and to AI assistants</span></legend>
+              {Array.from({ length: FAQ_ROWS }, (_, i) => (
+                <div key={i} className="grid gap-2 rounded-control bg-page p-3">
+                  <label className={label}>Question {i + 1}<input name={`faq_q_${i}`} maxLength={200} defaultValue={pv(`faq_q_${i}`, initial.page.faqs[i]?.q ?? '')} className={input} /></label>
+                  <label className={label}>Answer<textarea name={`faq_a_${i}`} rows={2} maxLength={1200} defaultValue={pv(`faq_a_${i}`, initial.page.faqs[i]?.a ?? '')} className={`${input} h-auto py-2`} /></label>
+                </div>
+              ))}
+            </fieldset>
+            {relatedOptions.length > 0 && (
+              <fieldset><legend className="mb-2 text-sm font-bold text-ink">Often taken alongside <span className={hint}>Tick up to 6 courses</span></legend>
+                <div className="flex flex-wrap gap-2">
+                  {relatedOptions.map((o) => <label key={o.slug} className="flex min-h-11 items-center gap-2 rounded-control border border-hairline px-3 text-sm text-ink"><input type="checkbox" name="related" value={o.slug} defaultChecked={state.values ? relatedChosen.includes(o.slug) : initial.page.related.includes(o.slug)} className="size-5 accent-ink" />{o.title}</label>)}
+                </div>
+              </fieldset>
+            )}
+          </div>
         </section>
 
         <section className={card} aria-labelledby="seo-h">

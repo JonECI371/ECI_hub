@@ -30,7 +30,7 @@ export async function makeFixtures(db: PrismaClient) {
   const subject = await db.subject.create({ data: { name: `E2E Subject ${tag}`, slug: `e2e-subject-${tag}`, changeCutoffHours: 24 } });
   const mkCourse = (suffix: string, capacity: number) =>
     db.course.create({
-      data: { slug: `e2e-course-${suffix}-${tag}`, title: `E2E Course ${suffix} ${tag}`, subjectId: subject.id, deliveryType: 'VIRTUAL_CLASSROOM', status: 'PUBLISHED', shortDescription: 'Browser check course', description: 'Browser check course', durationText: 'Half day', pricePence: 18500, meetingPlatform: 'TEAMS',
+      data: { slug: `e2e-course-${suffix}-${tag}`, title: `E2E Course ${suffix} ${tag}`, subjectId: subject.id, deliveryType: 'VIRTUAL_CLASSROOM', status: 'PUBLISHED', shortDescription: 'Browser check course', description: 'Browser check course', durationText: 'Half day', pricePence: 18500, placesPerSession: 10, meetingPlatform: 'TEAMS',
         sessions: { create: { startsAt: new Date(Date.now() + 14 * 86400000), endsAt: new Date(Date.now() + 14 * 86400000 + 3 * 3600000), capacity, status: 'PUBLISHED' } } },
       include: { sessions: true },
     });

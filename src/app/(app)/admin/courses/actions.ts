@@ -20,16 +20,19 @@ import { creditCancelledAccountBooking } from '@/lib/credit';
 import { kickXero } from '@/lib/xero-sync';
 import { composeDuration, durationDays } from '@/lib/duration';
 
-export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
+export type CourseFormState = { error?: string; fields?: Record<string, string>; values?: Record<string, string>; relatedChosen?: string[] };
 
 const DELIVERY: DeliveryType[] = ['ELEARNING', 'VIRTUAL_CLASSROOM', 'IN_PERSON'];
 const optInt = (v: string) => (v.trim() === '' ? null : Number(v));
+
+import { contentFromForm, hasPlaceholder } from '@/lib/course-content';
 
 export async function saveCourse(_prev: CourseFormState, form: FormData): Promise<CourseFormState> {
   const me = await requireAdmin('/admin/courses');
   const values: Record<string, string> = {};
   for (const [k, v] of form.entries()) if (typeof v === 'string' && !k.startsWith('$')) values[k] = v.trim();
   const get = (k: string) => values[k] ?? '';
+  const relatedChosen = form.getAll('related').filter((x): x is string => typeof x === 'string');
   const fields: Record<string, string> = {};
   const delivery = DELIVERY.includes(get('deliveryType') as DeliveryType) ? (get('deliveryType') as DeliveryType) : 'VIRTUAL_CLASSROOM';
   const status = ['DRAFT', 'PUBLISHED', 'WITHDRAWN'].includes(get('status')) ? get('status') : 'DRAFT';
@@ -57,9 +60,13 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     if (!get('description')) fields.description = 'Add a description before publishing';
     if (delivery === 'ELEARNING' && !get('provider')) fields.provider = 'Name the provider before publishing';
   }
+  // The page wording: stored with the course. Unfinished text ([Check: ...]) cannot be published.
+  const existing = get('id') ? await db.course.findUnique({ where: { id: get('id') }, select: { content: true } }) : null;
+  const page = contentFromForm(get, (k) => (k === 'related' ? relatedChosen : []), existing?.content);
+  if (status === 'PUBLISHED' && hasPlaceholder(page.content, page.faqs)) fields.page = 'Finish the course page wording before publishing: some text still says [Check: ...] or [YOUR ANSWER ...]';
   const clash = await db.course.findFirst({ where: { slug, NOT: get('id') ? { id: get('id') } : undefined } });
   if (clash) fields.slug = 'Another course already uses this web address';
-  if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
+  if (Object.keys(fields).length) return { error: fields.page ?? 'Check the highlighted fields.', fields, values, relatedChosen };
 
   const data: Prisma.CourseUncheckedCreateInput = {
     title: get('title'), slug, subjectId: get('subjectId'), deliveryType: delivery, status: status as 'DRAFT' | 'PUBLISHED' | 'WITHDRAWN',
@@ -77,6 +84,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     validityYears: optInt(get('validityYears')), issuesCertificate: get('issuesCertificate') === 'on', accreditation: get('accreditation') || null,
     seoTitle: get('seoTitle').slice(0, 60) || null, seoDescription: get('seoDescription').slice(0, 155) || null,
     photoAlt: get('photoAlt').slice(0, 200) || null,
+    content: page.content as Prisma.InputJsonValue, faqs: page.faqs as Prisma.InputJsonValue,
     ...(get('removePhoto') === 'on' ? { photoUrl: null, photoAlt: null } : {}),
   };
   if (hasPhoto) {

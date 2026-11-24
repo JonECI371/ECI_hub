@@ -1,0 +1,155 @@
+<title>CRM Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mulish:wght@400;600;700;800&display=swap">
+<style>
+/* Concept: the same dark Admin look as the live back office, so the CRM reads as one more admin area. All numbers are example data. */
+:root { color-scheme: dark; --page:#17181B; --card:#202226; --card2:#272A2F; --hair:#34373D; --ink:#F1F2F4; --text:#C4C8D0; --muted:#9AA0AB; --field:#6F7480; --side:#101114;
+  --cyan:#2EC39B; --on-cyan:#0B2B22; --ruby:#E5484D; --ruby-text:#F2767B; --ruby-bg:#40282C; --burnt:#F0883E; --burnt-text:#F59A57; --burnt-bg:#41322A; --ok-bg:#1E4D40; --ok-text:#6FE0BE; --font:'Mulish','Avenir',system-ui,sans-serif; }
+* { box-sizing: border-box; }
+body { margin:0; background:var(--page); color:var(--text); font-family:var(--font); font-size:15px; line-height:1.5; padding-left:max(16px,env(safe-area-inset-left,0px)); padding-right:max(16px,env(safe-area-inset-right,0px)); padding-bottom:48px; }
+.strip { margin:0 -16px; background:var(--cyan); color:var(--on-cyan); font-weight:800; font-size:12.5px; letter-spacing:.06em; text-transform:uppercase; padding:6px 16px; display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+.wrap { max-width:1180px; margin:0 auto; }
+h1 { color:var(--ink); font-size:28px; margin:18px 0 4px; font-weight:800; letter-spacing:-.01em; }
+h2 { color:var(--ink); font-size:17px; margin:0 0 10px; font-weight:800; } h3 { color:var(--ink); font-size:14px; margin:0; font-weight:800; }
+.sub { color:var(--muted); margin:0 0 14px; font-size:14px; }
+.tabs { display:flex; gap:6px; flex-wrap:wrap; margin:14px 0 18px; }
+.tab { font:inherit; font-weight:800; min-height:44px; padding:0 18px; border-radius:22px; border:1px solid var(--hair); background:var(--card); color:var(--ink); cursor:pointer; }
+.tab[aria-selected="true"] { background:var(--ink); color:var(--page); border-color:var(--ink); }
+.card { background:var(--card); border:1px solid var(--hair); border-radius:8px; padding:18px 20px; margin-bottom:14px; }
+.grid2 { display:grid; gap:14px; grid-template-columns:minmax(0,1fr); } @media (min-width:900px){ .grid2 { grid-template-columns:minmax(0,1.6fr) minmax(0,1fr); align-items:start; } }
+.chip { display:inline-block; padding:2px 9px; border-radius:4px; font-size:12px; font-weight:800; border:1px solid transparent; background:var(--hair); color:var(--ink); }
+.chip.ok { background:rgba(46,195,155,.16); color:var(--ok-text); border-color:rgba(46,195,155,.5); }
+.chip.warn { background:var(--burnt-bg); color:var(--burnt-text); border-color:var(--burnt); }
+.chip.bad { background:var(--ruby-bg); color:var(--ruby-text); border-color:var(--ruby); }
+.chip.hot { background:var(--ruby-bg); color:var(--ruby-text); border-color:var(--ruby); } .chip.warm { background:var(--burnt-bg); color:var(--burnt-text); border-color:var(--burnt); } .chip.cold { background:var(--card2); color:var(--muted); border-color:var(--hair); }
+.btn { font:inherit; font-weight:800; min-height:40px; padding:0 14px; border-radius:4px; border:1px solid var(--field); background:transparent; color:var(--ink); cursor:pointer; }
+.btn.p { background:var(--cyan); border-color:var(--cyan); color:var(--on-cyan); } .btn.s { min-height:36px; font-size:13px; padding:0 12px; }
+.btn.d { border-color:var(--ruby); color:var(--ruby-text); }
+select, input { font:inherit; color:var(--ink); background:var(--page); border:1px solid var(--field); border-radius:6px; padding:8px 12px; min-height:42px; }
+:focus-visible { outline:3px solid var(--cyan); outline-offset:2px; }
+/* pipeline */
+.board { display:grid; grid-auto-flow:column; grid-auto-columns:minmax(210px,1fr); gap:12px; overflow-x:auto; padding-bottom:8px; }
+.col { background:var(--card2); border:1px solid var(--hair); border-radius:8px; padding:10px; min-height:300px; }
+.col.over { outline:2px dashed var(--cyan); }
+.col header { display:flex; justify-content:space-between; color:var(--ink); font-weight:800; font-size:13px; margin-bottom:8px; } .col header span { color:var(--muted); font-weight:600; }
+.deal { background:var(--card); border:1px solid var(--hair); border-radius:6px; padding:10px 12px; margin-bottom:8px; cursor:grab; } .deal:active { cursor:grabbing; }
+.deal b { color:var(--ink); display:block; } .deal small { color:var(--muted); display:block; margin:2px 0 6px; } .deal .row { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+.deal .val { color:var(--ink); font-weight:800; margin-left:auto; font-variant-numeric:tabular-nums; }
+/* contact */
+.tl { list-style:none; margin:0; padding:0; } .tl li { display:flex; gap:12px; padding:12px 0; border-bottom:1px solid var(--hair); } .tl li:last-child { border:0; }
+.ico { width:34px; height:34px; border-radius:50%; background:var(--card2); border:1px solid var(--hair); display:grid; place-items:center; flex:none; color:var(--cyan); font-weight:800; font-size:13px; }
+.tl .when { color:var(--muted); font-size:12.5px; margin-left:auto; white-space:nowrap; }
+.tl p { margin:3px 0 0; font-size:14px; } .tl .sum { background:var(--card2); border-radius:6px; padding:8px 12px; margin-top:6px; font-size:14px; }
+dl { margin:0; display:grid; grid-template-columns:auto 1fr; gap:8px 14px; font-size:14px; } dt { color:var(--muted); } dd { margin:0; color:var(--ink); text-align:right; }
+.bar { height:10px; border-radius:5px; background:var(--hair); overflow:hidden; } .bar i { display:block; height:100%; background:var(--cyan); }
+.score { font-size:34px; font-weight:800; color:var(--ink); line-height:1; }
+/* dashboard */
+.stat { display:grid; gap:14px; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); margin-bottom:14px; } .stat .card { margin:0; } .stat .n { font-size:30px; font-weight:800; color:var(--ink); line-height:1.1; } .stat small { color:var(--muted); }
+table { width:100%; border-collapse:collapse; font-size:14px; } th { text-align:left; color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em; padding:8px 10px; border-bottom:1px solid var(--hair); } td { padding:10px; border-bottom:1px solid var(--hair); } td b { color:var(--ink); } .tw { overflow-x:auto; } td.r, th.r { text-align:right; font-variant-numeric:tabular-nums; }
+.hbar { display:grid; grid-template-columns:150px 1fr 52px; gap:10px; align-items:center; margin:8px 0; font-size:14px; } .hbar .bar { height:14px; }
+.funnel > div { display:flex; align-items:center; gap:10px; margin:6px 0; } .funnel .f { height:30px; border-radius:4px; background:var(--cyan); color:var(--on-cyan); font-weight:800; display:flex; align-items:center; padding:0 10px; font-size:13px; min-width:60px; }
+.heat { display:grid; grid-template-columns:150px repeat(8,minmax(54px,1fr)); gap:3px; font-size:12.5px; min-width:640px; } .heat .h { color:var(--muted); font-weight:800; text-align:center; padding:4px 2px; } .heat .n { color:var(--ink); padding:8px 0; } .heat .c { border-radius:4px; height:36px; display:grid; place-items:center; font-weight:800; color:var(--ink); }
+.note { background:rgba(46,195,155,.12); border-radius:6px; padding:10px 14px; font-size:14px; color:var(--ink); margin:0 0 14px; }
+.legend { display:flex; gap:12px; flex-wrap:wrap; align-items:center; font-size:13px; color:var(--muted); margin-top:10px; } .legend i { width:16px; height:16px; border-radius:3px; display:inline-block; vertical-align:middle; margin-right:5px; }
+</style>
+
+<div class="strip"><span>Admin · CRM preview</span><span>Example data. Nothing here is live.</span></div>
+<div class="wrap">
+  <h1>CRM</h1>
+  <p class="sub">A proposed look for the pipelines, records, sources dashboard, checkout recovery and marketing. Click the tabs; drag deals between stages.</p>
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div id="view"></div>
+</div>
+
+<script>
+(function () {
+  var tabs = [['pipe', 'Pipelines'], ['contact', 'Contact record'], ['src', 'Where enquiries come from'], ['chk', 'Abandoned checkouts'], ['mkt', 'Marketing and interests']];
+  var cur = 'pipe';
+  var stages = ['New', 'Contacted', 'Quoted', 'Negotiating', 'Won'];
+  var deals = [
+    { id: 1, st: 0, co: 'Severn Pipeline Services', who: 'Priya Shah', v: 1850, src: 'Google Ads', tag: 'CompEx', hot: true, due: 'Reply due today' },
+    { id: 2, st: 0, co: 'Calder Water Utilities', who: 'Mark Ellis', v: 0, src: 'Contact form', tag: 'Thames Water' },
+    { id: 3, st: 0, co: 'Nordic Chemicals UK', who: 'Sara Lindqvist', v: 4200, src: 'LinkedIn', tag: 'DSEAR' },
+    { id: 4, st: 1, co: 'Thames Contractors Ltd', who: 'Dan Ahmed', v: 6200, src: 'Email campaign', tag: 'CompEx', due: 'Follow up Thu' },
+    { id: 5, st: 1, co: 'Harbour Gas Terminal', who: 'Jo Marsh', v: 9500, src: 'Referral', tag: 'Consultancy' },
+    { id: 6, st: 2, co: 'Eastgate Pharma', who: 'Louise Park', v: 12400, src: 'Organic search', tag: 'DSEAR', due: 'No reply 5 days' },
+    { id: 7, st: 2, co: 'Bluewater Treatment', who: 'Ian Cole', v: 3100, src: 'Google Ads', tag: 'eLearning' },
+    { id: 8, st: 3, co: 'Mercia Process Ltd', who: 'Helen Wu', v: 18000, src: 'Referral', tag: 'Consultancy', hot: true },
+    { id: 9, st: 4, co: 'Anglian Utilities', who: 'Tom Reed', v: 5400, src: 'Email campaign', tag: 'Thames Water' }
+  ];
+  var el = function (id) { return document.getElementById(id); };
+  var gbp = function (n) { return n ? '£' + n.toLocaleString('en-GB') : 'No value yet'; };
+
+  function pipe() {
+    var h = '<div class="card" style="display:flex;gap:12px;flex-wrap:wrap;align-items:end"><label style="display:flex;flex-direction:column;gap:4px;font-weight:700;color:var(--ink);font-size:13px">Pipeline<select><option>CompEx</option><option>Consultancy</option><option>eLearning</option><option>Thames Water</option><option>General</option></select></label><span class="chip">9 open deals</span><span class="chip ok">£60,650 in the pipeline</span><span style="margin-left:auto" class="btn p">New deal</span></div>';
+    h += '<div class="board" id="board">' + stages.map(function (s, i) {
+      var ds = deals.filter(function (d) { return d.st === i; });
+      var total = ds.reduce(function (n, d) { return n + d.v; }, 0);
+      return '<div class="col" data-st="' + i + '"><header>' + s + '<span>' + ds.length + ' · ' + gbp(total).replace('No value yet', '£0') + '</span></header>' + ds.map(function (d) {
+        return '<div class="deal" draggable="true" data-id="' + d.id + '"><b>' + d.co + '</b><small>' + d.who + '</small><div class="row"><span class="chip">' + d.tag + '</span><span class="chip">' + d.src + '</span>' + (d.hot ? '<span class="chip hot">Hot</span>' : '') + '<span class="val">' + gbp(d.v) + '</span></div>' + (d.due ? '<div style="margin-top:8px"><span class="chip warn">' + d.due + '</span></div>' : '') + '</div>';
+      }).join('') + '</div>';
+    }).join('') + '</div>';
+    return h;
+  }
+  function contact() {
+    return '<div class="grid2"><div>' +
+      '<div class="card"><div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap"><span class="ico" style="width:48px;height:48px;font-size:16px;color:var(--on-cyan);background:var(--cyan)">PS</span><div><h2 style="margin:0">Priya Shah</h2><span class="sub" style="margin:0">Training manager, Severn Pipeline Services Ltd · 07700 900123 · priya@severnpipeline.example</span></div><span style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"><span class="btn s p">Log a call</span><span class="btn s">Send email</span><span class="btn s">Add task</span></span></div></div>' +
+      '<div class="card"><h2>Timeline</h2><ul class="tl">' +
+      '<li><span class="ico">☎</span><div style="flex:1"><div style="display:flex;gap:8px;flex-wrap:wrap"><b style="color:var(--ink)">Phone call, 6 min</b><span class="chip ok">Teams transcript</span></div><div class="sum"><b style="color:var(--ink)">Summary:</b> Wants ExA for 3 engineers in January. Asked about Ex12 prices and a group discount. Will email PO next week.<br><span style="color:var(--muted)">Actions: send ExA and Ex12 dates; quote 3 places.</span></div><p><span class="btn s">View transcript</span> <span style="color:var(--muted);font-size:12.5px">Opening it is logged.</span></p></div><span class="when">Today 09:12</span></li>' +
+      '<li><span class="ico">✉</span><div style="flex:1"><b style="color:var(--ink)">Email from Priya:</b> "Can you confirm the January dates?"<p style="color:var(--muted)">Logged from Kirsty’s Outlook · <span class="chip">Business</span></p></div><span class="when">Yesterday 16:40</span></li>' +
+      '<li><span class="ico">✉</span><div style="flex:1"><b style="color:var(--ink)">Email, marked private by Tom</b><p style="color:var(--muted)">Hidden from other Admins. As Super Admin you can open it with a reason; opening is logged. <span class="btn s d">Open with a reason</span></p></div><span class="when">Mon 11:05</span></li>' +
+      '<li><span class="ico">⚑</span><div style="flex:1"><b style="color:var(--ink)">Enquiry received</b> via the contact form, topic CompEx<p style="color:var(--muted)">Source: Google Ads, campaign "CompEx ExA Q1" · became deal <a href="#" onclick="return false" style="color:var(--cyan)">Severn Pipeline Services: £1,850</a></p></div><span class="when">Fri 14:22</span></li>' +
+      '<li><span class="ico">★</span><div style="flex:1"><b style="color:var(--ink)">Booked Thames Water Safety Passport</b> · 3 places, £666 · <a href="#" onclick="return false" style="color:var(--cyan)">ECI-3XG6W5</a><p style="color:var(--muted)">Linked to credit account application of 12 Nov.</p></div><span class="when">12 Nov</span></li>' +
+      '<li><span class="ico">▶</span><div style="flex:1"><b style="color:var(--ink)">Opened and clicked</b> "CompEx renewal reminder": clicked ExA dates<p style="color:var(--muted)">+5 engagement points</p></div><span class="when">9 Nov</span></li>' +
+      '</ul></div></div><div>' +
+      '<div class="card"><h2>Engagement</h2><div style="display:flex;align-items:center;gap:14px"><span class="score">82</span><span class="chip hot">Hot</span></div><p class="sub" style="margin:8px 0 10px">Booking and a call this week, clicks on 2 emails. Fades over about 90 days.</p><div class="bar"><i style="width:82%"></i></div></div>' +
+      '<div class="card"><h2>Interests</h2>' + [['CompEx', 90], ['Thames Water', 70], ['DSEAR', 25], ['eLearning', 10]].map(function (x) { return '<div class="hbar" style="grid-template-columns:110px 1fr 40px"><span>' + x[0] + '</span><div class="bar"><i style="width:' + x[1] + '%"></i></div><span style="text-align:right">' + x[1] + '</span></div>'; }).join('') + '</div>' +
+      '<div class="card"><h2>Linked</h2><dl><dt>Company</dt><dd>Severn Pipeline Services</dd><dt>Credit account</dt><dd>Active, £5,000</dd><dt>Open deal</dt><dd>£1,850, CompEx</dd><dt>Owner</dt><dd>Kirsty McInally</dd><dt>Marketing</dt><dd>Opted in</dd></dl><p style="margin:12px 0 6px"><span class="chip">CompEx</span> <span class="chip">Thames Water</span> <span class="chip">Credit account</span></p></div>' +
+      '<div class="card"><h2>Next</h2><p style="margin:0 0 8px"><span class="chip warn">Due today</span> Email ExA and Ex12 dates</p><p style="margin:0"><span class="chip">Fri</span> Chase PO number</p></div></div></div>';
+  }
+  function src() {
+    var rows = [['Google Ads', 58, 41, 4], ['Organic search', 46, 12, 2], ['Email campaigns', 30, 9, 3], ['LinkedIn', 18, 5, 1], ['Referral', 14, 7, 3], ['Direct', 12, 3, 1]];
+    return '<div class="note">Illustrative figures for the last 90 days. Sources come from the tags on each visitor’s first and last visit, saved with every enquiry, booking and credit application.</div>' +
+      '<div class="stat"><div class="card"><small>Enquiries</small><div class="n">178</div><small>+12% on previous 90 days</small></div><div class="card"><small>Deals won</small><div class="n">29</div><small>£112,400 of value</small></div><div class="card"><small>Cost per enquiry</small><div class="n">£24</div><small>Google Ads, last 90 days</small></div><div class="card"><small>Checkouts not completed</small><div class="n">37</div><small>14 recovered</small></div></div>' +
+      '<div class="grid2"><div class="card"><h2>Enquiries by source</h2>' + rows.map(function (r) { return '<div class="hbar"><span>' + r[0] + '</span><div class="bar"><i style="width:' + Math.round(r[1] / 58 * 100) + '%"></i></div><span style="text-align:right;color:var(--ink);font-weight:800">' + r[1] + '</span></div>'; }).join('') + '</div>' +
+      '<div class="card"><h2>Website to booking</h2><div class="funnel"><div><span class="f" style="width:100%">4,820 visits</span></div><div><span class="f" style="width:58%">2,790 viewed a course</span></div><div><span class="f" style="width:21%">1,010 started checkout</span></div><div><span class="f" style="width:9%">430 paid or applied</span></div></div><p class="sub" style="margin:10px 0 0">Visits and course views come from Google Analytics; the rest are our own records.</p></div></div>' +
+      '<div class="card"><h2>Campaigns</h2><div class="tw"><table><thead><tr><th>Campaign</th><th class="r">Spend</th><th class="r">Clicks</th><th class="r">Enquiries</th><th class="r">Won</th><th class="r">Won value</th><th class="r">Cost per won deal</th></tr></thead><tbody>' +
+      [['CompEx ExA Q1', 1480, 640, 41, 9, 38400], ['Thames Water passport', 920, 510, 24, 7, 21800], ['DSEAR awareness', 760, 280, 9, 1, 4200], ['Brand search', 410, 620, 17, 4, 11900]].map(function (c) { return '<tr><td><b>' + c[0] + '</b></td><td class="r">£' + c[1].toLocaleString('en-GB') + '</td><td class="r">' + c[2] + '</td><td class="r">' + c[3] + '</td><td class="r">' + c[4] + '</td><td class="r">£' + c[5].toLocaleString('en-GB') + '</td><td class="r"><span class="chip ' + (c[1] / c[4] < 200 ? 'ok' : 'warn') + '">£' + Math.round(c[1] / c[4]) + '</span></td></tr>'; }).join('') + '</tbody></table></div><p class="sub" style="margin:10px 0 0">Won deals are sent back to Google Ads, so campaigns are judged on revenue, not clicks.</p></div>';
+  }
+  function chk() {
+    var rows = [['Priya Shah', 'Severn Pipeline', 'Thames Water Passport x3', 666, 'Hold expired', '20 min ago', 'hot'], ['Dan Ahmed', 'Thames Contractors', 'CompEx ExA x2', 1190, 'Left the page', '2 hours ago', 'hot'], ['Alex Morgan', 'Individual', 'EUSR Water Hygiene', 90, 'Card declined: insufficient funds', '3 hours ago', 'warm'], ['Sam Taylor', 'Individual', 'DSEAR Awareness', 185, 'Left the page', 'Yesterday', 'cold']];
+    return '<div class="note">People who reached the payment step and did not finish. We hold their name, email and booking, so this is a call list, not guesswork. Visitors who never gave an email appear only as counts.</div>' +
+      '<div class="stat"><div class="card"><small>Started, not booked (30 days)</small><div class="n">37</div><small>£8,940 of bookings</small></div><div class="card"><small>Recovered by a reminder</small><div class="n">14</div><small>38%</small></div><div class="card"><small>Biggest drop-off</small><div class="n">Payment</div><small>Card declines: 9 of 23</small></div></div>' +
+      '<div class="card"><h2>Started but did not book</h2><div class="tw"><table><thead><tr><th>Person</th><th>Booking</th><th class="r">Value</th><th>Why</th><th>When</th><th></th></tr></thead><tbody>' + rows.map(function (r) { return '<tr><td><b>' + r[0] + '</b><br><span style="color:var(--muted)">' + r[1] + '</span></td><td>' + r[2] + '</td><td class="r">£' + r[3] + '</td><td><span class="chip ' + (r[4].indexOf('declined') > -1 ? 'bad' : 'warn') + '">' + r[4] + '</span></td><td>' + r[5] + '</td><td style="white-space:nowrap"><span class="btn s p">Create task</span> <span class="btn s">Send reminder</span></td></tr>'; }).join('') + '</tbody></table></div></div>' +
+      '<div class="card"><h2>Reminder email (one, sent a few hours after)</h2><div class="sum" style="background:var(--card2);border-radius:6px;padding:12px 16px"><b style="color:var(--ink)">Subject: Still want your places on Thames Water Safety Passport?</b><p style="margin:6px 0 0">Hi Priya, you started booking 3 places on 23 Nov. They are not held any more, but there are still places. <span style="color:var(--cyan);text-decoration:underline">Finish your booking</span>. If you would rather not hear from us, <span style="text-decoration:underline">stop reminders</span>.</p></div></div>';
+  }
+  function heatColour(v) { var a = Math.round(v) / 100; return v === 0 ? 'var(--card2)' : 'rgba(46,195,155,' + (0.12 + a * 0.78).toFixed(2) + ')'; }
+  function mkt() {
+    var tags = ['CompEx', 'DSEAR', 'Thames Water', 'eLearning', 'Process safety', 'Consultancy', 'Func. safety', 'Water'];
+    var people = [['Priya Shah', [90, 10, 70, 0, 5, 0, 0, 20], 82, 'hot'], ['Dan Ahmed', [60, 0, 25, 15, 0, 10, 0, 0], 55, 'warm'], ['Louise Park', [0, 85, 0, 0, 40, 25, 15, 0], 61, 'warm'], ['Helen Wu', [10, 20, 0, 0, 35, 90, 45, 0], 47, 'warm'], ['Mark Ellis', [0, 0, 45, 0, 0, 0, 0, 70], 22, 'cold'], ['Tom Reed', [5, 0, 80, 40, 0, 0, 0, 55], 38, 'cold']];
+    var h = '<div class="note">Example campaign and figures. Opens are the least reliable signal (some email apps open messages automatically), so clicks and site visits carry the score.</div>' +
+      '<div class="stat"><div class="card"><small>Campaign</small><div class="n" style="font-size:18px;line-height:1.3">CompEx renewal reminder</div><small>Sent Tue 9 Nov, 412 people</small></div><div class="card"><small>Delivered</small><div class="n">405</div><small>98% · 7 bounced</small></div><div class="card"><small>Clicked</small><div class="n">64</div><small>16% · opened 188</small></div><div class="card"><small>Booked after</small><div class="n">11</div><small>£9,870 of bookings</small></div><div class="card"><small>Unsubscribed</small><div class="n">2</div><small>blocked automatically</small></div></div>' +
+      '<div class="grid2"><div class="card"><h2>Who clicked what</h2><div class="tw"><table><thead><tr><th>Link</th><th>Tag</th><th class="r">Clicks</th></tr></thead><tbody><tr><td><b>ExA dates</b></td><td><span class="chip">CompEx</span></td><td class="r">31</td></tr><tr><td><b>Ex12 dates</b></td><td><span class="chip">CompEx</span></td><td class="r">17</td></tr><tr><td><b>Group booking enquiry</b></td><td><span class="chip">CompEx</span></td><td class="r">9</td></tr><tr><td><b>Thames Water passport</b></td><td><span class="chip">Thames Water</span></td><td class="r">7</td></tr></tbody></table></div></div>' +
+      '<div class="card"><h2>Engagement scores</h2><p class="sub">A click adds 5, an email visit 3, an enquiry 10, a booking 20. Points fade over about 90 days.</p><div style="display:flex;gap:8px;flex-wrap:wrap"><span class="chip hot">Hot 70 and over: 38 people</span><span class="chip warm">Warm 40 to 69: 112</span><span class="chip cold">Cold under 40: 262</span></div></div></div>' +
+      '<div class="card"><h2>Interest heat map</h2><p class="sub">Each click, page view and booking adds interest to a tag. Click a cell pattern to turn it into a list, for example "hot on CompEx, no booking in 12 months".</p><div class="tw"><div class="heat"><div></div>' + tags.map(function (t) { return '<div class="h">' + t + '</div>'; }).join('') +
+      people.map(function (p) { return '<div class="n">' + p[0] + ' <span class="chip ' + p[3] + '">' + p[2] + '</span></div>' + p[1].map(function (v) { return '<div class="c" style="background:' + heatColour(v) + '">' + (v || '') + '</div>'; }).join(''); }).join('') + '</div></div>' +
+      '<div class="legend"><span><i style="background:var(--card2)"></i>No interest</span><span><i style="background:rgba(46,195,155,.3)"></i>Some</span><span><i style="background:rgba(46,195,155,.9)"></i>Strong</span><span style="margin-left:auto"><span class="btn s p">Make a list from this</span></span></div></div>';
+    return h;
+  }
+  var views = { pipe: pipe, contact: contact, src: src, chk: chk, mkt: mkt };
+  function render() {
+    el('tabs').innerHTML = tabs.map(function (t) { return '<button class="tab" role="tab" type="button" data-t="' + t[0] + '" aria-selected="' + (t[0] === cur) + '">' + t[1] + '</button>'; }).join('');
+    el('view').innerHTML = views[cur]();
+    bindDrag();
+  }
+  function bindDrag() {
+    var board = el('board'); if (!board) return; var dragging = null;
+    board.addEventListener('dragstart', function (e) { var d = e.target.closest('.deal'); if (!d) return; dragging = Number(d.dataset.id); e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(dragging)); } catch (x) {} });
+    board.addEventListener('dragover', function (e) { var c = e.target.closest('.col'); if (!c) return; e.preventDefault(); board.querySelectorAll('.col').forEach(function (x) { x.classList.toggle('over', x === c); }); });
+    board.addEventListener('dragleave', function (e) { if (!e.relatedTarget || !board.contains(e.relatedTarget)) board.querySelectorAll('.col').forEach(function (x) { x.classList.remove('over'); }); });
+    board.addEventListener('drop', function (e) { var c = e.target.closest('.col'); if (!c || dragging == null) return; e.preventDefault(); var d = deals.filter(function (x) { return x.id === dragging; })[0]; d.st = Number(c.dataset.st); dragging = null; render(); });
+  }
+  document.addEventListener('click', function (e) { var t = e.target.closest('[data-t]'); if (t) { cur = t.dataset.t; render(); } });
+  render();
+})();
+</script>

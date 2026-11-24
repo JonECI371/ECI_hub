@@ -98,7 +98,7 @@ export default async function BookingDetail({ params, searchParams }: { params: 
   );
 
   const where = c.deliveryType === 'ELEARNING'
-    ? `Online, via ${c.provider ?? 'the learning platform'}`
+    ? 'Online, self-paced'
     : c.deliveryType === 'VIRTUAL_CLASSROOM'
       ? c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams'
       : s?.venue ? (c.subject.approvalRequired && !b.attendees.some((a) => a.registration?.approval === 'APPROVED') ? `${s.venue.name} (full address after approval)` : `${s.venue.name}, ${s.venue.address}, ${s.venue.postcode}`) : 'Venue to be confirmed';

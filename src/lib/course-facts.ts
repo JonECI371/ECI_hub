@@ -9,7 +9,8 @@ const platform = (c: C) => (c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft T
 
 /** How the course is delivered, in one plain phrase. */
 export function deliveryPhrase(c: C): string {
-  if (c.deliveryType === 'ELEARNING') return `Online, self-paced${c.provider ? ` on ${c.provider}` : ''}${c.daysToComplete ? `, with ${c.daysToComplete} days to finish` : ''}`;
+  // The learning platform behind an eLearning course is an internal detail, not shown to customers.
+  if (c.deliveryType === 'ELEARNING') return `Online, self-paced${c.daysToComplete ? `, with ${c.daysToComplete} days to finish` : ''}`;
   if (c.deliveryType === 'VIRTUAL_CLASSROOM') return `Live online on ${platform(c)}`;
   return 'In person at a training venue';
 }

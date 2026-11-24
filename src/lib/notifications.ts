@@ -15,7 +15,7 @@ export function whenText(s: S) {
 
 /** Where, respecting the venue release rule (address only after approval where the subject requires it). */
 export function whereText(c: C, s: S, approved = false) {
-  if (c.deliveryType === 'ELEARNING') return `Online, on ${c.provider ?? 'the learning platform'}`;
+  if (c.deliveryType === 'ELEARNING') return 'Online, self-paced';
   if (c.deliveryType === 'VIRTUAL_CLASSROOM') return `${c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams'} (link in your calendar invite)`;
   if (!s?.venue) return 'Venue to be confirmed';
   if ((c.subject.approvalRequired || c.venueRelease === 'AFTER_APPROVAL') && !approved) return `${s.venue.name} (full address once your registration is approved)`;

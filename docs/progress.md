@@ -10,6 +10,12 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-25 (deploy 3): everything live on the test site
+
+- Deployed branch course-formats-duplicate (format tabs, Duplicate course, course page template, POA, simpler checkout, wording from the website, prices, learning platform name hidden from customers). Same overlay method; run.sh now WITHOUT the seed argument (seed resets sample courses). Rollback tags in ECR: app-previous, app-before-2026-11-24b, app-before-deploy-3; backups before-deploy-3.sql.gz and earlier in /opt/eci/backups. Migration 20261124230000 (formatGroup) applied. Formats linked: ExA classroom with ExA eLearning, ExF classroom with ExF eLearning.
+- Jon's decisions: all CompEx training certificates are valid for 5 years (set on every CompEx course; accreditation CompEx); eLearning provider for CompEx is Trainor but must not be shown publicly (eLearning pages, booking detail and emails now say Online, self-paced); Ex14 at 1,850. Dates entered from the existing website: ExF 16-17 Mar 2027; Ex12 six five-day dates Dec 2026 to Dec 2027 (Ex12 duration changed to 5 days); SHEA Water 3, 10 and 17 Dec 2026 (09:00 to 16:00 assumed, capacity 12; Teams meetings are created when the first booking is confirmed). ExF eLearning still assumes 28 days to finish.
+- Lapse noted: the first two deploys put Jon's email address in the SSM command text (it was only used by the seed step). Not done again; do not put personal details in deploy commands.
+
 ## 2026-11-25: prices settled; optional extras held for the next build
 
 - Prices set by Jon on the test site: Thames Water Safety Passport 75, National Water Hygiene 140, SHEA Water 165, ExA 175 (eLearning 250), ExF 500 (eLearning 650), Ex14 1,850, Ex12 2,050, all plus VAT; DSEAR Awareness and Process Safety Awareness POA. EUSR SHEA Water and National Water Hygiene now have "issues a certificate" switched off (EUSR certificates go from the EUSR system straight to Vircarda), so they no longer raise upload-certificate tasks.

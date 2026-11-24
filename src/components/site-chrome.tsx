@@ -4,7 +4,7 @@ import { currentPerson } from '@/lib/auth';
 
 const BASE_NAV = [
   ['Courses', '/courses'],
-  ['Consultancy', '/contact'],
+  ['Consultancy', '/consultancy'],
   ['Free tools', '/tools'],
   ['About', '/about'],
 ] as const;
@@ -52,7 +52,7 @@ export async function SiteHeader() {
 
 const FOOTER_COLS = [
   ['Training', [['CompEx', '/courses?subject=compex'], ['DSEAR', '/courses?subject=dsear'], ['Process safety', '/courses?subject=process-safety'], ['EUSR', '/courses?subject=eusr']]],
-  ['Consultancy', [['Area classification', '/contact'], ['DSEAR assessment', '/contact'], ['Functional safety', '/contact'], ['Design assurance', '/contact']]],
+  ['Consultancy', [['Area classification', '/consultancy/dsear-risk-assessment-and-hazardous-area-classification'], ['DSEAR assessment', '/consultancy/dsear-risk-assessment-and-hazardous-area-classification'], ['Functional safety', '/contact'], ['Design assurance', '/contact']]],
   ['Company', [['About us', '/about'], ['Case studies', '/about'], ['Insights', '/tools'], ['Contact', '/contact']]],
 ] as const;
 

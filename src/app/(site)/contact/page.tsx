@@ -6,8 +6,9 @@ import { Breadcrumbs } from '@/components/ui';
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Contact us', description: 'Training for a team, on-site delivery or EC&I safety consultancy. One form, routed to the right person.', alternates: { canonical: '/contact' } };
 
-export default async function Contact({ searchParams }: { searchParams: Promise<{ topic?: string }> }) {
-  const { topic } = await searchParams;
+export default async function Contact({ searchParams }: { searchParams: Promise<{ topic?: string; service?: string }> }) {
+  const { topic, service } = await searchParams;
+  const services = (await db.service.findMany({ where: { status: 'PUBLISHED' }, select: { title: true }, orderBy: { title: 'asc' } })).map((x) => x.title);
   const courses = await db.course.findMany({ where: { status: 'PUBLISHED' }, select: { title: true }, orderBy: { title: 'asc' } });
   return (
     <>
@@ -18,7 +19,7 @@ export default async function Contact({ searchParams }: { searchParams: Promise<
         <p className="max-w-[720px] text-[17px] leading-relaxed text-white/80">Training for a team, on-site delivery or consultancy. One form, and we route it to the right person.</p>
       </div>
       <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
-        <div className="relative min-w-0 flex-1"><EnquiryForm courses={courses.map((c) => c.title)} initialTopic={topic ?? 'team'} /></div>
+        <div className="relative min-w-0 flex-1"><EnquiryForm courses={courses.map((c) => c.title)} initialTopic={topic ?? 'team'} services={services} initialService={service} /></div>
         <aside className="flex w-full flex-col gap-4 rounded-card bg-white p-6 shadow-card lg:w-[340px]">
           <h2 className="text-lg font-extrabold text-ink">What happens next</h2>
           <p className="text-sm leading-relaxed">We reply within one working day, usually by phone, to talk through what you need.</p>

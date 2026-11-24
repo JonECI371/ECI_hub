@@ -597,3 +597,19 @@ model TestAnomaly {
   personId  String?
   @@index([createdAt])
 }
+
+/// A consultancy service with its own page (for example DSEAR risk assessment and hazardous area classification).
+model Service {
+  id               String       @id @default(cuid())
+  slug             String       @unique
+  title            String
+  status           CourseStatus @default(DRAFT)
+  shortDescription String
+  seoTitle         String?
+  seoDescription   String?
+  // Page wording: { category, whatIsIt[], whoNeedsIt{}, whyItMatters{}, approach{}, outcome[], standards[], linkedRegulation, reviewFrequency, triggers[], whoWeWorkWith[], relatedCourses[], relatedServices[] }
+  content          Json         @default("{}")
+  faqs             Json         @default("[]")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}

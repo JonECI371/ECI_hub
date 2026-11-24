@@ -10,6 +10,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-25 (later): consultancy page template, demo service (built, not deployed)
+
+- Branch consultancy-demo (on top of course-formats-duplicate). New Service model (additive migration 20261125120000_consultancy_service), public pages /consultancy and /consultancy/<slug> (breadcrumb bar, hero with key facts, In short summary, What is it, Who needs it, Why it matters, Our approach in numbered steps, When to review, Who we work with, Questions and answers, a Talk to a consultant panel with POA and a Request a quote button that opens the contact form on Consultancy with the service chosen, related courses and services), schema.org Service, FAQ and breadcrumb markup, AI Markdown at /llms/consultancy/<slug>, llms.txt and sitemap entries; top menu Consultancy now opens /consultancy. Demo content for DSEAR Risk Assessment and Hazardous Area Classification taken from the existing website (kept in the session scratchpad service_demo.json, to be inserted into the test database after the deploy). No Admin screen to edit services yet: next step. The other four website consultancy pages: Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design.
+
 ## 2026-11-25 (deploy 3): everything live on the test site
 
 - Deployed branch course-formats-duplicate (format tabs, Duplicate course, course page template, POA, simpler checkout, wording from the website, prices, learning platform name hidden from customers). Same overlay method; run.sh now WITHOUT the seed argument (seed resets sample courses). Rollback tags in ECR: app-previous, app-before-2026-11-24b, app-before-deploy-3; backups before-deploy-3.sql.gz and earlier in /opt/eci/backups. Migration 20261124230000 (formatGroup) applied. Formats linked: ExA classroom with ExA eLearning, ExF classroom with ExF eLearning.

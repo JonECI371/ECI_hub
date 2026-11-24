@@ -8,7 +8,9 @@ const TOPICS: [string, string][] = [['team', 'Training for my team'], ['onsite',
 const input = 'box-border h-[46px] w-full rounded-control border border-field bg-white px-3.5 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
 const label = 'flex flex-col gap-1.5 text-sm font-bold text-ink';
 
-export function EnquiryForm({ courses, initialTopic }: { courses: string[]; initialTopic: string }) {
+const SERVICES = ['DSEAR risk assessment', 'Hazardous area classification', 'Ex inspection and verification', 'Functional safety', 'Competence gap analysis', 'Something else'];
+
+export function EnquiryForm({ courses, initialTopic, services = [], initialService }: { courses: string[]; initialTopic: string; services?: string[]; initialService?: string }) {
   const [state, action, pending] = useActionState<EnquiryState, FormData>(sendEnquiry, {});
   const [topic, setTopic] = useState(TOPICS.some(([t]) => t === initialTopic) ? initialTopic : 'team');
   const v = state.values ?? {};
@@ -56,7 +58,7 @@ export function EnquiryForm({ courses, initialTopic }: { courses: string[]; init
             </>
           )}
           {topic === 'consult' && (
-            <label className={`${label} sm:col-span-2`}>Service<select name="service" defaultValue={v.service ?? ''} className={input}>{['DSEAR risk assessment', 'Hazardous area classification', 'Ex inspection and verification', 'Functional safety', 'Competence gap analysis', 'Something else'].map((s) => <option key={s}>{s}</option>)}</select></label>
+            <label className={`${label} sm:col-span-2`}>Service<select name="service" defaultValue={v.service ?? (initialService && [...services, ...SERVICES].includes(initialService) ? initialService : '')} className={input}>{[...services, ...SERVICES.filter((x) => !services.includes(x))].map((s) => <option key={s}>{s}</option>)}</select></label>
           )}
           <label className={label}>Your name<input name="name" autoComplete="name" defaultValue={v.name} className={input} {...err('name')} /><E k="name" /></label>
           <label className={label}>Company<input name="company" autoComplete="organization" defaultValue={v.company} className={input} /></label>

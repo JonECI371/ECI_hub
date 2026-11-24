@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 // Plain-text summary for AI assistants, regenerated from the live catalogue.
 export async function GET() {
   const courses = await db.course.findMany({ where: { status: 'PUBLISHED' }, include: { subject: true }, orderBy: { title: 'asc' } });
+  const services = await db.service.findMany({ where: { status: 'PUBLISHED' }, orderBy: { title: 'asc' } });
   const lines = [
     '# ECI-Hub',
     '',
@@ -15,6 +16,9 @@ export async function GET() {
     '',
     '## Courses',
     ...courses.map((c) => `- [${c.title}](${SITE_URL}/courses/${c.slug}): ${DELIVERY_LABEL[c.deliveryType]}, ${c.durationText}, ${gbp(c.pricePence)}. ${c.shortDescription} Full details for assistants: ${SITE_URL}/llms/courses/${c.slug}`),
+    '',
+    '## Consultancy',
+    ...services.map((s) => `- [${s.title}](${SITE_URL}/consultancy/${s.slug}): ${s.shortDescription} Full details for assistants: ${SITE_URL}/llms/consultancy/${s.slug}`),
     '',
     '## Contact',
     `- [Talk to us](${SITE_URL}/contact): support@eci-hub.co.uk, +44 (0) 1932 963463`,

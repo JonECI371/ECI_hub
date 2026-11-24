@@ -43,7 +43,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     const { page, errors, ctx } = await newPage(br, phone ? 390 : 1100, phone ? 800 : 850);
     const paths: [string, string][] = [
       ['/', 'home'], ['/courses', 'courses'], [`/courses/${f.open.slug}`, 'course page'], ['/about', 'about'], ['/contact', 'contact'],
-      ['/accounts/apply', 'credit account application'], ['/tools', 'free tools'], ['/login', 'login'], ['/legal/terms', 'terms'], ['/legal/privacy', 'privacy'],
+      ['/accounts/apply', 'credit account application'], ['/consultancy', 'consultancy index'], [`/consultancy/${f.service.slug}`, 'consultancy page'], ['/tools', 'free tools'], ['/login', 'login'], ['/legal/terms', 'terms'], ['/legal/privacy', 'privacy'],
     ];
     for (const [p, l] of paths) await step(l, page, () => pageOk(page, errors, p, l, phone, !['home', 'login'].includes(l)));
     await ctx.close();
@@ -318,6 +318,29 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     check(!!made && JSON.stringify(made.content).includes('Anyone on site'), 'the copy carries the original wording');
     check((await db.session.count({ where: { courseId: made?.id ?? 'none' } })) === 0, 'dates are not copied');
     await ctx.close(); await pub.ctx.close();
+  });
+  await step('consultancy page', null, async () => {
+    const { page, ctx } = await newPage(br); await page.goto(`${BASE}/consultancy/${f.service.slug}`);
+    const t = await bodyText(page);
+    check(['What is it?', 'Who needs it?', 'Why does it matter?', 'Our approach', 'When to review', 'Who we work with', 'Questions and answers', 'Talk to a consultant', 'Refineries', 'Data gathering', 'HSE L138'].every((x) => t.includes(x)), 'the consultancy page shows every section of the template');
+    check((await page.locator('[data-testid=in-short]').innerText()).includes('is a consultancy service from ECI-Hub') && /POA/.test(t), 'it opens with an answer-first summary and shows POA');
+    const lds = (await page.locator('script[type="application/ld+json"]').allTextContents()).flatMap((s) => { const j = JSON.parse(s); return Array.isArray(j) ? j : [j]; });
+    const types = lds.map((j: { '@type': string | string[] }) => [j['@type']].flat().join('+'));
+    check(['Service', 'FAQPage', 'BreadcrumbList'].every((x) => types.includes(x)), 'search markup includes Service, FAQ and breadcrumb', types.join(', '));
+    check((await page.locator('a:has-text("E2E Course open")').count()) > 0, 'related courses are linked');
+    await page.click('[data-testid=enquire]'); await page.waitForURL(/\/contact\?topic=consult/);
+    check((await page.locator('select[name=service]').inputValue()) === f.service.title, 'Request a quote opens the contact form on Consultancy with this service chosen');
+    const md = await page.request.get(`${BASE}/llms/consultancy/${f.service.slug}`);
+    check(md.status() === 200 && (await md.text()).includes('## Our approach'), 'an AI-readable Markdown version is served');
+    check((await (await page.request.get(`${BASE}/llms.txt`)).text()).includes(`/llms/consultancy/${f.service.slug}`), 'llms.txt lists the service');
+    check((await (await page.request.get(`${BASE}/sitemap.xml`)).text()).includes(`/consultancy/${f.service.slug}`), 'the sitemap lists the service');
+    await page.goto(`${BASE}/`); await page.click('header a:has-text("Consultancy")'); await page.waitForURL(/\/consultancy$/);
+    check((await bodyText(page)).includes(f.service.title), 'the Consultancy menu opens the list of services');
+    check((await page.request.get(`${BASE}/consultancy/no-such-service`)).status() === 404, 'an unknown service gives a 404');
+    await db.service.update({ where: { id: f.service.id }, data: { status: 'DRAFT' } });
+    check((await page.request.get(`${BASE}/consultancy/${f.service.slug}`)).status() === 404, 'a draft service is not public');
+    await db.service.update({ where: { id: f.service.id }, data: { status: 'PUBLISHED' } });
+    await ctx.close();
   });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);

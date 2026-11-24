@@ -54,6 +54,13 @@ export async function makeFixtures(db: PrismaClient) {
   await db.course.update({ where: { id: open.id }, data: { formatGroup: group } });
   const online = await db.course.create({ data: { slug: `e2e-online-${tag}`, title: `E2E Online ${tag}`, subjectId: subject.id, deliveryType: 'ELEARNING', status: 'PUBLISHED', shortDescription: 'x', description: 'x', durationText: 'Self-paced', pricePence: 25000, provider: `E2E Provider A ${tag}`, fulfilment: 'ADMIN_TASK', daysToComplete: 28, formatGroup: group } });
 
-  return { tag, mail, providers, online, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
+  // A consultancy service with its own page.
+  const service = await db.service.create({ data: { slug: `e2e-service-${tag}`, title: `E2E Hazard Service ${tag}`, status: 'PUBLISHED', shortDescription: 'A test consultancy service.', content: {
+    category: 'Hazardous areas', whatIsIt: ['First paragraph about the service. Second sentence.'], whoNeedsIt: { intro: 'For sites that handle flammable gases.', items: ['Refineries', 'Water treatment sites'] },
+    whyItMatters: { points: ['Wrong zoning raises explosion risk'] }, approach: { steps: [{ title: 'Data gathering', text: 'Review the substances.' }, { title: 'Drawings', text: 'Produce zone drawings.' }] },
+    outcome: ['Zone drawings', 'A defensible report'], standards: ['HSE L138', 'IEC 60079-10-1'], linkedRegulation: 'DSEAR / ATEX', reviewFrequency: 'Every 3 to 5 years', triggers: ['A process change'], whoWeWorkWith: ['COMAH operators'], relatedCourses: [`e2e-course-open-${tag}`] },
+    faqs: [{ q: 'How long does it take?', a: 'It depends on the site.' }] } });
+
+  return { tag, mail, providers, online, service, superAdmin, admin, trainer, newStaff, customer, booker, account, subject, open, full };
 }
 export type Fixtures = Awaited<ReturnType<typeof makeFixtures>>;

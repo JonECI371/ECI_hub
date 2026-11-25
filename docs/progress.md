@@ -10,7 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
-## 2026-11-25 (later): Admin screen for consultancy services (built, not deployed)
+## 2026-11-25 (deploy 5): Admin screen for services live on the test site
+
+- Deployed branch services-admin (overlay method, no seed; rollback tag app-before-deploy-5, backup before-deploy-5.sql.gz; no migration this time). Admin > Services is live. Prices and courses unchanged. Next: enter the other four website consultancy services as drafts for Jon to check (Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).
+
+## 2026-11-25 (later): Admin screen for consultancy services (built)
 
 - Branch services-admin (on top of consultancy-demo). Admin > Services: list (name, label, updated, status, View page, Duplicate, Edit), New service, Edit service, Duplicate service (draft copy). The form covers every part of the page: name, short description, label, What is it (paragraphs), Who needs it, Why it matters, up to 10 approach steps (title and detail, drawn as a process), What you get, standards, regulation, review period, triggers, who we work with, up to 10 questions and answers, related courses and services, web address, search title and description with a Google preview, status. [Check: ...] or [YOUR ANSWER ...] text blocks publishing; duplicate web addresses are refused; saves are audited (SERVICE_CREATED, SERVICE_UPDATED). Admin menu has Services.
 - Browser checks: run them against a built copy (`npm run build`, then `npm start` with DATABASE_URL, AUTH_SECRET and SITE_URL set, then `npm run e2e`): the development server is slow and made checks flaky. 168 checks pass twice in a row. The staff lockout check now waits for the server to count each wrong code.

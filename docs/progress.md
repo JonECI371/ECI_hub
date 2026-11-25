@@ -180,3 +180,9 @@ Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification and In
 - Testimonials were left out (the website ones are placeholders or off-topic).
 - The I.S. and Verification website pages show the DSEAR RA "Useful information" box by mistake, so standards and outputs were written from each page's own text. Please check.
 - Short pages (Verification, I.S., BESS "who it is for") were kept to what the website says rather than padded.
+
+## 25 Nov 2026: pilot readiness started (redirects built, not yet deployed)
+
+- Old website redirects: src/lib/old-site-redirects.json (48 old addresses from the old site's sitemaps) read by next.config.mjs; every old course and service address goes to its new page, and ones with no equivalent yet go to the nearest list, never an error page. Test test/old-site-redirects.test.ts checks full coverage and that every target exists. Checked in a local copy: old address (with or without trailing slash) lands on the new page. Two hops for addresses with a trailing slash (Next strips the slash first), 308 not 301 (same effect for search engines). When a missing course is added (Functional Safety Foundation, CAT & Genny, PSL, PSMF, PSMO, Ageing Asset Risk), update its line in the JSON and prisma/redirect-targets.json.
+- docs/kirsty-retest.md: short list of what only a person can check.
+- Next: SimplyBook booking move (3.8, first half). Needs Jon's SimplyBook exports before building: bookings, clients and services as CSV from the SimplyBook reports.

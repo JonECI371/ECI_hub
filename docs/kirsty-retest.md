@@ -1,6 +1,7 @@
 # Kirsty's retest list (25 Nov 2026)
 
-**Do not use Claude or any automated browser to test the test site.** Website tracking (analytics) is switched on there. Automated visits are counted as real visitors, which spoils the testing and the figures, and it will report a false issue. Test by hand, in an ordinary browser, as yourself. Claude's automated browser checks run only against a private copy on Claude's own machine, never against https://test.eci-hub.co.uk, and not against the live site either.
+> **Kirsty, please read first: do NOT use Claude or any automated browser to do this testing.**
+> Website tracking is switched on, so an automated visit is counted as a real visitor. It spoils the testing and the figures, and it will report a false issue. Do every step yourself, by hand, in an ordinary browser (Chrome, Edge, Safari or your phone), signed in as yourself.
 
 The automated browser checks (118) already play the main journeys and the access rules. This list is only what a person has to look at or do. Test site: https://test.eci-hub.co.uk. Use the test card 4242 4242 4242 4242, any future date, any code. Write anything odd in the shared Test Log with the page address and a screenshot.
 

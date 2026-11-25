@@ -172,3 +172,11 @@ Jon signed off the Test Log 1 fixes (with notes) and answered the open questions
 - Never paste secrets in chat; they go to Secrets Manager. No Zapier.
 
 **Next:** build the approved fixes from Test Log 1; write the Phase 2 test checklist for Kirsty (using the requirement IDs PUB, POR, ADM, TRN); then Phase 3 (pipelines and reports, Zoom and Xero API, SCORM, free tools, email block editor) once Phase 1 and 2 checks pass.
+
+## 25 Nov 2026: four more consultancy services entered as drafts (test site, data only, no deploy)
+
+Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification and Intrinsically Safe (I.S.) Circuit Design were entered from the existing website as DRAFT services (audited as SERVICE_CREATED). Checked: all four return 404 publicly, are not in the sitemap or llms files, and show in Admin > Services. Jon or Kirsty to check the wording and publish each one.
+- Website slips corrected, not copied: "62485-2" typo, "venerable" for vulnerable, and process safety course text pasted into the BESS page.
+- Testimonials were left out (the website ones are placeholders or off-topic).
+- The I.S. and Verification website pages show the DSEAR RA "Useful information" box by mistake, so standards and outputs were written from each page's own text. Please check.
+- Short pages (Verification, I.S., BESS "who it is for") were kept to what the website says rather than padded.

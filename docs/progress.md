@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-25 (later): Admin screen for consultancy services (built, not deployed)
+
+- Branch services-admin (on top of consultancy-demo). Admin > Services: list (name, label, updated, status, View page, Duplicate, Edit), New service, Edit service, Duplicate service (draft copy). The form covers every part of the page: name, short description, label, What is it (paragraphs), Who needs it, Why it matters, up to 10 approach steps (title and detail, drawn as a process), What you get, standards, regulation, review period, triggers, who we work with, up to 10 questions and answers, related courses and services, web address, search title and description with a Google preview, status. [Check: ...] or [YOUR ANSWER ...] text blocks publishing; duplicate web addresses are refused; saves are audited (SERVICE_CREATED, SERVICE_UPDATED). Admin menu has Services.
+- Browser checks: run them against a built copy (`npm run build`, then `npm start` with DATABASE_URL, AUTH_SECRET and SITE_URL set, then `npm run e2e`): the development server is slow and made checks flaky. 168 checks pass twice in a row. The staff lockout check now waits for the server to count each wrong code.
+
 ## 2026-11-25 (deploy 4): consultancy template and demo service live on the test site
 
 - Deployed branch consultancy-demo (same overlay method, no seed; rollback tag app-before-deploy-4, backup before-deploy-4.sql.gz). Migration 20261125120000 applied. Demo service inserted from the existing website: https://test.eci-hub.co.uk/consultancy/dsear-risk-assessment-and-hazardous-area-classification (audit action SERVICE_CREATED). The approach section is drawn as a numbered step-by-step process ending in a result marker. Next: an Admin screen to edit services (with Duplicate), then the other four website consultancy pages (Battery Room Assessment, DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).

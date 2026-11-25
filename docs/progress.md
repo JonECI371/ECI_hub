@@ -10,7 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
-## 2026-11-25 (later): consultancy page template, demo service (built, not deployed)
+## 2026-11-25 (deploy 4): consultancy template and demo service live on the test site
+
+- Deployed branch consultancy-demo (same overlay method, no seed; rollback tag app-before-deploy-4, backup before-deploy-4.sql.gz). Migration 20261125120000 applied. Demo service inserted from the existing website: https://test.eci-hub.co.uk/consultancy/dsear-risk-assessment-and-hazardous-area-classification (audit action SERVICE_CREATED). The approach section is drawn as a numbered step-by-step process ending in a result marker. Next: an Admin screen to edit services (with Duplicate), then the other four website consultancy pages (Battery Room Assessment, DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).
+
+## 2026-11-25 (later): consultancy page template, demo service (built)
 
 - Branch consultancy-demo (on top of course-formats-duplicate). New Service model (additive migration 20261125120000_consultancy_service), public pages /consultancy and /consultancy/<slug> (breadcrumb bar, hero with key facts, In short summary, What is it, Who needs it, Why it matters, Our approach in numbered steps, When to review, Who we work with, Questions and answers, a Talk to a consultant panel with POA and a Request a quote button that opens the contact form on Consultancy with the service chosen, related courses and services), schema.org Service, FAQ and breadcrumb markup, AI Markdown at /llms/consultancy/<slug>, llms.txt and sitemap entries; top menu Consultancy now opens /consultancy. Demo content for DSEAR Risk Assessment and Hazardous Area Classification taken from the existing website (kept in the session scratchpad service_demo.json, to be inserted into the test database after the deploy). No Admin screen to edit services yet: next step. The other four website consultancy pages: Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design.
 

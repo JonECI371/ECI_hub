@@ -85,14 +85,21 @@ export default async function ServicePage({ params }: { params: Params }) {
           ) : null}
 
           {c.approach?.steps.length ? (
-            <section><Eyebrow>How we work</Eyebrow><h2 className="mb-3 text-[28px] font-bold tracking-tight text-ink">Our approach</h2>
-              {c.approach.intro && <p className="mb-6 max-w-[760px] text-base leading-[1.7]">{c.approach.intro}</p>}
-              <ol className="grid gap-px border border-hairline bg-hairline sm:grid-cols-2">
+            <section aria-labelledby="approach-h"><Eyebrow>How we work</Eyebrow><h2 id="approach-h" className="mb-3 text-[28px] font-bold tracking-tight text-ink">Our approach</h2>
+              {c.approach.intro && <p className="mb-8 max-w-[760px] text-base leading-[1.7]">{c.approach.intro}</p>}
+              <ol className="max-w-[760px]" data-testid="approach-steps">
                 {c.approach.steps.map((x, i) => (
-                  <li key={x.title} className="bg-white p-6"><p className="mb-3 text-xl font-bold text-cyan">{String(i + 1).padStart(2, '0')}</p><h3 className="mb-2 text-lg font-bold text-ink">{x.title}</h3><p className="text-sm leading-[1.7]">{x.text}</p></li>
+                  <li key={x.title} className="relative flex gap-5 pb-8">
+                    <span aria-hidden="true" className="absolute left-5 top-10 -ml-px h-[calc(100%-2.5rem)] w-0.5 bg-cyan/50" />
+                    <span aria-hidden="true" className="relative z-10 grid size-10 shrink-0 place-items-center rounded-full bg-cyan text-base font-extrabold text-ink ring-4 ring-page">{i + 1}</span>
+                    <div className="min-w-0 pt-1.5"><h3 className="text-lg font-bold text-ink"><span className="sr-only">Step {i + 1}: </span>{x.title}</h3><p className="mt-1 text-[15px] leading-[1.7]">{x.text}</p></div>
+                  </li>
                 ))}
-              </ol>
-              {c.approach.closing && <p className="mt-4 max-w-[760px] text-base leading-[1.7]">{c.approach.closing}</p>}</section>
+                <li className="relative flex gap-5">
+                  <span aria-hidden="true" className="relative z-10 grid size-10 shrink-0 place-items-center rounded-full bg-ink text-lg font-extrabold text-cyan ring-4 ring-page">&#10003;</span>
+                  <div className="min-w-0 pt-1.5"><h3 className="text-lg font-bold text-ink">The result</h3><p className="mt-1 text-[15px] leading-[1.7]">{c.approach.closing ?? 'A clear report and a prioritised action plan.'}</p></div>
+                </li>
+              </ol></section>
           ) : null}
 
           {c.triggers?.length ? (

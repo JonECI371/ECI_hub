@@ -12,13 +12,12 @@ import { syncSessionMeeting } from '@/lib/integrations/teams';
 import { enqueueXero } from '@/lib/xero-queue';
 import { kickXero } from '@/lib/xero-sync';
 import { sendEmail } from '@/lib/integrations/email';
-import type { PoRule } from '@/lib/accounts';
 
 /** How long an emailed payment link keeps the places. */
 export const PAY_LINK_HOURS = 72;
 export const ADMIN_MAX_PLACES = 100;
 
-export type AdminWarning = { code: 'CAPACITY' | 'CREDIT' | 'ON_HOLD' | 'PO_MISSING'; text: string };
+export type AdminWarning = { code: 'CAPACITY' | 'CREDIT' | 'ON_HOLD'; text: string };
 
 /** Thrown, with nothing saved, when a booking would break a rule and Admin has not ticked the override box. */
 export class AdminWarnings extends Error {
@@ -45,7 +44,7 @@ export type AdminBookingInput = {
 
 /**
  * Staff book on a customer's behalf (ADM-12). Every rule a customer must meet (places left, credit available,
- * PO number, account not on hold) is checked under the same locks; if one would be broken the whole booking is
+ * account not on hold) is checked under the same locks; if one would be broken the whole booking is
  * refused with the list of warnings, and is only saved again with an override reason, which is audited.
  */
 export async function createAdminBooking(input: AdminBookingInput) {
@@ -82,7 +81,6 @@ export async function createAdminBooking(input: AdminBookingInput) {
       if (account.status !== 'ACTIVE' && account.status !== 'ON_HOLD') throw new CheckoutError(`${account.company} is not an active credit account.`);
       accountId = account.id;
       if (account.status === 'ON_HOLD') warnings.push({ code: 'ON_HOLD', text: `${account.company} is on hold because an invoice is overdue.` });
-      if ((account.poRule as PoRule) !== 'NONE' && !po) warnings.push({ code: 'PO_MISSING', text: `${account.company} needs a PO number on every booking and none was entered.` });
       const available = await availableCredit(tx, account);
       if (price.totalPence > available) warnings.push({ code: 'CREDIT', text: `This booking is ${money(price.totalPence)} and ${account.company} has ${money(Math.max(0, available))} of credit available (limit ${money(account.creditLimitPence)}).` });
     }

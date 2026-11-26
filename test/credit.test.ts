@@ -46,9 +46,9 @@ describe('booking on account', async () => {
     expect(await availableCredit(db, s.account)).toBeGreaterThanOrEqual(0);
   });
 
-  it('needs a PO number when the account says so', async () => {
+  it('a PO number is optional even when the account usually uses one', async () => {
     const s = await setup({ poRule: 'PER_BOOKING' });
-    await expect(book(s, 1)).rejects.toThrow(/PO number/);
+    expect((await book(s, 1)).poNumber).toBeNull();
     expect((await book(s, 1, 'PO 4500-221')).poNumber).toBe('PO 4500-221');
   });
 

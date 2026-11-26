@@ -11,6 +11,8 @@ Paste this whole file into a new chat to start the CRM build. This chat is for t
 - **Testing rule (Jon, 25 Nov 2026):** Claude and automated browsers must NOT be used to test the test site or the live site. Website tracking is switched on, so automated visits count as real visitors and report false issues. Claude's browser checks (`npm run e2e`) run only against a private local copy.
 - Copy: UK English, plain and direct. Never use em dashes. GBP, UK time. Never put names, emails or other personal details in requests to outside services.
 
+- **Sequencing rule (Jon, 26 Nov 2026):** the tool is finished and independently penetration tested BEFORE any data is moved in from SimplyBook or Zoho. So in this chat: build the CRM and the Zoho importer against made-up data only. Do not ask Jon for Zoho exports yet (except stage names, which are configuration, not customer data), and do not run an importer against real data until he says the pen test is done.
+
 ## 2. Read first
 
 In the repo (GitHub JonECI371/ECI_hub, private, currently branch `services-admin`; check what is merged to `main` first):
@@ -89,7 +91,7 @@ Full text in the Claude Doc (section 2 link). Summary of the recommended design:
 
 ## 7. Dependencies and things only Jon can do
 
-- Zoho exports (stages, open deals, companies, contacts). Real customer data: Jon saves files and tells you where; he must never paste them into chat; do not commit them to git.
+- Zoho exports (stages, open deals, companies, contacts). Not until after the penetration test (see the sequencing rule). The stage names alone can come earlier. Real customer data: Jon saves files and tells you where; he must never paste them into chat; do not commit them to git.
 - Teams call recording and transcription switched on, and Microsoft 365 admin consent for any new Graph permission (CallTranscripts.Read.All, mail and calendar read permissions for Stage C). Jon can grant consent in Entra; Claude cannot.
 - Google Analytics, Google Ads, Clarity accounts and logins (Stage B). Do not ask for passwords; use the sharing or API-key routes the services provide, saved via the environment's credential tools if available.
 - The five SES DNS records, real Stripe and Xero accounts, and solicitor review of: cookie banner, abandoned-checkout reminder wording, staff monitoring notice, call recording notice, marketing consent wording. These are tracked in `docs/go-live-checklist.md`.

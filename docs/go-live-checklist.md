@@ -17,7 +17,7 @@ Everything that must be true before real customers use the platform. Items are c
 - [ ] Malware scanning of uploads on (GuardDuty Malware Protection for S3 on the files bucket; app serves, attaches to Xero or opens a file only once it is tagged clean).
 - [ ] Email domain verified and out of the SES sandbox (the five DNS records for eci-hub.co.uk).
 - [ ] Backups and restore tested; logging and alerts on failures.
-- [ ] Independent penetration test done; open items in docs/security.md closed or accepted.
+- [ ] Independent penetration test done; open items in docs/security.md closed or accepted. (Jon, 26 Nov 2026: this comes BEFORE any SimplyBook or Zoho data is migrated in. Test with made-up data only.)
 
 ## C. Content and legal
 

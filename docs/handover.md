@@ -12,6 +12,10 @@ Read this first in a new chat, then `docs/spec.md`, `docs/build-plan.md`, `docs/
 
 Claude and automated browsers must NOT be used to test the test site (https://test.eci-hub.co.uk) or the live site. Tracking is switched on, so automated visits are counted as real ones, spoil the testing and report a false issue. Testing there is done by people, by hand, in an ordinary browser. Claude's browser checks (`npm run e2e`) run only against a private local copy.
 
+## Sequencing rule (Jon, 26 Nov 2026)
+
+Jon's decision (26 Nov 2026): finish the tool and have it independently penetration tested BEFORE any data is moved in from SimplyBook or Zoho. Order: finish the build, fix testing findings, pen test (CREST-accredited, on a staging copy with test data only, then a re-test of fixes), then the data migrations (3.8, both halves), then the 301 redirects and the switch-over. Until then, no real customer data goes into the new platform and no importer is run against real exports. Importers may be written and tried on made-up files only. Jon commissions the pen test (it is a paid service: ask first).
+
 ## Where things are
 - Repo: /home/user/eci-hub-platform-src/eci-hub-platform (branch as checked out; push to origin). Scratchpad for helper scripts: /tmp/claude-0/-home-user/5147478d-0c46-5f67-b65d-56a16e8c4224/scratchpad (may be cleared; deploy.sh, up.sh, ssm-*.json live there and can be recreated from the notes below).
 - Test site: https://test.eci-hub.co.uk (EC2 i-0567b0e02843cb540, Stockholm eu-north-1, Elastic IP 13.63.252.95, account 992868470990). Production is planned for London eu-west-2 after testing.

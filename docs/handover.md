@@ -1,5 +1,7 @@
 # Handover (written 17 Nov 2026)
 
+> **Newer hand-offs:** start with `docs/handoff-main.md` (26 Nov 2026) for the main build, or `docs/handoff-crm.md` for the CRM chat. This older file keeps the background, and its Testing rule and Sequencing rule sections are current.
+
 Read this first in a new chat, then `docs/spec.md`, `docs/build-plan.md`, `docs/progress.md`, `docs/go-live-checklist.md`, `docs/security.md`. Jon (Super Admin, jon@ecfio.co.uk) is a newbie: plain English, one clear recommendation, no jargon. Kirsty (kirsty@ecfio.co.uk, Admin and Trainer) tests.
 
 ## How we work (Jon's standing rules)

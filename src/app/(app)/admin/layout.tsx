@@ -6,8 +6,13 @@ import { AppShell } from '@/components/app-shell';
 import { SITE_URL } from '@/lib/format';
 
 export const dynamic = 'force-dynamic';
-/** Admin is always dark: the page surround, scrollbars and form controls follow, and Safari and Android Chrome tint their bar to match. */
-export const viewport: Viewport = { themeColor: '#101114', colorScheme: 'dark' };
+/**
+ * Admin look. Jon switched the dark Admin theme off on 27 Nov 2026 and kept the coloured strip (Test site green, Live site orange)
+ * so it is still obvious when you are in Admin. Set ADMIN_DARK to true to bring the dark theme back: all of its colours are still
+ * in globals.css under .admin-theme.
+ */
+const ADMIN_DARK = false;
+export const viewport: Viewport = ADMIN_DARK ? { themeColor: '#101114', colorScheme: 'dark' } : { themeColor: '#ffffff' };
 const isTestSite = /\/\/(test|staging|localhost)/i.test(SITE_URL);
 
 /** Admin back office: ADMIN and SUPER_ADMIN only, checked on the server. */
@@ -17,7 +22,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <AppShell
       label="Admin"
-      theme="admin"
+      theme={ADMIN_DARK ? 'admin' : undefined}
       strip={isTestSite ? { left: 'Admin', right: 'Test site: changes here affect test bookings', tone: 'test' } : { left: 'Admin', right: 'Live site: changes here affect real customers', tone: 'live' }}
       me={me}
       roleLabel={me.roles.includes('SUPER_ADMIN') ? 'Super Admin' : 'Admin'}

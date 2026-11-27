@@ -23,6 +23,10 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - 90 tests pass (7 new in test/delegate-details.test.ts), typecheck and build clean. Not checked on screen or on the test site. Not yet done: SkillGuard-missing marker on the Admin class list and delegate dashboard, mention in the 5-day pre-course reminder, breadcrumbs on other pages, and the Admin Add booking flow does not use the new page.
 - Local test database: Postgres from /usr/lib/postgresql/16 with `DATABASE_URL=postgresql://eci:eci@localhost:5432/eci_test` (the earlier container had no Docker daemon running by default).
 
+## 2026-11-27: Admin back to the light look
+
+- Jon switched the dark Admin theme off (Admin only) and kept the coloured strip (Test site green, Live site orange) so it is still obvious when you are in Admin. The dark theme is not deleted: set ADMIN_DARK to true in `src/app/(app)/admin/layout.tsx` to bring it back. Checked locally on Admin home, Bookings, Tasks and Add booking; not yet deployed.
+
 ## 2026-11-16: fixes from Kirsty's Round 2 and Round 3 testing
 
 - Signed off by Jon one by one. Built: bad PO files no longer vanish (booking goes ahead, confirmation page warns which files were not saved); Log out link on checkout works (GET /logout, plain link; it had been a link to a POST-only route); "This course gives a certificate" tick per course (no certificate task when off); Change date or time for one session (emails everyone booked, moves the Teams invite, audit entry); test emails through Microsoft 365 (EMAIL_MODE=graph from /opt/eci/mail.env, only to allow-listed addresses, needs Mail.Send); application audit now records PO choice and other bookers; Test log (Super Admin only, Settings) of odd input on the booking, credit account and registration forms.

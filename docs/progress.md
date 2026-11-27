@@ -10,6 +10,12 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-28: Per-course delegate field settings built, not deployed
+
+- Approved by Jon 27 Nov (matrix in docs/delegate-fields.md). `Course.delegateFields` (JSON, null = template for subject and delivery), `Person.address`; migration 20261128090000 (additive). Admin course form has a Delegate details section (Required / Optional / Not asked, hold the certificate, templates) and Admin > Courses > Delegate fields shows a read-only grid.
+- The registration form, `questionSet`, the booker's Delegate details page (now any course without photo or ID uploads and not eLearning, with approval tasks and venue release handled), the certificate check and the weekly chase (`sendMissingDetailsChases`) all read the settings. CompEx ID and ULN are one field (stored under schemeIds.compex). Photo and photo ID courses (EUSR) and eLearning keep the registration form.
+- Tests: new test/delegate-fields.test.ts; typecheck and build clean. Not checked on screen or on the test site. The templates match the matrix, so Thames Water, CompEx and EUSR behaviour changes as the matrix says (telephone optional for Thames Water, required for CompEx; emergency contact removed; accessibility only for in-person CompEx; ULN required for in-person CompEx).
+
 ## 2026-11-27: Delegate details page built (Thames Water), not deployed
 
 - Approved by Jon 27 Nov (spec PUB-13). Built on the booking outcome page, Thames Water only (registration set `thames-water`; other courses keep the registration form because they need photo and ID). Breadcrumbs Course > Book > Delegate details. One row per delegate: first name, last name, email, date of birth required; telephone and SkillGuard number optional; Fill in now or Email them a link (name and email only); one authority tick; progress bar; optional "PO or reference for invoicing" per delegate (new column `Attendee.invoiceRef`, migration 20261127120000, additive), shown in the statement line description as `Refs: name ref` for references that differ from the booking PO; the invoice stays one line per booking.

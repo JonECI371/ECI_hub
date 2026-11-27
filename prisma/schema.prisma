@@ -167,6 +167,7 @@ model Course {
   photoUrl         String?
   photoAlt         String?
   issuesCertificate Boolean         @default(true) // false: no certificate task or upload for this course
+  delegateFields   Json?               // which delegate details this course asks for ({fields, certificate}); null = the template for its subject and delivery (src/lib/delegate-fields.ts)
   faqs             Json                @default("[]")
   // Course page copy: { eyebrow, assessment, beforeYouBook, audienceHeading, audience, cover: [{ title, text }], completionHeading, completion, related: [slug] }
   content          Json                @default("{}")
@@ -233,6 +234,7 @@ model Person {
   dateOfBirth     DateTime?
   employer        String?
   jobTitle        String?
+  address         String?   // postal address, only for courses that post a card or certificate
   sessionsValidFrom DateTime? // sessions started before this are no longer valid (sign out everywhere, role change)
   xeroContactId   String?
   schemeIds       Json      @default("{}") // { skillguard, compex, eusr }

@@ -3,6 +3,7 @@
 import { useActionState, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveDelegateAction, type DelegateState } from '@/app/(site)/book/outcome/actions';
+import { FIELD_INFO, FIELD_KEYS, type FieldKey, type FieldMode } from '@/lib/delegate-fields';
 
 export type DelegateRow = {
   attendeeId: string;
@@ -10,8 +11,12 @@ export type DelegateRow = {
   status: 'done' | 'sent' | 'needed';
   first: string; last: string; email: string;
   d: string; m: string; y: string;
-  phone: string; skillguard: string; invoiceRef: string;
+  values: Partial<Record<FieldKey, string>>;
+  invoiceRef: string;
 };
+export type Modes = Record<FieldKey, FieldMode>;
+const SKIP: FieldKey[] = ['dob', 'photo', 'photoId'];
+const AREA: FieldKey[] = ['address', 'dietary', 'access'];
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const YEARS = Array.from({ length: 71 }, (_, i) => 2010 - i);
@@ -23,7 +28,7 @@ function Err({ id, msg }: { id: string; msg?: string }) {
   return msg ? <span id={id} className="text-[13px] font-semibold text-bad-fg">{msg}</span> : null;
 }
 
-function Row({ row, n, bookingId, authority, showInvoiceRef }: { row: DelegateRow; n: number; bookingId: string; authority: boolean; showInvoiceRef: boolean }) {
+function Row({ row, n, bookingId, authority, showInvoiceRef, modes, certificate }: { row: DelegateRow; n: number; bookingId: string; authority: boolean; showInvoiceRef: boolean; modes: Modes; certificate: FieldKey[] }) {
   const router = useRouter();
   const [mode, setMode] = useState<'now' | 'link'>(row.status === 'sent' ? 'link' : 'now');
   const [state, action, pending] = useActionState<DelegateState, FormData>(saveDelegateAction, {});
@@ -61,17 +66,29 @@ function Row({ row, n, bookingId, authority, showInvoiceRef }: { row: DelegateRo
             <input key={k('email')} name="email" type="email" defaultValue={row.email} autoComplete="off" readOnly={row.you} className={input} {...bad('email')} /><Err id={`r${n}-email`} msg={f.email} /></label>
           {mode === 'now' && (
             <>
-              <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
-                <legend className="mb-1.5 text-sm font-bold text-ink">Date of birth *<span className={`${hint} ml-2`}>Used to match them in SkillGuard.</span></legend>
-                <div className="grid grid-cols-[72px_1fr_96px] gap-2">
-                  <select key={k('d')} name="dobD" aria-label="Day" defaultValue={row.d} className={input} {...bad('dob')}><option value="">Day</option>{Array.from({ length: 31 }, (_, i) => i + 1).map((v) => <option key={v} value={v}>{v}</option>)}</select>
-                  <select key={k('m')} name="dobM" aria-label="Month" defaultValue={row.m} className={input} {...bad('dob')}><option value="">Month</option>{MONTHS.map((v, i) => <option key={v} value={i + 1}>{v}</option>)}</select>
-                  <select key={k('y')} name="dobY" aria-label="Year" defaultValue={row.y} className={input} {...bad('dob')}><option value="">Year</option>{YEARS.map((v) => <option key={v} value={v}>{v}</option>)}</select>
-                </div>
-                <Err id={`r${n}-dob`} msg={f.dob} />
-              </fieldset>
-              <label className={labelCls}>Telephone <span className={hint}>Optional</span><input key={k('phone')} name="phone" type="tel" defaultValue={row.phone} autoComplete="off" className={input} {...bad('phone')} /><Err id={`r${n}-phone`} msg={f.phone} /></label>
-              <label className={labelCls}>SkillGuard number <span className={hint}>Optional now. Needed before the certificate is issued.</span><input key={k('sg')} name="skillguard" defaultValue={row.skillguard} autoComplete="off" className={input} {...bad('skillguard')} /><Err id={`r${n}-skillguard`} msg={f.skillguard} /></label>
+              {modes.dob !== 'OFF' && (
+                <fieldset className="flex flex-col gap-1.5 sm:col-span-2">
+                  <legend className="mb-1.5 text-sm font-bold text-ink">Date of birth {modes.dob === 'REQUIRED' ? '*' : <span className={hint}>(optional)</span>}<span className={`${hint} ml-2`}>For awarding bodies and SkillGuard matching.</span></legend>
+                  <div className="grid grid-cols-[72px_1fr_96px] gap-2">
+                    <select key={k('d')} name="dobD" aria-label="Day" defaultValue={row.d} className={input} {...bad('dob')}><option value="">Day</option>{Array.from({ length: 31 }, (_, i) => i + 1).map((v) => <option key={v} value={v}>{v}</option>)}</select>
+                    <select key={k('m')} name="dobM" aria-label="Month" defaultValue={row.m} className={input} {...bad('dob')}><option value="">Month</option>{MONTHS.map((v, i) => <option key={v} value={i + 1}>{v}</option>)}</select>
+                    <select key={k('y')} name="dobY" aria-label="Year" defaultValue={row.y} className={input} {...bad('dob')}><option value="">Year</option>{YEARS.map((v) => <option key={v} value={v}>{v}</option>)}</select>
+                  </div>
+                  <Err id={`r${n}-dob`} msg={f.dob} />
+                </fieldset>
+              )}
+              {FIELD_KEYS.filter((fk) => !SKIP.includes(fk) && modes[fk] !== 'OFF').map((fk) => {
+                const info = FIELD_INFO[fk];
+                const tag = modes[fk] === 'REQUIRED' ? ' *' : '';
+                const note = modes[fk] === 'OPTIONAL' ? (certificate.includes(fk) ? 'Optional now. Needed before the certificate is issued.' : 'Optional') : certificate.includes(fk) ? 'Needed before the certificate is issued.' : info.hint;
+                const common = { key: k(fk), name: `f_${fk}`, defaultValue: row.values[fk] ?? '', autoComplete: 'off', ...bad(fk) };
+                return (
+                  <label key={fk} className={`${labelCls} ${AREA.includes(fk) ? 'sm:col-span-2' : ''}`}>{info.label}{tag}{note && <span className={hint}>{note}</span>}
+                    {AREA.includes(fk) ? <textarea {...common} className={`${input} h-auto min-h-[88px] py-2.5`} /> : <input {...common} type={fk === 'phone' ? 'tel' : 'text'} className={input} />}
+                    <Err id={`r${n}-${fk}`} msg={f[fk]} />
+                  </label>
+                );
+              })}
             </>
           )}
           {showInvoiceRef && (
@@ -79,8 +96,8 @@ function Row({ row, n, bookingId, authority, showInvoiceRef }: { row: DelegateRo
           )}
         </div>
         <Err id={`r${n}-authority`} msg={f.authority} />
-        {done && mode === 'now' && !row.skillguard && (
-          <p className="rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">No SkillGuard number yet. The certificate cannot be issued until one is added, and we will remind {row.you ? 'you' : 'them'} after the course.</p>
+        {done && mode === 'now' && certificate.some((c) => !row.values[c]) && (
+          <p className="rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">The certificate cannot be issued until {certificate.filter((c) => !row.values[c]).map((c) => FIELD_INFO[c].label).join(' and ')} {certificate.filter((c) => !row.values[c]).length > 1 ? 'are' : 'is'} added, and we will remind {row.you ? 'you' : 'them'} after the course.</p>
         )}
         {state.message && <p role="status" className={`text-sm font-semibold ${state.ok ? 'text-ink' : 'text-bad-fg'}`}>{state.message}</p>}
         <div>
@@ -93,7 +110,7 @@ function Row({ row, n, bookingId, authority, showInvoiceRef }: { row: DelegateRo
   );
 }
 
-export function DelegateDetails({ bookingId, rows, showInvoiceRef }: { bookingId: string; rows: DelegateRow[]; showInvoiceRef: boolean }) {
+export function DelegateDetails({ bookingId, rows, showInvoiceRef, modes, certificate }: { bookingId: string; rows: DelegateRow[]; showInvoiceRef: boolean; modes: Modes; certificate: FieldKey[] }) {
   const [authority, setAuthority] = useState(false);
   const complete = rows.filter((r) => r.status !== 'needed').length;
   const others = rows.some((r) => !r.you);
@@ -108,7 +125,7 @@ export function DelegateDetails({ bookingId, rows, showInvoiceRef }: { bookingId
         <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="text-lg font-extrabold text-ink">{complete} of {rows.length} {complete === rows.length ? 'delegates done' : 'delegates complete'}</h3><span className="text-sm">About 1 minute each</span></div>
         <div className="h-2.5 overflow-hidden rounded-chip bg-hairline" aria-hidden="true"><div className="h-full bg-cyan transition-all" style={{ width: `${(complete / rows.length) * 100}%` }} /></div>
       </section>
-      {rows.map((r, i) => <Row key={r.attendeeId} row={r} n={i + 1} bookingId={bookingId} authority={authority} showInvoiceRef={showInvoiceRef} />)}
+      {rows.map((r, i) => <Row key={r.attendeeId} row={r} n={i + 1} bookingId={bookingId} authority={authority} showInvoiceRef={showInvoiceRef} modes={modes} certificate={certificate} />)}
       {others && (
         <section className="rounded-card bg-white p-5 shadow-card">
           <label className="flex items-start gap-3 text-[15px] font-semibold text-ink"><input type="checkbox" checked={authority} onChange={(e) => setAuthority(e.target.checked)} className="mt-1 size-6 shrink-0" />
@@ -116,7 +133,7 @@ export function DelegateDetails({ bookingId, rows, showInvoiceRef }: { bookingId
           <p className="mt-2 text-[13px]">Tick this once before you save anyone else&apos;s details. It is not needed for your own.</p>
         </section>
       )}
-      <p className="text-sm">We email you and anyone still outstanding 5 days before the course. A SkillGuard number must be on record before the certificate is issued; we remind the delegate and you after the course until it is added.</p>
+      <p className="text-sm">We email you and anyone still outstanding 5 days before the course. {certificate.length > 0 ? `${certificate.map((c) => FIELD_INFO[c].label).join(' and ')} must be on record before the certificate is issued; we remind the delegate and you after the course until it is added.` : ''}</p>
     </div>
   );
 }

@@ -2,18 +2,15 @@ import 'server-only';
 import type { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { findOrCreatePerson } from '@/lib/booking';
-import { sendJoiningDetails } from '@/lib/notifications';
+import { sendJoiningDetails, sendVenueReleased } from '@/lib/notifications';
 import { sendEmail } from '@/lib/integrations/email';
 import { registrationLink } from '@/lib/registration-link';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { ANSWER_KEY, FIELD_INFO, FIELD_KEYS, SCHEME_KEY, asksForFiles, effectiveFields, type FieldKey } from '@/lib/delegate-fields';
 
-/** Registration sets that use the delegate details page. Others (photo and ID uploads) keep the registration form. */
-export const DELEGATE_DETAILS_SETS = ['thames-water'];
-/** Courses whose certificate cannot be issued until the delegate's SkillGuard number is on record. */
-export const SKILLGUARD_SETS = ['thames-water'];
-
-export const usesDelegateDetails = (registrationSet: string | null | undefined) => DELEGATE_DETAILS_SETS.includes(registrationSet ?? '');
-export const needsSkillguard = (registrationSet: string | null | undefined) => SKILLGUARD_SETS.includes(registrationSet ?? '');
+/** The delegate details page serves courses that need no uploaded files. eLearning and photo or ID courses keep the registration form. */
+export const usesDelegateDetails = (course: { deliveryType: string; delegateFields: unknown; subject: { registrationSet: string } }) =>
+  course.deliveryType !== 'ELEARNING' && !asksForFiles(effectiveFields(course));
 export const skillguardOf = (schemeIds: unknown): string => String(((schemeIds ?? {}) as Record<string, unknown>).skillguard ?? '').trim();
 
 export class DelegateError extends Error {
@@ -36,44 +33,54 @@ export type DelegateInput = {
   lastName: string;
   email: string;
   dob?: { d: string; m: string; y: string };
-  mobile?: string;
-  skillguard?: string;
+  values?: Partial<Record<FieldKey, string>>; // phone, employer, jobTitle, address, skillguard, uln, eusrId, emergency, dietary, access
   invoiceRef?: string;
   authority: boolean;
 };
 
 /**
- * The booker gives one delegate's details on the booking's Delegate details page: either in full ("now") or just a name
- * and email, after which the delegate is emailed a link to add the rest ("link"). Existing people are never
- * overwritten: only blanks are filled, unless the details are the booker's own.
+ * The booker gives one delegate's details on the booking's Delegate details page: either in full ("now", the fields the
+ * course asks for) or just a name and email, after which the delegate is emailed a link to add the rest ("link").
+ * Existing people are never overwritten: only blanks are filled, unless the details are the booker's own.
  */
 export async function saveDelegate(actorId: string, bookingId: string, input: DelegateInput) {
   const a = await db.attendee.findUnique({
     where: { id: input.attendeeId },
-    include: { person: true, registration: true, booking: { include: { booker: true, course: { include: { subject: true } } } } },
+    include: { person: true, registration: true, booking: { include: { booker: true, course: { include: { subject: true } }, session: true } } },
   });
   if (!a || a.bookingId !== bookingId || a.status === 'CANCELLED' || a.booking.status !== 'CONFIRMED') throw new DelegateError('We could not find that place on your booking.');
   if (a.booking.bookerId !== actorId) throw new DelegateError('Only the person who made the booking can enter these details.');
-  if (!usesDelegateDetails(a.booking.course.subject.registrationSet) || a.booking.course.subject.approvalRequired) throw new DelegateError('This course collects delegate details on its registration form instead.');
+  const course = a.booking.course;
+  if (!usesDelegateDetails(course)) throw new DelegateError('This course collects delegate details on its registration form instead.');
+  const df = effectiveFields(course);
+  const mode = df.fields;
 
   const email = input.email.trim().toLowerCase();
   const firstName = input.firstName.trim();
   const lastName = input.lastName.trim();
-  const mobile = (input.mobile ?? '').trim();
-  const skillguard = (input.skillguard ?? '').trim();
+  const v = (k: FieldKey) => (input.values?.[k] ?? '').trim();
   const invoiceRef = (input.invoiceRef ?? '').trim().slice(0, 50);
   const self = email === a.booking.booker.email.toLowerCase();
   const fields: Record<string, string> = {};
   if (!firstName || firstName.length > 80) fields.first = 'Enter their first name';
   if (!lastName || lastName.length > 80) fields.last = 'Enter their last name';
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email) || email.length > 200) fields.email = 'Enter a valid email address';
-  if (mobile && !/^[0-9 +()-]{7,20}$/.test(mobile)) fields.phone = 'Enter a telephone number, like 07700 900123';
-  if (skillguard.length > 40) fields.skillguard = 'That SkillGuard number is too long';
-  const dob = input.mode === 'now' ? dobFromParts(input.dob?.d ?? '', input.dob?.m ?? '', input.dob?.y ?? '') : null;
-  if (input.mode === 'now' && !dob) fields.dob = 'Choose their full date of birth';
+  const now = input.mode === 'now';
+  if (now) {
+    for (const k of FIELD_KEYS) {
+      if (k === 'dob' || mode[k] === 'OFF') continue;
+      const label = FIELD_INFO[k].label.toLowerCase();
+      if (mode[k] === 'REQUIRED' && !v(k)) fields[k] = `Enter their ${label}`;
+      if (k === 'phone' && v(k) && !/^[0-9 +()-]{7,20}$/.test(v(k))) fields.phone = 'Enter a telephone number, like 07700 900123';
+      if (v(k).length > (k === 'address' || k === 'dietary' || k === 'access' ? 500 : 120)) fields[k] = 'That is too long';
+    }
+  }
+  const dob = now && mode.dob !== 'OFF' ? dobFromParts(input.dob?.d ?? '', input.dob?.m ?? '', input.dob?.y ?? '') : null;
+  if (now && mode.dob !== 'OFF' && !dob && (mode.dob === 'REQUIRED' || input.dob?.d || input.dob?.m || input.dob?.y)) fields.dob = 'Choose their full date of birth';
   if (!self && !input.authority) fields.authority = 'Tick the box to confirm you may give these details';
   if (Object.keys(fields).length) throw new DelegateError('Check the highlighted fields.', fields);
 
+  const approval = course.subject.approvalRequired ? 'PENDING' : 'NOT_REQUIRED';
   const person = await db.$transaction(async (tx) => {
     const existing = await tx.person.findUnique({ where: { email } });
     if (existing && (await tx.attendee.count({ where: { bookingId, personId: existing.id, status: { not: 'CANCELLED' }, id: { not: a.id } } }))) {
@@ -84,31 +91,48 @@ export async function saveDelegate(actorId: string, bookingId: string, input: De
     const scheme = { ...((p.schemeIds as Record<string, string>) ?? {}) };
     const data: Prisma.PersonUpdateInput = {};
     if (mayOverwrite) { data.firstName = firstName; data.lastName = lastName; }
-    if (dob && (mayOverwrite || !p.dateOfBirth)) data.dateOfBirth = dob;
-    if (mobile && (mayOverwrite || !p.mobile)) data.mobile = mobile;
-    if (skillguard && (mayOverwrite || !scheme.skillguard)) { scheme.skillguard = skillguard; data.schemeIds = scheme as Prisma.InputJsonValue; }
+    const fill = (have: string | null | undefined, val: string) => !!val && (mayOverwrite || !have);
+    if (now) {
+      if (dob && (mayOverwrite || !p.dateOfBirth)) data.dateOfBirth = dob;
+      if (mode.phone !== 'OFF' && fill(p.mobile, v('phone'))) data.mobile = v('phone');
+      if (mode.employer !== 'OFF' && fill(p.employer, v('employer'))) data.employer = v('employer');
+      if (mode.jobTitle !== 'OFF' && fill(p.jobTitle, v('jobTitle'))) data.jobTitle = v('jobTitle');
+      if (mode.address !== 'OFF' && fill(p.address, v('address'))) data.address = v('address');
+      for (const k of ['skillguard', 'uln', 'eusrId'] as const) if (mode[k] !== 'OFF' && fill(scheme[SCHEME_KEY[k]!], v(k))) scheme[SCHEME_KEY[k]!] = v(k);
+      data.schemeIds = scheme as Prisma.InputJsonValue;
+    }
     if (Object.keys(data).length) await tx.person.update({ where: { id: p.id }, data });
 
-    const status = input.mode === 'now' ? 'REGISTERED' : a.status === 'REGISTERED' && a.personId === p.id ? 'REGISTERED' : 'INVITED';
+    const status = now ? 'REGISTERED' : a.status === 'REGISTERED' && a.personId === p.id ? 'REGISTERED' : 'INVITED';
     await tx.attendee.update({ where: { id: a.id }, data: { personId: p.id, status, invoiceRef: invoiceRef || null } });
-    if (input.mode === 'now') {
-      const sg = skillguard || skillguardOf(scheme);
-      await tx.registration.upsert({ where: { attendeeId: a.id }, update: { answers: { skillguard: sg }, submittedAt: new Date() }, create: { attendeeId: a.id, answers: { skillguard: sg }, approval: 'NOT_REQUIRED' } });
+    if (now) {
+      const answers: Record<string, string> = {};
+      for (const k of FIELD_KEYS) {
+        if (mode[k] === 'OFF' || k === 'photo' || k === 'photoId') continue;
+        if (SCHEME_KEY[k]) answers[k === 'uln' ? 'compexId' : k] = String(scheme[SCHEME_KEY[k]!] ?? '');
+        else if (ANSWER_KEY[k]) answers[ANSWER_KEY[k]!] = v(k);
+        else if (k === 'jobTitle' || k === 'address') answers[k] = v(k);
+      }
+      await tx.registration.upsert({ where: { attendeeId: a.id }, update: { answers, approval, submittedAt: new Date() }, create: { attendeeId: a.id, answers, approval } });
+      if (approval === 'PENDING' && !(await tx.task.findFirst({ where: { type: 'REGISTRATION_APPROVAL', recordId: a.id, status: 'OPEN' } }))) {
+        await tx.task.create({ data: { type: 'REGISTRATION_APPROVAL', title: `Approve registration: ${p.firstName} ${p.lastName}`, detail: `${course.title}${a.booking.session ? `, ${a.booking.session.startsAt.toISOString().slice(0, 10)}` : ''}`, recordType: 'Attendee', recordId: a.id } });
+      }
     }
-    await tx.auditLog.create({ data: { actorId, action: input.mode === 'now' ? 'DELEGATE_DETAILS_ENTERED' : 'DELEGATE_LINK_SENT', recordType: 'Attendee', recordId: a.id, before: { personId: a.personId }, after: { personId: p.id, invoiceRef: invoiceRef || null, skillguard: !!(skillguard || skillguardOf(scheme)) } } });
+    await tx.auditLog.create({ data: { actorId, action: now ? 'DELEGATE_DETAILS_ENTERED' : 'DELEGATE_LINK_SENT', recordType: 'Attendee', recordId: a.id, before: { personId: a.personId }, after: { personId: p.id, invoiceRef: invoiceRef || null } } });
     await refreshLineRefs(tx, bookingId);
     return p;
   });
 
   const b = a.booking;
-  if (input.mode === 'link') await sendJoiningDetails(a.id);
+  if (now && course.deliveryType === 'IN_PERSON' && course.venueRelease === 'AFTER_APPROVAL' && !course.subject.approvalRequired && !a.registration) await sendVenueReleased(a.id);
+  if (!now) await sendJoiningDetails(a.id);
   else if (!self) {
     await sendEmail({
       to: person.email, personId: person.id, trigger: 'DELEGATE_DETAILS_COPY', subject: `Please check your details for ${b.course.title}`,
       blocks: [
         { type: 'heading', text: `Your details, ${person.firstName}` },
         { type: 'text', text: `${b.booker.firstName} ${b.booker.lastName} has booked you on ${b.course.title} and entered these details so we can record your competencies after the course. Please check they are right.` },
-        { type: 'summary', rows: [['Name', `${person.firstName} ${person.lastName}`], ['Email', person.email], ['SkillGuard number', skillguardOf(person.schemeIds) || 'Not given yet'], ['Reference', b.reference]] },
+        { type: 'summary', rows: [['Name', `${person.firstName} ${person.lastName}`], ['Email', person.email], ...(mode.skillguard !== 'OFF' ? [['SkillGuard number', skillguardOf(person.schemeIds) || 'Not given yet'] as [string, string]] : []), ['Reference', b.reference]] },
         { type: 'button', label: 'Check or correct my details', href: registrationLink(a.id) },
       ],
     });

@@ -8,7 +8,7 @@ process.env.LOCAL_UPLOAD_DIR = mkdtempSync(join(tmpdir(), 'eci-delegates-'));
 describe('delegate details', async () => {
   const { db } = await import('@/lib/db');
   const { saveDelegate, DelegateError, dobFromParts, skillguardOf } = await import('@/lib/delegate-details');
-  const { issueCertificate, CertificateError, sendSkillguardChases } = await import('@/lib/certificates');
+  const { issueCertificate, CertificateError, sendMissingDetailsChases } = await import('@/lib/certificates');
   const { createAccountBooking, addStatementLine } = await import('@/lib/credit');
   const { course } = await import('./fixtures');
 
@@ -75,7 +75,7 @@ describe('delegate details', async () => {
     const s = await setup();
     const free = s.attendees.find((a) => a.personId !== s.booker.id)!;
     const other = await db.person.create({ data: { email: `known.${s.id}@example.com`, firstName: 'Real', lastName: 'Name', mobile: '07700900111', schemeIds: { skillguard: 'SG-REAL' } } });
-    await saveDelegate(s.booker.id, s.b.id, input(free.id, { email: other.email, firstName: 'Typo', lastName: 'Wrong', mobile: '07700900999', skillguard: 'SG-WRONG' }));
+    await saveDelegate(s.booker.id, s.b.id, input(free.id, { email: other.email, firstName: 'Typo', lastName: 'Wrong', values: { phone: '07700900999', skillguard: 'SG-WRONG' } }));
     const p = await db.person.findUniqueOrThrow({ where: { id: other.id } });
     expect([p.firstName, p.lastName, p.mobile, skillguardOf(p.schemeIds)]).toEqual(['Real', 'Name', '07700900111', 'SG-REAL']);
     expect(p.dateOfBirth?.toISOString().slice(0, 10)).toBe('1990-04-03'); // was blank, so filled
@@ -107,8 +107,8 @@ describe('delegate details', async () => {
 
     // The course ended two days ago: one email each to the delegate and the booker, and not again the same week.
     await db.session.update({ where: { id: s.session.id }, data: { startsAt: new Date(Date.now() - 3 * 86400000), endsAt: new Date(Date.now() - 2 * 86400000) } });
-    expect(await sendSkillguardChases()).toBeGreaterThanOrEqual(2);
-    expect(await sendSkillguardChases()).toBe(0);
+    expect(await sendMissingDetailsChases()).toBeGreaterThanOrEqual(2);
+    expect(await sendMissingDetailsChases()).toBe(0);
 
     const p = await db.attendee.findUniqueOrThrow({ where: { id: free.id }, include: { person: true } });
     await db.person.update({ where: { id: p.personId! }, data: { schemeIds: { skillguard: 'SG-123' } } });

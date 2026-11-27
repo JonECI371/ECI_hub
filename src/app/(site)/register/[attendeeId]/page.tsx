@@ -5,7 +5,7 @@ import { loadForRegistration } from '@/lib/registration';
 import { questionSet } from '@/lib/registration-sets';
 import { DeliveryChip, Chip } from '@/components/ui';
 import { RegistrationForm } from '@/components/registration-form';
-import { usesDelegateDetails } from '@/lib/delegate-details';
+import { effectiveFields } from '@/lib/delegate-fields';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Registration', robots: { index: false } };
@@ -34,7 +34,8 @@ export default async function RegisterPage({ params, searchParams }: { params: P
 
   const b = a.booking;
   const c = b.course;
-  const set = questionSet(c.subject.registrationSet, c.deliveryType, c.subject.approvalRequired, c.subject.name);
+  const df = effectiveFields(c);
+  const set = questionSet(df, c.deliveryType, c.subject.approvalRequired, c.subject.name);
   const scheme = (a.person.schemeIds ?? {}) as Record<string, string>;
   const answers = (a.registration?.answers ?? {}) as Record<string, string>;
   const prefill: Record<string, string> = {
@@ -44,6 +45,8 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     mobile: a.person.mobile ?? '',
     dob: dmy(a.person.dateOfBirth),
     employer: a.person.employer ?? b.account?.company ?? '',
+    jobTitle: a.person.jobTitle ?? '',
+    address: a.person.address ?? '',
     skillguard: scheme.skillguard ?? '',
     compexId: scheme.compex ?? '',
     eusrId: scheme.eusr ?? '',
@@ -113,7 +116,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
           <p className="mt-1 text-[15px]">We&apos;ve filled in what we already know. Check it and add the rest. Everything is required unless it says optional.</p>
           {a.registration && <p className="mt-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You have already registered. You can update your answers and submit again.</p>}
         </div>
-        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} contactOptional={usesDelegateDetails(c.subject.registrationSet)} />
+        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} about={{ phone: df.fields.phone, dob: df.fields.dob, employer: df.fields.employer }} />
       </div>
       {aside}
     </div>

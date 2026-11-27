@@ -21,7 +21,7 @@ export default async function Page({ params }: { params: Promise<{ id: string }>
         <p className="mb-1.5 text-xs"><Link href="/admin/courses">Courses</Link> › <Link href={`/admin/courses/${course.id}`}>{course.title}</Link></p>
         <h1 className="text-[30px] font-extrabold tracking-tight text-ink">Edit course</h1>
       </div>
-      <CourseForm action={saveCourse} initial={courseFormValues(course, subjects[0]?.id ?? '')} subjects={subjects} venues={venues} siteUrl={SITE_URL} />
+      <CourseForm action={saveCourse} initial={courseFormValues(course, subjects[0]?.id ?? '', subjects)} subjects={subjects} venues={venues} siteUrl={SITE_URL} />
     </>
   );
 }

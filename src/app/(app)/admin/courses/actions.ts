@@ -3,7 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
-import type { DeliveryType, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+import type { DeliveryType } from '@prisma/client';
+import { FIELD_KEYS, parseDelegateFields, templateById, templateIdFor } from '@/lib/delegate-fields';
 import { db } from '@/lib/db';
 import { audit, requireAdmin } from '@/lib/admin';
 import { fmtSessionDates, fmtTime } from '@/lib/format';
@@ -61,6 +63,15 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
   if (clash) fields.slug = 'Another course already uses this web address';
   if (Object.keys(fields).length) return { error: 'Check the highlighted fields.', fields, values };
 
+  // Delegate details: stored only when they differ from the template for this subject and delivery.
+  let delegateFields: Prisma.InputJsonValue | typeof Prisma.DbNull | undefined;
+  if (get('df_set') === '1') {
+    const subj = await db.subject.findUnique({ where: { id: get('subjectId') }, select: { registrationSet: true } });
+    const chosen = parseDelegateFields({ fields: Object.fromEntries(FIELD_KEYS.map((k) => [k, get(`df_${k}`)])), certificate: FIELD_KEYS.filter((k) => get(`cert_${k}`) === 'on') });
+    const tpl = templateById(templateIdFor(subj?.registrationSet, delivery));
+    const same = !!chosen && FIELD_KEYS.every((k) => chosen.fields[k] === tpl.fields[k]) && [...chosen.certificate].sort().join() === [...tpl.certificate].sort().join();
+    delegateFields = !chosen || same ? Prisma.DbNull : (chosen as unknown as Prisma.InputJsonValue);
+  }
   const data: Prisma.CourseUncheckedCreateInput = {
     title: get('title'), slug, subjectId: get('subjectId'), deliveryType: delivery, status: status as 'DRAFT' | 'PUBLISHED' | 'WITHDRAWN',
     shortDescription: get('shortDescription').slice(0, 160), description: get('description') || get('shortDescription'), durationText: durationText ?? '',
@@ -77,6 +88,7 @@ export async function saveCourse(_prev: CourseFormState, form: FormData): Promis
     validityYears: optInt(get('validityYears')), issuesCertificate: get('issuesCertificate') === 'on', accreditation: get('accreditation') || null,
     seoTitle: get('seoTitle').slice(0, 60) || null, seoDescription: get('seoDescription').slice(0, 155) || null,
     photoAlt: get('photoAlt').slice(0, 200) || null,
+    ...(delegateFields !== undefined ? { delegateFields } : {}),
     ...(get('removePhoto') === 'on' ? { photoUrl: null, photoAlt: null } : {}),
   };
   if (hasPhoto) {

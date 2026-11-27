@@ -6,6 +6,7 @@ import { DobField } from '@/components/dob-field';
 import { TestSignals } from '@/components/test-signals';
 import { submitRegistration, type RegState } from '@/app/(site)/register/[attendeeId]/actions';
 import type { QuestionSet } from '@/lib/registration-sets';
+import type { FieldMode } from '@/lib/delegate-fields';
 
 type Props = {
   attendeeId: string;
@@ -13,7 +14,7 @@ type Props = {
   set: QuestionSet;
   prefill: Record<string, string>;
   filesOnFile: string[];
-  contactOptional?: boolean; // telephone and employer are optional (Thames Water)
+  about: { phone: FieldMode; dob: FieldMode; employer: FieldMode }; // from the course's delegate field settings
 };
 
 const input = 'box-border h-[46px] w-full rounded-control border border-field bg-white px-3.5 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-fg';
@@ -21,7 +22,7 @@ const area = 'box-border min-h-[88px] w-full rounded-control border border-field
 const labelCls = 'flex flex-col gap-1.5 text-sm font-bold text-ink';
 const hintCls = 'text-[13px] font-normal text-slate';
 
-export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile, contactOptional }: Props) {
+export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile, about }: Props) {
   const [state, action, pending] = useActionState<RegState, FormData>(submitRegistration, {});
   const f = state.fields ?? {};
   const v = state.values ?? {};
@@ -42,9 +43,9 @@ export function RegistrationForm({ attendeeId, token, set, prefill, filesOnFile,
           <label className={labelCls}>First name<input name="firstName" autoComplete="given-name" defaultValue={val('firstName')} className={input} {...err('firstName')} /><E k="firstName" /></label>
           <label className={labelCls}>Last name<input name="lastName" autoComplete="family-name" defaultValue={val('lastName')} className={input} {...err('lastName')} /><E k="lastName" /></label>
           <label className={labelCls}>Email<input type="email" value={prefill.email} readOnly className={`${input} bg-page`} /><span className={hintCls}>To change this, contact us.</span></label>
-          <label className={labelCls}>{contactOptional ? 'Telephone (optional)' : 'Mobile'}<input name="mobile" type="tel" autoComplete="tel" defaultValue={val('mobile')} className={input} {...err('mobile')} /><E k="mobile" /></label>
-          <div className="flex flex-col gap-1"><DobField name="dob" defaultValue={val('dob')} inputClass={input} invalid={!!f.dob} describedBy={f.dob ? 'dob-err' : undefined} /><span className={hintCls}>Needed by the awarding body.</span><E k="dob" /></div>
-          <label className={labelCls}>{contactOptional ? 'Employer (optional)' : 'Employer'}<input name="employer" autoComplete="organization" defaultValue={val('employer')} className={input} {...err('employer')} /><E k="employer" /></label>
+          {about.phone !== 'OFF' && <label className={labelCls}>{about.phone === 'OPTIONAL' ? 'Telephone (optional)' : 'Telephone'}<input name="mobile" type="tel" autoComplete="tel" defaultValue={val('mobile')} className={input} {...err('mobile')} /><E k="mobile" /></label>}
+          {about.dob !== 'OFF' && <div className="flex flex-col gap-1"><DobField name="dob" defaultValue={val('dob')} inputClass={input} invalid={!!f.dob} describedBy={f.dob ? 'dob-err' : undefined} /><span className={hintCls}>{about.dob === 'OPTIONAL' ? 'Optional. ' : ''}Needed by the awarding body.</span><E k="dob" /></div>}
+          {about.employer !== 'OFF' && <label className={labelCls}>{about.employer === 'OPTIONAL' ? 'Employer (optional)' : 'Employer'}<input name="employer" autoComplete="organization" defaultValue={val('employer')} className={input} {...err('employer')} /><E k="employer" /></label>}
         </div>
       </section>
 

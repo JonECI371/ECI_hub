@@ -9,7 +9,8 @@ import { DeliveryChip, Chip } from '@/components/ui';
 import { checkoutBookingId } from '../actions';
 import { statementText } from '@/lib/credit';
 import { DelegateDetails, type DelegateRow } from '@/components/delegate-details';
-import { skillguardOf, usesDelegateDetails } from '@/lib/delegate-details';
+import { usesDelegateDetails } from '@/lib/delegate-details';
+import { effectiveFields, heldValue, FIELD_KEYS, type FieldKey } from '@/lib/delegate-fields';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your booking', robots: { index: false } };
@@ -112,7 +113,8 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
           ['Your certificate', `Issued once you complete the course${c.validityYears ? `, valid for ${c.validityYears} years` : ''}.`],
         ];
   const missing = b.attendees.filter((a) => !a.personId).length;
-  const useDetails = !elearn && usesDelegateDetails(c.subject.registrationSet);
+  const df = effectiveFields(c);
+  const useDetails = usesDelegateDetails(c);
   const rows: DelegateRow[] = b.attendees.filter((a) => a.status !== 'CANCELLED').map((a) => {
     const p = a.person;
     const dob = p?.dateOfBirth;
@@ -121,7 +123,8 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
       status: !p ? 'needed' : a.registration ? 'done' : a.status === 'INVITED' && a.personId !== b.bookerId ? 'sent' : 'needed',
       first: p?.firstName ?? '', last: p && p.lastName !== '-' ? p.lastName : '', email: p?.email ?? '',
       d: dob ? String(dob.getUTCDate()) : '', m: dob ? String(dob.getUTCMonth() + 1) : '', y: dob ? String(dob.getUTCFullYear()) : '',
-      phone: p?.mobile ?? '', skillguard: p ? skillguardOf(p.schemeIds) : '', invoiceRef: a.invoiceRef ?? b.poNumber ?? '',
+      values: p ? Object.fromEntries(FIELD_KEYS.filter((k) => k !== 'dob' && k !== 'photo' && k !== 'photoId').map((k) => [k, heldValue(k, p, a.registration?.answers as Record<string, unknown> | undefined)])) as Partial<Record<FieldKey, string>> : {},
+      invoiceRef: a.invoiceRef ?? b.poNumber ?? '',
     };
   });
 
@@ -142,7 +145,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
             <li aria-hidden="true">/</li>
             <li aria-current="page" className="font-bold text-ink">{useDetails ? 'Delegate details' : 'Confirmation'}</li>
           </ol></nav>
-          {useDetails && <DelegateDetails bookingId={b.id} rows={rows} showInvoiceRef={b.method === 'ACCOUNT'} />}
+          {useDetails && <DelegateDetails bookingId={b.id} rows={rows} showInvoiceRef={b.method === 'ACCOUNT'} modes={df.fields} certificate={df.certificate} />}
           {!useDetails && regLink && (
             <section className="flex flex-col gap-4 rounded-card bg-cyan-soft p-6 md:flex-row md:items-center md:justify-between md:p-8">
               <div>

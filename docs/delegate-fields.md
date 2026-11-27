@@ -26,9 +26,8 @@ Courses: **TW** Thames Water Safety Passport (virtual) · **A** CompEx ExA Aware
 | Marketing emails opt-in | o | o | o | o | o | o | o | o | Booker at checkout, never pre-ticked |
 | Admin approves registration before the course | - | R | R | R | R | - | - | - | A setting, not a field. Confirm for CompEx eLearning |
 
-## Open points
-- The platform does not read this yet. Registration questions are still set in code per subject (`src/lib/registration-sets.ts`), and the new Delegate details page is Thames Water only. See the proposal to make these per-course settings in Admin.
-- Add the ULN field and the CompEx and EUSR changes above when this is built (ULN required for in-person CompEx; telephone required for CompEx and EUSR; emergency contact removed; accessibility only for in-person CompEx).
+## In the platform
+These settings are now per course in Admin (Courses > edit > Delegate details), starting from the template for the subject and delivery; **Admin > Courses > Delegate fields** shows every course side by side. Built 28 Nov 2026 (`src/lib/delegate-fields.ts`, `Course.delegateFields`), not yet deployed. Approval of registrations is still a subject setting (Settings), shown above for reference.
 
 ## When a course is created
-Add a column for it to the matrix page (the page has an "Add a course" form, or Claude writes a `courses` document to its database), start its ticks from a similar course, and update this file. Claude does this whenever Claude creates or changes a course. Courses made by staff in Admin are not seen by the page automatically, so tell Claude or add the column on the page.
+Add a column for it to the matrix page (the page has an "Add a course" form, or Claude writes a `courses` document to its database), start its ticks from a similar course, and update this file. Claude does this whenever Claude creates or changes a course. Courses made by staff in Admin are not seen by the page automatically, so tell Claude or add the column on the page. The live view is the Admin grid.

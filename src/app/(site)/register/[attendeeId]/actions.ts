@@ -10,7 +10,7 @@ import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets
 import { storeFile, storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
 import { sendEnrolmentPack, sendVenueReleased } from '@/lib/notifications';
-import { usesDelegateDetails } from '@/lib/delegate-details';
+import { effectiveFields } from '@/lib/delegate-fields';
 
 export type RegState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -37,21 +37,18 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   const fields: Record<string, string> = {};
   const course = a.booking.course;
   const hadRegistration = !!(await db.registration.findUnique({ where: { attendeeId: a.id }, select: { id: true } }));
-  const set = questionSet(course.subject.registrationSet, course.deliveryType, course.subject.approvalRequired, course.subject.name);
+  const df = effectiveFields(course);
+  const mode = df.fields;
+  const set = questionSet(df, course.deliveryType, course.subject.approvalRequired, course.subject.name);
 
-  const contactOptional = usesDelegateDetails(course.subject.registrationSet); // Thames Water: telephone and employer are optional
-  for (const [k, schema] of [
-    ['firstName', req('first name', 80)],
-    ['lastName', req('last name', 80)],
-    ['mobile', z.string().trim().regex(/^[0-9 +()-]{7,20}$/, 'Enter a telephone number, like 07700 900123')],
-    ['employer', req('employer')],
-  ] as const) {
-    if (contactOptional && (k === 'mobile' || k === 'employer') && !get(k)) continue;
+  for (const [k, schema] of [['firstName', req('first name', 80)], ['lastName', req('last name', 80)]] as const) {
     const r = schema.safeParse(get(k));
     if (!r.success) fields[k] = r.error.issues[0].message;
   }
-  const dob = parseDob(get('dob'));
-  if (!dob) fields.dob = 'Enter your full date of birth: day, month and year';
+  if (mode.phone !== 'OFF' && (get('mobile') || mode.phone === 'REQUIRED') && !/^[0-9 +()-]{7,20}$/.test(get('mobile'))) fields.mobile = 'Enter a telephone number, like 07700 900123';
+  if (mode.employer !== 'OFF' && !get('employer') && mode.employer === 'REQUIRED') fields.employer = 'Enter your employer';
+  const dob = mode.dob === 'OFF' ? null : parseDob(get('dob'));
+  if (mode.dob !== 'OFF' && !dob && (get('dob') || mode.dob === 'REQUIRED')) fields.dob = 'Enter your full date of birth: day, month and year';
 
   const answers: Record<string, string> = {};
   const files: [string, File][] = [];
@@ -89,7 +86,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     const before = { firstName: person.firstName, lastName: person.lastName, mobile: person.mobile, employer: person.employer };
     await tx.person.update({
       where: { id: person.id },
-      data: { firstName: get('firstName'), lastName: get('lastName'), mobile: get('mobile') || null, employer: get('employer') || null, dateOfBirth: dob, schemeIds: scheme as Prisma.InputJsonValue, ...(photoKey ? { photoKey, photoUpdatedAt: new Date() } : {}) },
+      data: { firstName: get('firstName'), lastName: get('lastName'), ...(mode.phone !== 'OFF' ? { mobile: get('mobile') || null } : {}), ...(mode.employer !== 'OFF' ? { employer: get('employer') || null } : {}), ...(dob ? { dateOfBirth: dob } : {}), ...(answers.jobTitle ? { jobTitle: answers.jobTitle.slice(0, 120) } : {}), ...(answers.address ? { address: answers.address.slice(0, 500) } : {}), schemeIds: scheme as Prisma.InputJsonValue, ...(photoKey ? { photoKey, photoUpdatedAt: new Date() } : {}) },
     });
     await tx.registration.upsert({
       where: { attendeeId: a.id },

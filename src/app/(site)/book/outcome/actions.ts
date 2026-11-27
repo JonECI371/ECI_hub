@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { currentPerson } from '@/lib/auth';
 import { checkoutBookingId } from '../actions';
 import { DelegateError, saveDelegate } from '@/lib/delegate-details';
+import { FIELD_KEYS, type FieldKey } from '@/lib/delegate-fields';
 
 export type DelegateState = { ok?: boolean; message?: string; fields?: Record<string, string> };
 
@@ -21,7 +22,7 @@ export async function saveDelegateAction(_prev: DelegateState, form: FormData): 
       mode: get('mode') === 'link' ? 'link' : 'now',
       firstName: get('first'), lastName: get('last'), email: get('email'),
       dob: { d: get('dobD'), m: get('dobM'), y: get('dobY') },
-      mobile: get('phone'), skillguard: get('skillguard'), invoiceRef: get('invoiceRef'),
+      values: Object.fromEntries(FIELD_KEYS.map((k) => [k, get(`f_${k}`)])) as Partial<Record<FieldKey, string>>, invoiceRef: get('invoiceRef'),
       authority: get('authority') === 'on',
     });
     return { ok: true, message: r.mode === 'link' ? 'Link sent. They can add their own details from the email.' : 'Saved. We have emailed them a copy to check.' };

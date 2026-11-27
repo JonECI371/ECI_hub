@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 export type PickerSession = {
   id: string;
@@ -14,6 +14,10 @@ export type PickerSession = {
   full: boolean;
   places: { text: string; low: boolean } | null;
 };
+
+/** The date chosen in the picker is announced so the booking button in the side panel can follow it. */
+export const SELECTED_DATE_EVENT = 'eci:date-selected';
+export type SelectedDate = { id: string };
 
 const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const key = (y: number, m: number) => y * 12 + (m - 1);
@@ -39,6 +43,10 @@ export function DatePicker({ sessions, initialId }: { sessions: PickerSession[];
   const months = useMemo(() => [...new Set(sessions.map((s) => key(s.y, s.m)))].sort((a, b) => a - b), [sessions]);
   const [monthKey, setMonthKey] = useState(key(first.y, first.m));
   const sel = sessions.find((s) => s.id === selId) ?? first;
+  useEffect(() => {
+    (window as unknown as { __eciSelectedDate?: SelectedDate }).__eciSelectedDate = { id: sel.id };
+    window.dispatchEvent(new CustomEvent<SelectedDate>(SELECTED_DATE_EVENT, { detail: { id: sel.id } }));
+  }, [sel.id]);
 
   const y = Math.floor(monthKey / 12);
   const m = (monthKey % 12) + 1;

@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { SITE_URL, fmtSessionDates } from '@/lib/format';
 import { sendEmail } from '@/lib/integrations/email';
 import { storeFile } from '@/lib/integrations/files';
+import { needsSkillguard, skillguardOf } from '@/lib/delegate-details';
+import { registrationLink } from '@/lib/registration-link';
 
 export class CertificateError extends Error {}
 
@@ -21,10 +23,13 @@ export function expiryFor(issuedAt: Date, validityYears: number | null): Date | 
  * expiry, mark the attendee certified, tell them and their booker, and close the task once everyone is done.
  */
 export async function issueCertificate(attendeeId: string, actorId: string, file: File, issuedAt: Date) {
-  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, booking: { include: { booker: true, course: true, session: true } } } });
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, booking: { include: { booker: true, course: { include: { subject: true } }, session: true } } } });
   if (!a.person) throw new CertificateError('This place has no attendee name yet.');
   if (a.status !== 'ATTENDED' && a.status !== 'CERTIFIED') throw new CertificateError('Certificates can only be issued to people marked as attended.');
   const c = a.booking.course;
+  if (needsSkillguard(c.subject.registrationSet) && !skillguardOf(a.person.schemeIds)) {
+    throw new CertificateError(`SkillGuard number needed: add it for ${a.person.firstName} ${a.person.lastName} before issuing this certificate. We email them and the booker about it each week.`);
+  }
   const fileKey = await storeFile('files', `certificates/${a.person.id}`, file);
   const cert = await db.$transaction(async (tx) => {
     const cert = await tx.certificate.create({ data: { personId: a.person!.id, courseId: c.id, issuedAt, expiresAt: expiryFor(issuedAt, c.validityYears), fileKey } });
@@ -113,6 +118,49 @@ export async function sendExpiryReminders(now = new Date()) {
       });
     }
     sent++;
+  }
+  return sent;
+}
+
+/**
+ * The day after a course, and then every week, asks for the SkillGuard number of anyone who attended without one on
+ * record: the delegate gets a link to add it, and so does their booker. One email per person per week (email log).
+ */
+export async function sendSkillguardChases(): Promise<number> {
+  const DAY = 86400000;
+  const attendees = await db.attendee.findMany({
+    where: { status: 'ATTENDED', personId: { not: null }, booking: { session: { endsAt: { lt: new Date(Date.now() - DAY) } }, course: { subject: { registrationSet: { in: ['thames-water'] } } } } },
+    include: { person: true, booking: { include: { booker: true, course: true, session: true } } },
+  });
+  let sent = 0;
+  for (const a of attendees) {
+    if (!a.person || skillguardOf(a.person.schemeIds) || !a.booking.session) continue;
+    const week = Math.floor((Date.now() - a.booking.session.endsAt.getTime() - DAY) / (7 * DAY));
+    const trigger = `SKILLGUARD:${a.id}:${week}`;
+    const title = a.booking.course.title;
+    if (!(await db.emailLog.findFirst({ where: { trigger, personId: a.person.id } }))) {
+      await sendEmail({
+        to: a.person.email, personId: a.person.id, trigger, subject: `We need your SkillGuard number for ${title}`,
+        blocks: [
+          { type: 'heading', text: `One last thing, ${a.person.firstName}` },
+          { type: 'text', text: `We cannot issue your ${title} certificate until we have your SkillGuard number. It takes a minute to add.` },
+          { type: 'button', label: 'Add my SkillGuard number', href: registrationLink(a.id) },
+        ],
+      });
+      sent++;
+    }
+    const b = a.booking.booker;
+    if (b.id !== a.person.id && !(await db.emailLog.findFirst({ where: { trigger: `${trigger}:booker`, personId: b.id } }))) {
+      await sendEmail({
+        to: b.email, personId: b.id, trigger: `${trigger}:booker`, subject: `SkillGuard number needed: ${a.person.firstName} ${a.person.lastName}`,
+        blocks: [
+          { type: 'heading', text: 'A certificate is waiting on a SkillGuard number' },
+          { type: 'text', text: `${a.person.firstName} ${a.person.lastName} attended ${title}, but we do not have their SkillGuard number yet, so we cannot issue their certificate. We have emailed them. You can also add it from the booking.` },
+          { type: 'button', label: 'Open the booking', href: `${SITE_URL}/account/bookings/${a.booking.reference}` },
+        ],
+      });
+      sent++;
+    }
   }
   return sent;
 }

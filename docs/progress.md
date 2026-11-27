@@ -10,6 +10,13 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-27: Delegate details page built (Thames Water), not deployed
+
+- Approved by Jon 27 Nov (spec PUB-13). Built on the booking outcome page, Thames Water only (registration set `thames-water`; other courses keep the registration form because they need photo and ID). Breadcrumbs Course > Book > Delegate details. One row per delegate: first name, last name, email, date of birth required; telephone and SkillGuard number optional; Fill in now or Email them a link (name and email only); one authority tick; progress bar; optional "PO or reference for invoicing" per delegate (new column `Attendee.invoiceRef`, migration 20261127120000, additive), shown in the statement line description as `Refs: name ref` for references that differ from the booking PO; the invoice stays one line per booking.
+- SkillGuard rule: `issueCertificate` refuses Thames Water attendees with no SkillGuard number ("SkillGuard number needed"); `sendSkillguardChases` (job) emails the delegate and the booker the day after the course and then weekly. Telephone and employer are now optional on the Thames Water registration form.
+- 90 tests pass (7 new in test/delegate-details.test.ts), typecheck and build clean. Not checked on screen or on the test site. Not yet done: SkillGuard-missing marker on the Admin class list and delegate dashboard, mention in the 5-day pre-course reminder, breadcrumbs on other pages, and the Admin Add booking flow does not use the new page.
+- Local test database: Postgres from /usr/lib/postgresql/16 with `DATABASE_URL=postgresql://eci:eci@localhost:5432/eci_test` (the earlier container had no Docker daemon running by default).
+
 ## 2026-11-16: fixes from Kirsty's Round 2 and Round 3 testing
 
 - Signed off by Jon one by one. Built: bad PO files no longer vanish (booking goes ahead, confirmation page warns which files were not saved); Log out link on checkout works (GET /logout, plain link; it had been a link to a POST-only route); "This course gives a certificate" tick per course (no certificate task when off); Change date or time for one session (emails everyone booked, moves the Teams invite, audit entry); test emails through Microsoft 365 (EMAIL_MODE=graph from /opt/eci/mail.env, only to allow-listed addresses, needs Mail.Send); application audit now records PO choice and other bookers; Test log (Super Admin only, Settings) of odd input on the booking, credit account and registration forms.

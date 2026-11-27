@@ -10,6 +10,7 @@ import { FILE_TYPES, MAX_FILE_BYTES, questionSet } from '@/lib/registration-sets
 import { storeFile, storeIdFile } from '@/lib/integrations/files';
 import { sendEmail } from '@/lib/integrations/email';
 import { sendEnrolmentPack, sendVenueReleased } from '@/lib/notifications';
+import { usesDelegateDetails } from '@/lib/delegate-details';
 
 export type RegState = { error?: string; fields?: Record<string, string>; values?: Record<string, string> };
 
@@ -38,12 +39,14 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
   const hadRegistration = !!(await db.registration.findUnique({ where: { attendeeId: a.id }, select: { id: true } }));
   const set = questionSet(course.subject.registrationSet, course.deliveryType, course.subject.approvalRequired, course.subject.name);
 
+  const contactOptional = usesDelegateDetails(course.subject.registrationSet); // Thames Water: telephone and employer are optional
   for (const [k, schema] of [
     ['firstName', req('first name', 80)],
     ['lastName', req('last name', 80)],
-    ['mobile', z.string().trim().regex(/^[0-9 +()-]{7,20}$/, 'Enter a mobile number, like 07700 900123')],
+    ['mobile', z.string().trim().regex(/^[0-9 +()-]{7,20}$/, 'Enter a telephone number, like 07700 900123')],
     ['employer', req('employer')],
   ] as const) {
+    if (contactOptional && (k === 'mobile' || k === 'employer') && !get(k)) continue;
     const r = schema.safeParse(get(k));
     if (!r.success) fields[k] = r.error.issues[0].message;
   }
@@ -86,7 +89,7 @@ export async function submitRegistration(_prev: RegState, form: FormData): Promi
     const before = { firstName: person.firstName, lastName: person.lastName, mobile: person.mobile, employer: person.employer };
     await tx.person.update({
       where: { id: person.id },
-      data: { firstName: get('firstName'), lastName: get('lastName'), mobile: get('mobile'), employer: get('employer'), dateOfBirth: dob, schemeIds: scheme as Prisma.InputJsonValue, ...(photoKey ? { photoKey, photoUpdatedAt: new Date() } : {}) },
+      data: { firstName: get('firstName'), lastName: get('lastName'), mobile: get('mobile') || null, employer: get('employer') || null, dateOfBirth: dob, schemeIds: scheme as Prisma.InputJsonValue, ...(photoKey ? { photoKey, photoUpdatedAt: new Date() } : {}) },
     });
     await tx.registration.upsert({
       where: { attendeeId: a.id },

@@ -5,6 +5,7 @@ import { loadForRegistration } from '@/lib/registration';
 import { questionSet } from '@/lib/registration-sets';
 import { DeliveryChip, Chip } from '@/components/ui';
 import { RegistrationForm } from '@/components/registration-form';
+import { usesDelegateDetails } from '@/lib/delegate-details';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Registration', robots: { index: false } };
@@ -112,7 +113,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
           <p className="mt-1 text-[15px]">We&apos;ve filled in what we already know. Check it and add the rest. Everything is required unless it says optional.</p>
           {a.registration && <p className="mt-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You have already registered. You can update your answers and submit again.</p>}
         </div>
-        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} />
+        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} contactOptional={usesDelegateDetails(c.subject.registrationSet)} />
       </div>
       {aside}
     </div>

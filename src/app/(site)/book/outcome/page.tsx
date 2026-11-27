@@ -8,6 +8,8 @@ import { registrationLink } from '@/lib/registration-link';
 import { DeliveryChip, Chip } from '@/components/ui';
 import { checkoutBookingId } from '../actions';
 import { statementText } from '@/lib/credit';
+import { DelegateDetails, type DelegateRow } from '@/components/delegate-details';
+import { skillguardOf, usesDelegateDetails } from '@/lib/delegate-details';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Your booking', robots: { index: false } };
@@ -68,7 +70,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
   const b = ref
     ? await db.booking.findUnique({
         where: { reference: ref },
-        include: { booker: true, course: { include: { subject: true } }, session: { include: { venue: true } }, attendees: { include: { registration: true } } },
+        include: { booker: true, course: { include: { subject: true } }, session: { include: { venue: true } }, attendees: { include: { registration: true, person: true }, orderBy: { id: 'asc' } } },
       })
     : null;
   // Only the browser that made the booking, or the booker when signed in, can see it.
@@ -110,6 +112,18 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
           ['Your certificate', `Issued once you complete the course${c.validityYears ? `, valid for ${c.validityYears} years` : ''}.`],
         ];
   const missing = b.attendees.filter((a) => !a.personId).length;
+  const useDetails = !elearn && usesDelegateDetails(c.subject.registrationSet);
+  const rows: DelegateRow[] = b.attendees.filter((a) => a.status !== 'CANCELLED').map((a) => {
+    const p = a.person;
+    const dob = p?.dateOfBirth;
+    return {
+      attendeeId: a.id, you: a.personId === b.bookerId,
+      status: !p ? 'needed' : a.registration ? 'done' : a.status === 'INVITED' && a.personId !== b.bookerId ? 'sent' : 'needed',
+      first: p?.firstName ?? '', last: p && p.lastName !== '-' ? p.lastName : '', email: p?.email ?? '',
+      d: dob ? String(dob.getUTCDate()) : '', m: dob ? String(dob.getUTCMonth() + 1) : '', y: dob ? String(dob.getUTCFullYear()) : '',
+      phone: p?.mobile ?? '', skillguard: p ? skillguardOf(p.schemeIds) : '', invoiceRef: a.invoiceRef ?? b.poNumber ?? '',
+    };
+  });
 
   return (
     <>
@@ -119,7 +133,17 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
       </Message>
       <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1536px)/2))] lg:flex-row lg:items-start">
         <div className="flex min-w-0 flex-1 flex-col gap-6">
-          {regLink && (
+          <nav aria-label="Breadcrumb"><ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+            <li><Link href="/courses" className="text-ink">Courses</Link></li>
+            <li aria-hidden="true">/</li>
+            <li><Link href={`/courses/${c.slug}`} className="text-ink">{c.title}</Link></li>
+            <li aria-hidden="true">/</li>
+            <li>Book</li>
+            <li aria-hidden="true">/</li>
+            <li aria-current="page" className="font-bold text-ink">{useDetails ? 'Delegate details' : 'Confirmation'}</li>
+          </ol></nav>
+          {useDetails && <DelegateDetails bookingId={b.id} rows={rows} showInvoiceRef={b.method === 'ACCOUNT'} />}
+          {!useDetails && regLink && (
             <section className="flex flex-col gap-4 rounded-card bg-cyan-soft p-6 md:flex-row md:items-center md:justify-between md:p-8">
               <div>
                 <p className="mb-1 text-xs font-bold uppercase tracking-[0.08em] text-ink">One more thing · 2 minutes</p>
@@ -129,7 +153,7 @@ export default async function Outcome({ searchParams }: { searchParams: Search }
               <Link href={regLink} className="inline-flex min-h-[52px] shrink-0 items-center justify-center rounded-chip bg-ink px-6 font-bold text-white no-underline hover:text-white">Complete registration</Link>
             </section>
           )}
-          {missing > 0 && (
+          {!useDetails && missing > 0 && (
             <p className="rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">{missing} {missing === 1 ? 'place still needs' : 'places still need'} attendee details. Add them from your dashboard; we remind you 5 days before.</p>
           )}
           <Steps items={steps} />

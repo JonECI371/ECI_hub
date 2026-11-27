@@ -348,6 +348,7 @@ model Attendee {
   personId     String?
   person       Person?        @relation(fields: [personId], references: [id])
   status       AttendeeStatus @default(DETAILS_MISSING)
+  invoiceRef   String?        // "PO or reference for invoicing" the booker gave for this delegate; printed in the invoice line
   registration Registration?
   enrolment    Enrolment?
 }

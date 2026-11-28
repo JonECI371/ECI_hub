@@ -10,6 +10,7 @@ import { readContent, readFaqs } from '@/lib/course-content';
 import { placesLeft, placesLabel } from '@/lib/sessions';
 import { Breadcrumbs, Chip, DeliveryChip, Eyebrow } from '@/components/ui';
 import { DatePicker, type PickerSession } from '@/components/date-picker';
+import { BookSelectedButton } from '@/components/book-selected-button';
 
 export const dynamic = 'force-dynamic';
 type Params = Promise<{ slug: string }>;
@@ -216,9 +217,16 @@ export default async function CoursePage({ params, searchParams }: { params: Par
                 {nextOpen && <> · next on {shortDate.format(c.sessions.find((s) => s.id === nextOpen.id)!.startsAt).replace(',', '')}</>}
               </p>
             )}
-            <Link href={isElearning ? `/book/course/${c.slug}` : '#dates'} className="inline-flex min-h-[52px] items-center justify-center rounded-chip bg-cyan px-5 text-[15px] font-semibold text-ink no-underline">
-              {isElearning ? 'Book now' : 'Choose a date'}
-            </Link>
+            {!isElearning && picker.length > 0 ? (
+              <BookSelectedButton
+                initialId={waitlist}
+                choices={picker.map((p) => ({ id: p.id, full: p.full, label: shortDate.format(c.sessions.find((s) => s.id === p.id)!.startsAt).replace(',', '') }))}
+              />
+            ) : (
+              <Link href={isElearning ? `/book/course/${c.slug}` : '#dates'} className="inline-flex min-h-[52px] items-center justify-center rounded-chip bg-cyan px-5 text-[15px] font-semibold text-ink no-underline">
+                {isElearning ? 'Book now' : 'Choose a date'}
+              </Link>
+            )}
             <p className="text-[13px]">Booking for your company? <Link href="/accounts/apply">Apply for a credit account</Link></p>
           </div>
         </aside>

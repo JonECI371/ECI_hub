@@ -5,6 +5,7 @@ import { useActionState, useState } from 'react';
 import type { DeliveryType } from '@prisma/client';
 import type { CourseFormState } from '@/app/(app)/admin/courses/actions';
 import { COVER_ROWS, FAQ_ROWS } from '@/lib/course-content';
+import { FIELD_INFO, FIELD_KEYS, MODES, TEMPLATES, asksForFiles, templateById, templateIdFor, type DelegateFields, type FieldKey, type FieldMode } from '@/lib/delegate-fields';
 
 export type CourseFormValues = {
   id?: string; title: string; slug: string; subjectId: string; pricePounds: string; vatRatePercent: string; shortDescription: string; description: string;
@@ -12,6 +13,7 @@ export type CourseFormValues = {
   provider: string; fulfilment: string; providerEmail: string; daysToComplete: string; validityYears: string; issuesCertificate: boolean; accreditation: string; seoTitle: string; seoDescription: string; status: string; photoUrl: string; photoAlt: string;
   page: import('@/lib/course-content').ContentForm;
   siblings: string[]; copyFrom?: string;
+  df: DelegateFields; dfSaved: boolean;
 };
 
 const input = 'box-border h-[44px] w-full rounded-control border border-field bg-card px-3 text-[15px] text-ink aria-[invalid=true]:border-2 aria-[invalid=true]:border-bad-line';
@@ -26,7 +28,7 @@ const DELIVERY: [DeliveryType, string, string][] = [
 
 export function CourseForm({ action, initial, subjects, venues, siteUrl, relatedOptions = [], formatOptions = [] }: {
   action: (s: CourseFormState, f: FormData) => Promise<CourseFormState>;
-  initial: CourseFormValues; subjects: { id: string; name: string }[]; venues: { id: string; name: string }[]; siteUrl: string; relatedOptions?: { slug: string; title: string }[]; formatOptions?: { id: string; title: string; deliveryType: DeliveryType }[];
+  initial: CourseFormValues; subjects: { id: string; name: string; registrationSet: string }[]; venues: { id: string; name: string }[]; siteUrl: string; relatedOptions?: { slug: string; title: string }[]; formatOptions?: { id: string; title: string; deliveryType: DeliveryType }[];
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const v = { ...initial, ...(state.values ?? {}) } as CourseFormValues;
@@ -38,6 +40,13 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
   const [seoTitle, setSeoTitle] = useState(initial.seoTitle || initial.title);
   const [seoDesc, setSeoDesc] = useState(initial.seoDescription || initial.shortDescription);
   const [slug, setSlug] = useState(initial.slug);
+  const [subjectId, setSubjectId] = useState(initial.subjectId);
+  const [df, setDf] = useState<DelegateFields>(initial.df);
+  const [dfTouched, setDfTouched] = useState(initial.dfSaved);
+  const regSet = subjects.find((s) => s.id === subjectId)?.registrationSet ?? '';
+  const applyTemplate = (id: string) => { setDf(templateById(id)); setDfTouched(false); };
+  const setMode = (k: FieldKey, m: FieldMode) => { setDfTouched(true); setDf((d) => ({ fields: { ...d.fields, [k]: m }, certificate: m === 'OFF' ? d.certificate.filter((x) => x !== k) : d.certificate })); };
+  const setCert = (k: FieldKey, on: boolean) => { setDfTouched(true); setDf((d) => ({ ...d, certificate: on ? [...new Set([...d.certificate, k])] : d.certificate.filter((x) => x !== k) })); };
   const f = state.fields ?? {};
   const err = (k: string) => (f[k] ? { 'aria-invalid': true, 'aria-describedby': `${k}-err` } : {});
   const E = ({ k }: { k: string }) => (f[k] ? <span id={`${k}-err`} className="text-[13px] font-semibold text-bad-fg">{f[k]}</span> : null);
@@ -53,7 +62,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
           <h2 id="basics-h" className="mb-4 text-lg font-extrabold text-ink">Basics</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <label className={`${label} sm:col-span-2`}>Course name<input name="title" defaultValue={v.title} className={input} {...err('title')} /><E k="title" /></label>
-            <label className={label}>Subject<select name="subjectId" defaultValue={v.subjectId} className={input}>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
+            <label className={label}>Subject<select name="subjectId" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); if (!initial.id && !dfTouched) setDf(templateById(templateIdFor(subjects.find((s) => s.id === e.target.value)?.registrationSet, delivery))); }} className={input}>{subjects.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>
             <label className={label}>Price per place (excl. VAT, £)<input name="pricePounds" inputMode="decimal" defaultValue={v.pricePounds} className={input} {...err('pricePounds')} /><span className={hint}>Leave at 0 to show POA (price on application). Online booking needs a price.</span><E k="pricePounds" /></label>
             <label className={label}>VAT rate (%)<input name="vatRatePercent" inputMode="numeric" defaultValue={v.vatRatePercent} className={input} /></label>
             <div className={label}>
@@ -101,7 +110,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
           <div className="mb-5 grid gap-3 md:grid-cols-3" role="radiogroup" aria-labelledby="del-h">
             {DELIVERY.map(([d, t, desc]) => (
               <label key={d} className={`flex cursor-pointer gap-3 rounded-control border p-4 ${delivery === d ? 'border-2 border-ink bg-cyan-soft' : 'border-hairline'}`}>
-                <input type="radio" name="deliveryRadio" checked={delivery === d} onChange={() => setDelivery(d)} className="mt-1 accent-ink" />
+                <input type="radio" name="deliveryRadio" checked={delivery === d} onChange={() => { setDelivery(d); if (!initial.id && !dfTouched) setDf(templateById(templateIdFor(regSet, d))); }} className="mt-1 accent-ink" />
                 <span><span className="block font-bold text-ink">{t}</span><span className="text-[13px]">{desc}</span></span>
               </label>
             ))}
@@ -139,6 +148,34 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
           )}
         </section>
 
+        <section className={card} aria-labelledby="df-h">
+          <h2 id="df-h" className="mb-1 text-lg font-extrabold text-ink">Delegate details</h2>
+          <p className="mb-4 text-sm">What we ask each delegate for on this course. First name, last name and email are always required. <a href="/admin/delegate-fields" className="font-bold text-ink underline">See every course side by side</a>.</p>
+          <input type="hidden" name="df_set" value="1" />
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <label className={label}>Start from a template
+              <select id="df-template" defaultValue={templateIdFor(regSet, delivery)} className={`${input} sm:w-64`}>{TEMPLATES.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}</select>
+            </label>
+            <button type="button" onClick={() => applyTemplate((document.getElementById('df-template') as HTMLSelectElement).value)} className="inline-flex min-h-11 items-center rounded-chip border border-field bg-card px-4 text-sm font-bold text-ink">Use this template</button>
+            <span className={hint}>{dfTouched ? 'Custom settings for this course.' : 'Using the template for this subject and delivery. It updates if the template changes.'}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[560px] border-collapse text-sm">
+              <thead><tr className="text-left"><th scope="col" className="py-2 pr-3">Field</th><th scope="col" className="py-2 pr-3">We ask</th><th scope="col" className="py-2">Needed before the certificate</th></tr></thead>
+              <tbody>
+                {FIELD_KEYS.map((k) => (
+                  <tr key={k} className="border-t border-hairline">
+                    <th scope="row" className="py-2 pr-3 text-left font-bold text-ink">{FIELD_INFO[k].label}{FIELD_INFO[k].hint && <span className={`${hint} block`}>{FIELD_INFO[k].hint}</span>}</th>
+                    <td className="py-2 pr-3"><select name={`df_${k}`} aria-label={`${FIELD_INFO[k].label}: we ask`} value={df.fields[k]} onChange={(e) => setMode(k, e.target.value as FieldMode)} className={`${input} sm:w-48`}>{MODES.map((m) => <option key={m} value={m}>{m === 'REQUIRED' ? 'Required' : m === 'OPTIONAL' ? 'Optional' : 'Not asked'}</option>)}</select></td>
+                    <td className="py-2"><label className="flex min-h-11 items-center gap-2"><input type="checkbox" name={`cert_${k}`} checked={df.certificate.includes(k)} disabled={df.fields[k] === 'OFF' || k === 'photo' || k === 'photoId'} onChange={(e) => setCert(k, e.target.checked)} className="size-5 accent-ink" /><span className="text-[13px]">Hold the certificate until we have it</span></label></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {asksForFiles(df) && <p className="mt-3 rounded-control bg-warn-bg px-4 py-3 text-sm text-warn-fg">A photo or photo ID means each delegate completes the registration form themselves. The booker cannot enter their details for them on the booking page.</p>}
+        </section>
+
         <section className={card} aria-labelledby="after-h">
           <h2 id="after-h" className="mb-4 text-lg font-extrabold text-ink">After the course</h2>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -146,7 +183,7 @@ export function CourseForm({ action, initial, subjects, venues, siteUrl, related
             <label className={label}>Certificate valid for (years)<input name="validityYears" inputMode="numeric" defaultValue={v.validityYears} placeholder="Leave empty if it does not expire" className={input} /></label>
             <label className={label}>Awarded by<input name="accreditation" defaultValue={v.accreditation} placeholder="CompEx, EUSR, Cogent Skills" className={input} /></label>
           </div>
-          <p className="mt-3 text-[13px]">Registration questions and approval come from the subject, in Settings.</p>
+          <p className="mt-3 text-[13px]">Approval of registrations comes from the subject, in Settings.</p>
         </section>
 
         {formatOptions.length > 0 && (

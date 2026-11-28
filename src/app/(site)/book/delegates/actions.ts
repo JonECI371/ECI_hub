@@ -9,6 +9,7 @@ import { bookingForDelegates, delegatesPath } from '@/lib/delegates';
 import { registrationLink } from '@/lib/registration-link';
 import { sendJoiningDetails } from '@/lib/notifications';
 import { syncSessionMeeting } from '@/lib/integrations/teams';
+import { refreshLineRefs } from '@/lib/delegate-details';
 
 /**
  * Name a delegate on a booking, then either email them their link ("link") or let the booker fill the form in now ("now").
@@ -29,11 +30,13 @@ export async function assignDelegate(form: FormData) {
   const email = z.string().trim().toLowerCase().email().max(254).safeParse(form.get('email'));
   if (!first.success || !last.success || !email.success) return bounce('invalid');
 
+  const invoiceRef = String(form.get('invoiceRef') ?? '').trim().slice(0, 50);
   const me = await currentPerson();
   const person = await db.$transaction(async (tx) => {
     const p = await findOrCreatePerson(tx, { email: email.data!, firstName: first.data!, lastName: last.data! });
     if (b.attendees.some((x) => x.id !== a.id && x.personId === p.id && x.status !== 'CANCELLED')) return null;
-    await tx.attendee.update({ where: { id: a.id }, data: { personId: p.id, status: intent === 'link' ? 'INVITED' : 'DETAILS_MISSING' } });
+    await tx.attendee.update({ where: { id: a.id }, data: { personId: p.id, status: intent === 'link' ? 'INVITED' : 'DETAILS_MISSING', invoiceRef: invoiceRef || null } });
+    await refreshLineRefs(tx, b.id);
     await tx.auditLog.create({ data: { actorId: me?.id ?? b.bookerId, action: a.personId ? 'ATTENDEE_SWAPPED' : 'ATTENDEE_ADDED', recordType: 'Booking', recordId: b.id, before: { personId: a.personId }, after: { personId: p.id, how: intent } } });
     return p;
   });

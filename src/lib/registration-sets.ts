@@ -1,4 +1,5 @@
 import type { DeliveryType } from '@prisma/client';
+import type { DelegateFields, FieldKey } from '@/lib/delegate-fields';
 
 /** One extra question on the registration form, beyond the "About you" fields every set has. */
 export type Question =
@@ -8,36 +9,39 @@ export type Question =
 
 export type QuestionSet = { minutes: number; intro?: string; questions: Question[]; note?: string };
 
-const access: Question = { key: 'accessNeeds', kind: 'textarea', label: 'Accessibility or support needs', hint: 'For example captions or extra breaks.', optional: true };
-const dietary: Question = { key: 'dietary', kind: 'textarea', label: 'Dietary requirements', optional: true };
-const emergency: Question = { key: 'emergencyContact', kind: 'text', label: 'Emergency contact name and number' };
 const photo: Question = { key: 'photo', kind: 'file', label: 'Your photo (a selfie)', hint: 'A clear selfie of your face and shoulders, for your virtual card. This is not your passport or ID. JPEG, PNG or PDF, up to 10MB.' };
 const photoId: Question = { key: 'photoId', kind: 'file', label: 'Copy of photo ID', hint: 'A clear copy or photo of your passport or driving licence showing your name and photo. JPEG, PNG or PDF, up to 10MB.' };
 
-/** Question set by the subject's registrationSet, falling back to sensible defaults for the delivery type. */
-export function questionSet(set: string, delivery: DeliveryType, approvalRequired: boolean, subjectName: string): QuestionSet {
-  if (set === 'thames-water') {
-    return { minutes: 2, questions: [{ key: 'skillguard', kind: 'text', label: 'SkillGuard number', hint: "Add it later from your dashboard if you don't have it yet.", optional: true, scheme: 'skillguard' }, access] };
-  }
-  if (set === 'compex') {
-    const q: Question[] = [{ key: 'compexId', kind: 'text', label: 'CompEx ID', hint: 'If you already hold one.', optional: true, scheme: 'compex' }];
-    if (delivery === 'ELEARNING') return { minutes: 3, intro: 'Have your photo and photo ID ready.', questions: [...q, photo, photoId], note: `${subjectName} needs these to register you. We delete your photo ID one month after we send your registration.` };
-    return {
-      minutes: 3,
-      questions: [...q, emergency, dietary, access],
-      note: approvalRequired ? 'This course checks registrations before the first day, so we may contact you. The venue address follows once your registration is approved.' : undefined,
-    };
-  }
-  if (set === 'eusr') {
-    return {
-      minutes: 3,
-      intro: 'Have your photo and photo ID ready.',
-      questions: [{ key: 'eusrId', kind: 'text', label: 'EUSR ID', hint: 'If you already hold one.', optional: true, scheme: 'eusr' }, photo, photoId],
-      note: 'EUSR needs these to register you. We delete your photo ID one month after we send your registration.',
-    };
-  }
-  if (delivery === 'IN_PERSON') return { minutes: 3, questions: [emergency, dietary, access] };
-  return { minutes: 2, questions: [access] };
+/**
+ * The questions on the registration form, built from the course's delegate field settings (src/lib/delegate-fields.ts).
+ * Telephone, date of birth and employer are the "About you" fields and are handled by the form itself.
+ */
+export function questionSet(df: DelegateFields, delivery: DeliveryType, approvalRequired: boolean, subjectName: string): QuestionSet {
+  const m = df.fields;
+  const opt = (k: FieldKey) => m[k] === 'OPTIONAL';
+  const on = (k: FieldKey) => m[k] !== 'OFF';
+  const questions: Question[] = [];
+  if (on('jobTitle')) questions.push({ key: 'jobTitle', kind: 'text', label: 'Job title', optional: opt('jobTitle') });
+  if (on('address')) questions.push({ key: 'address', kind: 'textarea', label: 'Postal address', hint: 'Where we post your card or certificate.', optional: opt('address') });
+  if (on('skillguard')) questions.push({ key: 'skillguard', kind: 'text', label: 'SkillGuard number', hint: opt('skillguard') ? "Add it later from your dashboard if you don't have it yet." : undefined, optional: opt('skillguard'), scheme: 'skillguard' });
+  if (on('uln')) questions.push({ key: 'compexId', kind: 'text', label: 'CompEx Unique Learner Number (ULN)', hint: opt('uln') ? 'If you already have one.' : undefined, optional: opt('uln'), scheme: 'compex' });
+  if (on('eusrId')) questions.push({ key: 'eusrId', kind: 'text', label: 'EUSR ID', hint: opt('eusrId') ? 'If you already hold one.' : undefined, optional: opt('eusrId'), scheme: 'eusr' });
+  if (on('emergency')) questions.push({ key: 'emergencyContact', kind: 'text', label: 'Emergency contact name and number', optional: opt('emergency') });
+  if (on('dietary')) questions.push({ key: 'dietary', kind: 'textarea', label: 'Dietary requirements', optional: opt('dietary') });
+  if (on('access')) questions.push({ key: 'accessNeeds', kind: 'textarea', label: 'Accessibility or support needs', hint: 'For example captions or extra breaks.', optional: opt('access') });
+  if (on('photo')) questions.push(photo);
+  if (on('photoId')) questions.push(photoId);
+  const files = on('photo') || on('photoId');
+  return {
+    minutes: files || delivery === 'IN_PERSON' ? 3 : 2,
+    intro: files ? 'Have your photo and photo ID ready.' : undefined,
+    questions,
+    note: on('photoId')
+      ? `${subjectName} needs these to register you. We delete your photo ID one month after we send your registration.`
+      : approvalRequired && delivery === 'IN_PERSON'
+        ? 'This course checks registrations before the first day, so we may contact you. The venue address follows once your registration is approved.'
+        : undefined,
+  };
 }
 
 export const FILE_TYPES = ['image/jpeg', 'image/png', 'application/pdf'];

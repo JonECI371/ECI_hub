@@ -3,6 +3,8 @@ import { db } from '@/lib/db';
 import { SITE_URL, fmtSessionDates } from '@/lib/format';
 import { sendEmail } from '@/lib/integrations/email';
 import { storeFile } from '@/lib/integrations/files';
+import { certificateMissing, effectiveFields, labelList } from '@/lib/delegate-fields';
+import { registrationLink } from '@/lib/registration-link';
 
 export class CertificateError extends Error {}
 
@@ -21,10 +23,14 @@ export function expiryFor(issuedAt: Date, validityYears: number | null): Date | 
  * expiry, mark the attendee certified, tell them and their booker, and close the task once everyone is done.
  */
 export async function issueCertificate(attendeeId: string, actorId: string, file: File, issuedAt: Date) {
-  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, booking: { include: { booker: true, course: true, session: true } } } });
+  const a = await db.attendee.findUniqueOrThrow({ where: { id: attendeeId }, include: { person: true, registration: true, booking: { include: { booker: true, course: { include: { subject: true } }, session: true } } } });
   if (!a.person) throw new CertificateError('This place has no attendee name yet.');
   if (a.status !== 'ATTENDED' && a.status !== 'CERTIFIED') throw new CertificateError('Certificates can only be issued to people marked as attended.');
   const c = a.booking.course;
+  const missing = certificateMissing(effectiveFields(c), a.person, a.registration?.answers as Record<string, unknown> | undefined);
+  if (missing.length) {
+    throw new CertificateError(`${labelList(missing)} needed: add ${missing.length > 1 ? 'them' : 'it'} for ${a.person.firstName} ${a.person.lastName} before issuing this certificate. We email them and the booker about it each week.`);
+  }
   const fileKey = await storeFile('files', `certificates/${a.person.id}`, file);
   const cert = await db.$transaction(async (tx) => {
     const cert = await tx.certificate.create({ data: { personId: a.person!.id, courseId: c.id, issuedAt, expiresAt: expiryFor(issuedAt, c.validityYears), fileKey } });
@@ -113,6 +119,53 @@ export async function sendExpiryReminders(now = new Date()) {
       });
     }
     sent++;
+  }
+  return sent;
+}
+
+/**
+ * The day after a course, and then every week, asks for the details a course needs before its certificate (the SkillGuard
+ * number for Thames Water) from anyone who attended without them on record: the delegate gets a link to add them, and
+ * so does their booker. One email per person per week (email log).
+ */
+export async function sendMissingDetailsChases(): Promise<number> {
+  const DAY = 86400000;
+  const attendees = await db.attendee.findMany({
+    where: { status: 'ATTENDED', personId: { not: null }, booking: { session: { endsAt: { lt: new Date(Date.now() - DAY), gt: new Date(Date.now() - 120 * DAY) } } } },
+    include: { person: true, registration: true, booking: { include: { booker: true, session: true, course: { include: { subject: true } } } } },
+  });
+  let sent = 0;
+  for (const a of attendees) {
+    if (!a.person || !a.booking.session) continue;
+    const missing = certificateMissing(effectiveFields(a.booking.course), a.person, a.registration?.answers as Record<string, unknown> | undefined);
+    if (!missing.length) continue;
+    const what = labelList(missing);
+    const week = Math.floor((Date.now() - a.booking.session.endsAt.getTime() - DAY) / (7 * DAY));
+    const trigger = `CERT_DETAILS:${a.id}:${week}`;
+    const title = a.booking.course.title;
+    if (!(await db.emailLog.findFirst({ where: { trigger, personId: a.person.id } }))) {
+      await sendEmail({
+        to: a.person.email, personId: a.person.id, trigger, subject: `We need your ${what} for ${title}`,
+        blocks: [
+          { type: 'heading', text: `One last thing, ${a.person.firstName}` },
+          { type: 'text', text: `We cannot issue your ${title} certificate until we have your ${what}. It takes a minute to add.` },
+          { type: 'button', label: 'Add my details', href: registrationLink(a.id) },
+        ],
+      });
+      sent++;
+    }
+    const b = a.booking.booker;
+    if (b.id !== a.person.id && !(await db.emailLog.findFirst({ where: { trigger: `${trigger}:booker`, personId: b.id } }))) {
+      await sendEmail({
+        to: b.email, personId: b.id, trigger: `${trigger}:booker`, subject: `${what} needed: ${a.person.firstName} ${a.person.lastName}`,
+        blocks: [
+          { type: 'heading', text: 'A certificate is waiting on some details' },
+          { type: 'text', text: `${a.person.firstName} ${a.person.lastName} attended ${title}, but we do not have their ${what} yet, so we cannot issue their certificate. We have emailed them. You can also add it from the booking.` },
+          { type: 'button', label: 'Open the booking', href: `${SITE_URL}/account/bookings/${a.booking.reference}` },
+        ],
+      });
+      sent++;
+    }
   }
   return sent;
 }

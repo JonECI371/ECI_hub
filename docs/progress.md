@@ -10,6 +10,30 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-28: all branches merged into one main (not deployed)
+
+- Why: `main` had fallen behind. The test site was running branch consultancy-demo (deploy 5, 25 Nov), which contains booking-flow-2-10, 2-10b, step3, course-formats-duplicate, course-page-template, prices-poa and browser-checks. Claude's delegate field work was built on the older main and then deployed from it with the seed step, which replaced the live build and reset seeded course data on the test site. Recovery of the test site is a separate decision for Jon (see below).
+- Merged: main (delegate field settings, SkillGuard before certificate, optional PO, per-delegate invoice reference, course page date button, spec and docs) into consultancy-demo. Kept the branch's Delegate details page (`/book/delegates`, `src/lib/delegates.ts`) as the single page; removed the duplicate embedded page. The branch's registration form, Fill in now and authority tick now follow the course's delegate field settings. The optional PO or reference for invoicing is on the branch's delegate page for account bookings (`refreshLineRefs`).
+- Checks: typecheck and build clean, 107 tests pass, 152 of 153 browser checks pass on a private local copy. One browser check, "staff lockout" (five wrong authenticator codes), fails; no code touched by the merge is in that path, but the cause is not found. The browser checks for the PO rule and delegate details were updated: the PO number is now optional, and the delegate details course is set to ask for telephone, employer and date of birth.
+- Rules from now on: build from main only; deploy with a database backup first, a rollback tag for the app image, and NO seed argument (seed resets sample courses); never put personal details in deploy commands.
+
+## 2026-11-28: Per-course delegate field settings built, not deployed
+
+- Approved by Jon 27 Nov (matrix in docs/delegate-fields.md). `Course.delegateFields` (JSON, null = template for subject and delivery), `Person.address`; migration 20261128090000 (additive). Admin course form has a Delegate details section (Required / Optional / Not asked, hold the certificate, templates) and Admin > Courses > Delegate fields shows a read-only grid.
+- The registration form, `questionSet`, the booker's Delegate details page (now any course without photo or ID uploads and not eLearning, with approval tasks and venue release handled), the certificate check and the weekly chase (`sendMissingDetailsChases`) all read the settings. CompEx ID and ULN are one field (stored under schemeIds.compex). Photo and photo ID courses (EUSR) and eLearning keep the registration form.
+- Tests: new test/delegate-fields.test.ts; typecheck and build clean. Not checked on screen or on the test site. The templates match the matrix, so Thames Water, CompEx and EUSR behaviour changes as the matrix says (telephone optional for Thames Water, required for CompEx; emergency contact removed; accessibility only for in-person CompEx; ULN required for in-person CompEx).
+
+## 2026-11-27: Delegate details page built (Thames Water), not deployed
+
+- Approved by Jon 27 Nov (spec PUB-13). Built on the booking outcome page, Thames Water only (registration set `thames-water`; other courses keep the registration form because they need photo and ID). Breadcrumbs Course > Book > Delegate details. One row per delegate: first name, last name, email, date of birth required; telephone and SkillGuard number optional; Fill in now or Email them a link (name and email only); one authority tick; progress bar; optional "PO or reference for invoicing" per delegate (new column `Attendee.invoiceRef`, migration 20261127120000, additive), shown in the statement line description as `Refs: name ref` for references that differ from the booking PO; the invoice stays one line per booking.
+- SkillGuard rule: `issueCertificate` refuses Thames Water attendees with no SkillGuard number ("SkillGuard number needed"); `sendSkillguardChases` (job) emails the delegate and the booker the day after the course and then weekly. Telephone and employer are now optional on the Thames Water registration form.
+- 90 tests pass (7 new in test/delegate-details.test.ts), typecheck and build clean. Not checked on screen or on the test site. Not yet done: SkillGuard-missing marker on the Admin class list and delegate dashboard, mention in the 5-day pre-course reminder, breadcrumbs on other pages, and the Admin Add booking flow does not use the new page.
+- Local test database: Postgres from /usr/lib/postgresql/16 with `DATABASE_URL=postgresql://eci:eci@localhost:5432/eci_test` (the earlier container had no Docker daemon running by default).
+
+## 2026-11-27: Admin back to the light look
+
+- Jon switched the dark Admin theme off (Admin only) and kept the coloured strip (Test site green, Live site orange) so it is still obvious when you are in Admin. The dark theme is not deleted: set ADMIN_DARK to true in `src/app/(app)/admin/layout.tsx` to bring it back. Checked locally on Admin home, Bookings, Tasks and Add booking; not yet deployed.
+
 ## 2026-11-25 (deploy 4): consultancy template and demo service live on the test site
 
 - Deployed branch consultancy-demo (same overlay method, no seed; rollback tag app-before-deploy-4, backup before-deploy-4.sql.gz). Migration 20261125120000 applied. Demo service inserted from the existing website: https://test.eci-hub.co.uk/consultancy/dsear-risk-assessment-and-hazardous-area-classification (audit action SERVICE_CREATED). The approach section is drawn as a numbered step-by-step process ending in a result marker. Next: an Admin screen to edit services (with Duplicate), then the other four website consultancy pages (Battery Room Assessment, DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).

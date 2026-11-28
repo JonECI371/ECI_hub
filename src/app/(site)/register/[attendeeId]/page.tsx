@@ -6,6 +6,7 @@ import { questionSet } from '@/lib/registration-sets';
 import { Breadcrumbs, DeliveryChip, Chip } from '@/components/ui';
 import { RegistrationForm } from '@/components/registration-form';
 import { delegatesPath, enteringForOther } from '@/lib/delegates';
+import { effectiveFields } from '@/lib/delegate-fields';
 
 export const dynamic = 'force-dynamic';
 export const metadata: Metadata = { title: 'Registration', robots: { index: false } };
@@ -35,7 +36,8 @@ export default async function RegisterPage({ params, searchParams }: { params: P
   const b = a.booking;
   const c = b.course;
   const byBooker = await enteringForOther(a);
-  const set = questionSet(c.subject.registrationSet, c.deliveryType, c.subject.approvalRequired, c.subject.name);
+  const df = effectiveFields(c);
+  const set = questionSet(df, c.deliveryType, c.subject.approvalRequired, c.subject.name);
   const scheme = (a.person.schemeIds ?? {}) as Record<string, string>;
   const answers = (a.registration?.answers ?? {}) as Record<string, string>;
   const prefill: Record<string, string> = {
@@ -45,6 +47,8 @@ export default async function RegisterPage({ params, searchParams }: { params: P
     mobile: a.person.mobile ?? '',
     dob: dmy(a.person.dateOfBirth),
     employer: a.person.employer ?? b.account?.company ?? '',
+    jobTitle: a.person.jobTitle ?? '',
+    address: a.person.address ?? '',
     skillguard: scheme.skillguard ?? '',
     compexId: scheme.compex ?? '',
     eusrId: scheme.eusr ?? '',
@@ -118,7 +122,7 @@ export default async function RegisterPage({ params, searchParams }: { params: P
           {a.registration && <p className="mt-3 rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You have already registered. You can update your answers and submit again.</p>}
         </div>
         {byBooker && <p className="rounded-control bg-cyan-soft px-4 py-3 text-sm text-ink">You are entering the details for {a.person.firstName}. We email them a copy afterwards so they can check it and correct anything.</p>}
-        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} byBooker={byBooker} forName={a.person.firstName} />
+        <RegistrationForm attendeeId={a.id} token={t ?? ''} set={set} prefill={prefill} filesOnFile={filesOnFile} byBooker={byBooker} forName={a.person.firstName} about={{ phone: df.fields.phone, dob: df.fields.dob, employer: df.fields.employer }} />
       </div>
       {aside}
     </div>

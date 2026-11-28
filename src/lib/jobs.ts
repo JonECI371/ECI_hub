@@ -32,6 +32,9 @@ export async function runJobs(): Promise<Record<string, number>> {
     // Certificates expiring in about three months: remind the holder and their booker, once.
     const { sendExpiryReminders } = await import('@/lib/certificates');
     done.expiry = await sendExpiryReminders();
+    // Thames Water: the day after a course, then weekly, ask for any missing SkillGuard number (no certificate without it).
+    const { sendMissingDetailsChases } = await import('@/lib/certificates');
+    done.skillguard = await sendMissingDetailsChases();
     // Xero: send what is queued, and pick up payments made against the account invoices.
     const { processXeroJobs, syncXeroStatements, attachLatePoFiles } = await import('@/lib/xero-sync');
     done.xero = (await processXeroJobs(30)).done;

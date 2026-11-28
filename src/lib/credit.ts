@@ -5,7 +5,7 @@ import { money } from '@/lib/format';
 import { CheckoutError, findOrCreatePerson, newReference, pricing, splitName } from '@/lib/booking';
 import { placesTakenWhere } from '@/lib/sessions';
 import { placesOnOffer } from '@/lib/waitlist';
-import { creditDefaults, type PoRule } from '@/lib/accounts';
+import { creditDefaults } from '@/lib/accounts';
 import { sendEmail } from '@/lib/integrations/email';
 import { upsertPurchaseOrder } from '@/lib/purchase-orders';
 
@@ -73,7 +73,7 @@ export async function createAccountBooking(input: AccountBookingInput) {
     if (account.status === 'ON_HOLD') throw new CheckoutError('Your company account is on hold because an invoice is overdue. You can still pay by card, or contact us to sort it out.');
     if (account.status !== 'ACTIVE') throw new CheckoutError('Your company account is not active. Pay by card instead.');
     const po = (input.poNumber ?? '').trim().slice(0, 50);
-    if ((account.poRule as PoRule) !== 'NONE' && !po) throw new CheckoutError('Your company needs a PO number on every booking. Enter it to continue.');
+    // A PO number is always optional (Jon, 26 Nov 2026). The account's PO setting only changes the wording at checkout.
 
     const course = await tx.course.findUniqueOrThrow({ where: { id: input.courseId } });
     if (course.status !== 'PUBLISHED') throw new CheckoutError('This course is not open for booking.');

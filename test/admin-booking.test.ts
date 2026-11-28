@@ -44,12 +44,12 @@ describe('Admin add booking (ADM-12)', async () => {
     expect(log.after).toMatchObject({ overridden: ['CREDIT'], overrideReason: 'Director agreed on the phone' });
   });
 
-  it('warns for a full date, a missing PO and an account on hold, all at once', async () => {
+  it('warns for a full date and an account on hold, and a missing PO does not warn', async () => {
     const s = await setup({ capacity: 1, poRule: 'PER_BOOKING', status: 'ON_HOLD' });
     await createAdminBooking({ ...base(s), method: 'PAID', note: 'Bank transfer' }); // takes the only place
     const err = await createAdminBooking({ ...base(s), method: 'ACCOUNT' }).catch((e) => e);
     expect(err).toBeInstanceOf(AdminWarnings);
-    expect((err as InstanceType<typeof AdminWarnings>).warnings.map((w) => w.code).sort()).toEqual(['CAPACITY', 'ON_HOLD', 'PO_MISSING']);
+    expect((err as InstanceType<typeof AdminWarnings>).warnings.map((w) => w.code).sort()).toEqual(['CAPACITY', 'ON_HOLD']);
   });
 
   it('a person who is not on a credit account cannot be booked on account, override or not', async () => {

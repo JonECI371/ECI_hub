@@ -159,9 +159,9 @@ export function CheckoutForm(p: CheckoutProps) {
               <>
                 <div className="mb-4 flex items-center justify-between rounded-control bg-page px-4 py-3 text-sm"><span>Available credit</span><span className="text-base font-extrabold text-ink">{money(p.account.available)}</span></div>
                 {sub + vat > p.account.available && <p role="alert" className="mb-4 rounded-control bg-bad-bg px-4 py-3 text-sm font-semibold text-bad-fg">This booking is more than your available credit. Pay by card, or contact us to raise your limit.</p>}
-                <label className={labelCls}>Your reference or PO number{p.account.poRequired ? '' : <span className="font-normal"> (optional)</span>}
+                <label className={labelCls}>Your reference or PO number <span className="font-normal">(optional)</span>
                   <input name="poNumber" defaultValue={val('poNumber', p.account.lastPo)} maxLength={50} placeholder="PO 4500-221" className={`${input} sm:max-w-[320px]`} {...err('poNumber')} />
-                  <span className="text-[13px] font-normal">{p.account.poRequired ? 'Your company needs a PO number on every booking. ' : ''}Shown on the invoice line.</span>
+                  <span className="text-[13px] font-normal">{p.account.poRequired ? 'Your company usually needs a PO number on invoices, so add it now if you have it. You can still book without one. ' : ''}Shown on the invoice line.</span>
                   <FieldError id="poNumber-err" msg={f.poNumber} />
                 </label>
                 <div className="mt-4 grid gap-4 sm:grid-cols-2">

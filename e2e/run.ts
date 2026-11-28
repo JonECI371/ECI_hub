@@ -155,11 +155,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     check((await page.locator('nav[aria-label="Breadcrumb"]').innerText()).replace(/\s+/g, ' ').includes('Courses › ') && /Book$/.test((await page.locator('nav[aria-label="Breadcrumb"]').innerText()).trim()), 'checkout shows the trail Home › Courses › course › Book');
     await page.check('input[name=terms]');
     if (await page.locator('input[name=waiver]').count()) await page.check('input[name=waiver]');
-    const before = await db.booking.count({ where: { bookerId: f.booker.id } });
-    await page.click('button:has-text("Confirm booking")');
-    await page.waitForTimeout(1500);
-    const noPo = await db.booking.count({ where: { bookerId: f.booker.id } });
-    check(noPo === before, 'a booking without the PO number the account requires is refused');
+    check(/optional/i.test(await page.locator('label:has(input[name=poNumber])').first().innerText()), 'the PO number is marked optional even when the account usually uses one');
     await page.fill('input[name=poNumber]', 'PO-E2E-1');
     if (!(await page.locator('input[name=terms]').isChecked())) await page.check('input[name=terms]');
     if (await page.locator('input[name=waiver]').count() && !(await page.locator('input[name=waiver]').isChecked())) await page.check('input[name=waiver]');
@@ -188,6 +184,8 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
   // ---------- 4b. Delegate details ----------
   console.log('\n# Delegate details');
   await step('delegate details', null, async () => {
+    // This course asks for telephone, employer and date of birth, as a Thames Water or CompEx style registration does.
+    await db.course.update({ where: { id: openSession.courseId }, data: { delegateFields: { fields: { phone: 'REQUIRED', dob: 'REQUIRED', employer: 'REQUIRED' }, certificate: [] } } });
     const { page, ctx, errors } = await newPage(br); await customerLogin(page, f.booker.email, `/book/${openSession.id}`);
     await page.click('button:has-text("+")'); await page.click('button:has-text("+")');
     check((await page.locator('[data-testid=delegates-next]').count()) === 1 && (await page.locator('input[name^=other_name_]').count()) === 0, 'checkout no longer asks for the other delegates; it says they come next');

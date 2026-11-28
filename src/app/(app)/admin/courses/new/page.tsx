@@ -18,8 +18,8 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ f
   const [subjects, venues, others, formatOptions] = await Promise.all([db.subject.findMany({ orderBy: { name: 'asc' } }), db.venue.findMany({ orderBy: { name: 'asc' } }), db.course.findMany({ where: { status: 'PUBLISHED' }, select: { slug: true, title: true }, orderBy: { title: 'asc' } }), db.course.findMany({ select: { id: true, title: true, deliveryType: true }, orderBy: { title: 'asc' } })]);
   // A duplicate starts from the original's details and wording. It is a draft, linked to the original as another format.
   const initial = source
-    ? { ...courseFormValues(source, subjects[0]?.id ?? '', [source.id]), id: undefined, title: `${source.title} (copy)`, slug: `${source.slug}-copy`, status: 'DRAFT', copyFrom: source.id }
-    : courseFormValues(null, subjects[0]?.id ?? '');
+    ? { ...courseFormValues(source, subjects[0]?.id ?? '', [source.id], subjects), id: undefined, title: `${source.title} (copy)`, slug: `${source.slug}-copy`, status: 'DRAFT', copyFrom: source.id }
+    : courseFormValues(null, subjects[0]?.id ?? '', [], subjects);
   return (
     <>
       <div>

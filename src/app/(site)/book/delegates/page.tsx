@@ -108,6 +108,7 @@ export default async function Delegates({ searchParams }: { searchParams: Promis
                   <label className="flex flex-col gap-1 text-sm font-bold text-ink">First name<input name="firstName" defaultValue={a.person?.firstName ?? ''} required className={input} /></label>
                   <label className="flex flex-col gap-1 text-sm font-bold text-ink">Last name<input name="lastName" defaultValue={a.person && a.person.lastName !== '-' ? a.person.lastName : ''} required className={input} /></label>
                   <label className="flex flex-col gap-1 text-sm font-bold text-ink sm:col-span-2">Email<input name="email" type="email" defaultValue={a.person?.email ?? ''} required className={input} /></label>
+                  {b.method === 'ACCOUNT' && <label className="flex flex-col gap-1 text-sm font-bold text-ink sm:col-span-2">PO or reference for invoicing <span className="text-[13px] font-normal">Optional. Printed on the invoice line so your accounts team can pay it.</span><input name="invoiceRef" defaultValue={a.invoiceRef ?? b.poNumber ?? ''} maxLength={50} className={input} /></label>}
                   {st.key === 'LINK_SENT' && <p className="text-sm sm:col-span-2">We emailed them a link. You can resend it, or fill their details in yourself.</p>}
                   <div className="flex flex-wrap gap-3 sm:col-span-2">
                     <button type="submit" name="intent" value="now" className={`${btn} bg-cyan text-ink`}>Fill in their details now</button>

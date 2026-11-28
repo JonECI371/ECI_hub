@@ -10,6 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-28: course page date chooser simplified (branch date-picker-layout, not deployed)
+
+- Jon's request: the same date was shown several times. Now the calendar sits beside one list of the same dates; both only highlight the chosen date. The side panel is the one place that says it in words (date, time, where, places left) and holds the single Book button; on a phone the button is a bar fixed to the bottom. The old "Selected date" card, the separate "All upcoming dates" list, the per-row Book buttons and the "N upcoming dates" line are gone. A full date offers the waitlist in the same button. Files: `src/components/date-picker.tsx`, `src/components/book-selected-button.tsx`, `src/app/(site)/courses/[slug]/page.tsx`.
+- Checks: typecheck, 114 tests, build, 168 of 168 browser checks (run before the last one-line removal). Looked at on a private local copy at 1280 px and 390 px.
+
 ## 2026-11-28 (recovery): test site restored onto the merged main
 
 - What went wrong: Claude built on an old `main` and deployed it with the seed step on 27 Nov. That replaced the live build (services-admin, deploy 5) and reset wording, prices and durations on 8 seeded courses (Thames Water 75 became 185, CompEx ExA 175 and eLearning 250 and Ex12 2,050 became 0, ExF 500 became 450, National Water Hygiene 140 became 145, Ex12 5 days became 2 days, plus descriptions, content and FAQs).

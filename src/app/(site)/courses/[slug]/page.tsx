@@ -90,7 +90,6 @@ export default async function CoursePage({ params, searchParams }: { params: Par
     : c.deliveryType === 'VIRTUAL_CLASSROOM'
       ? `Live online on ${c.meetingPlatform === 'ZOOM' ? 'Zoom' : 'Microsoft Teams'}. Your joining link is emailed once your booking is confirmed.`
       : 'In person. The venue address is in your booking confirmation.';
-  const nextOpen = picker.find((s) => !s.full);
 
   return (
     <>
@@ -130,7 +129,7 @@ export default async function CoursePage({ params, searchParams }: { params: Par
         <p data-testid="in-short" className="max-w-[820px] text-[17px] leading-relaxed text-ink">{courseSummary(c, content)}</p>
       </section>
 
-      <div className="flex flex-col gap-8 px-4 py-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-8 px-4 pb-28 pt-10 md:px-[max(4.1667%,calc((100%_-_1280px)/2))] lg:flex-row lg:items-start lg:pb-10">
         <div className="flex min-w-0 flex-1 flex-col gap-12">
           <section id="dates" className="scroll-mt-6">
             <Eyebrow>{isElearning ? 'Booking' : 'Dates and booking'}</Eyebrow>
@@ -211,16 +210,10 @@ export default async function CoursePage({ params, searchParams }: { params: Par
               {price.vatNote && <span className="ml-1.5 text-sm">per place + VAT</span>}
             </p>
             <p className="text-sm leading-relaxed">{isElearning ? deliveryLine : `${c.durationText} · ${deliveryLine}`}</p>
-            {!isElearning && picker.length > 0 && (
-              <p className="text-sm">
-                <strong className="text-ink">{picker.length} upcoming {picker.length === 1 ? 'date' : 'dates'}</strong>
-                {nextOpen && <> · next on {shortDate.format(c.sessions.find((s) => s.id === nextOpen.id)!.startsAt).replace(',', '')}</>}
-              </p>
-            )}
             {!isElearning && picker.length > 0 ? (
               <BookSelectedButton
                 initialId={waitlist}
-                choices={picker.map((p) => ({ id: p.id, full: p.full, label: shortDate.format(c.sessions.find((s) => s.id === p.id)!.startsAt).replace(',', '') }))}
+                choices={picker.map((p) => ({ id: p.id, full: p.full, long: p.long, time: p.time, where: p.where, places: p.places, label: shortDate.format(c.sessions.find((s) => s.id === p.id)!.startsAt).replace(',', '') }))}
               />
             ) : (
               <Link href={isElearning ? `/book/course/${c.slug}` : '#dates'} className="inline-flex min-h-[52px] items-center justify-center rounded-chip bg-cyan px-5 text-[15px] font-semibold text-ink no-underline">

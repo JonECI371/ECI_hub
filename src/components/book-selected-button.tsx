@@ -4,13 +4,13 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { SELECTED_DATE_EVENT, type SelectedDate } from '@/components/date-picker';
 
-export type Choice = { id: string; label: string; full: boolean };
+export type Choice = { id: string; label: string; long: string; time: string; where: string; full: boolean; places: { text: string; low: boolean } | null };
 
 const btn = 'inline-flex min-h-[52px] items-center justify-center rounded-chip px-5 text-center text-[15px] font-semibold no-underline';
 
 /**
- * The booking button in the side panel. It follows the date chosen in the date picker (calendar or list), so the
- * button goes straight to booking that date. Until a date is chosen it uses the same default the picker starts on.
+ * The side panel for the date chosen in the date picker: the one place that says which date it is, how many places are
+ * left, and the Book button. On a phone the button is a bar fixed to the bottom of the screen.
  */
 export function BookSelectedButton({ choices, initialId }: { choices: Choice[]; initialId?: string }) {
   const first = choices.find((c) => c.id === initialId) ?? choices.find((c) => !c.full) ?? choices[0];
@@ -23,13 +23,21 @@ export function BookSelectedButton({ choices, initialId }: { choices: Choice[]; 
     return () => window.removeEventListener(SELECTED_DATE_EVENT, on);
   }, [choices]);
   const c = choices.find((x) => x.id === id) ?? first;
+  const href = c.full ? `/waitlist/${c.id}` : `/book/${c.id}`;
+  const text = c.full ? `Join the waitlist for ${c.label}` : `Book ${c.label}`;
+  const look = c.full ? 'border border-field bg-white text-ink' : 'bg-cyan text-ink';
   return (
-    <div className="flex flex-col gap-2">
-      {c.full ? (
-        <Link href={`/waitlist/${c.id}`} className={`${btn} border border-field bg-white text-ink`}>Join the waitlist for {c.label}</Link>
-      ) : (
-        <Link href={`/book/${c.id}`} className={`${btn} bg-cyan text-ink`}>Book {c.label}</Link>
-      )}
+    <div className="flex flex-col gap-3">
+      <div aria-live="polite" className="rounded-control bg-page px-4 py-3">
+        <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Your date</p>
+        <p className="text-base font-bold text-ink">{c.long}</p>
+        <p className="text-sm">{c.time} UK time · {c.where}</p>
+        {c.full ? <p className="text-[13px] font-semibold text-slate">Full</p> : c.places && <p className={`text-[13px] ${c.places.low ? 'font-semibold text-warn-fg' : 'text-slate'}`}>{c.places.text}</p>}
+      </div>
+      <Link href={href} className={`${btn} ${look} hidden lg:inline-flex`}>{text}</Link>
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-white px-4 pb-[max(12px,env(safe-area-inset-bottom,0px))] pt-3 shadow-card lg:hidden">
+        <Link href={href} className={`${btn} ${look} w-full`}>{text}</Link>
+      </div>
       <p className="text-center text-[13px]">Not this date? <a href="#dates">Choose another</a></p>
     </div>
   );

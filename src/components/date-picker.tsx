@@ -22,21 +22,13 @@ export type SelectedDate = { id: string };
 const MONTH = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const key = (y: number, m: number) => y * 12 + (m - 1);
 
-function Action({ s }: { s: PickerSession }) {
-  return s.full ? (
-    <Link href={`/waitlist/${s.id}`} className="inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-chip border border-field bg-white px-5 text-sm font-semibold text-ink no-underline">Join waitlist</Link>
-  ) : (
-    <Link href={`/book/${s.id}`} className="inline-flex min-h-11 shrink-0 items-center justify-center whitespace-nowrap rounded-chip bg-cyan px-5 text-sm font-semibold text-ink no-underline">Book</Link>
-  );
-}
-
 function Places({ s }: { s: PickerSession }) {
   if (s.full) return <span className="text-[13px] font-semibold text-slate">Full</span>;
   if (!s.places) return null;
   return <span className={`text-[13px] ${s.places.low ? 'font-semibold text-warn-fg' : 'text-slate'}`}>{s.places.text}</span>;
 }
 
-/** Course page date chooser: month calendar, the selected date, and the full list. */
+/** Course page date chooser: a month calendar and a list of the same dates. The side panel says which one is chosen and holds the Book button. */
 export function DatePicker({ sessions, initialId }: { sessions: PickerSession[]; initialId?: string }) {
   const first = sessions.find((s) => s.id === initialId) ?? sessions.find((s) => !s.full) ?? sessions[0];
   const [selId, setSelId] = useState(first.id);
@@ -104,35 +96,29 @@ export function DatePicker({ sessions, initialId }: { sessions: PickerSession[];
           </div>
         </div>
 
-        <div aria-live="polite" className="flex flex-col justify-center gap-3 rounded-card bg-white p-6 shadow-card">
-          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-slate">Selected date</p>
-          <p className="text-xl font-semibold text-ink">{sel.long}</p>
-          <p className="text-sm">{sel.time} UK time · {sel.where}</p>
-          <Places s={sel} />
-          <div className="pt-1"><Action s={sel} /></div>
+        <div className="flex min-h-0 flex-col overflow-hidden rounded-card bg-white shadow-card">
+          <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
+            <h3 className="text-lg font-bold text-ink">Upcoming dates</h3>
+            <span className="text-[13px]">{sessions.length} {sessions.length === 1 ? 'date' : 'dates'}</span>
+          </div>
+          <ul className="max-h-[420px] overflow-y-auto" aria-label="Choose a date">
+            {sessions.map((s) => {
+              const on = s.id === sel.id;
+              return (
+                <li key={s.id} className={`border-b border-[#E6E6E6] last:border-0 ${on ? 'bg-cyan-soft shadow-[inset_4px_0_0_#2EC39B]' : 'bg-white'}`}>
+                  <button type="button" onClick={() => pick(s)} aria-pressed={on} className="flex min-h-11 w-full items-center gap-3 px-5 py-4 text-left">
+                    <span aria-hidden="true" className={`flex size-5 shrink-0 items-center justify-center rounded-full border-2 ${on ? 'border-ink' : 'border-field'}`}>{on && <span className="size-2.5 rounded-full bg-ink" />}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-[15px] font-bold text-ink">{s.long}</span>
+                      <span className="block text-[13px]">{s.time} UK time · {s.where}</span>
+                      <Places s={s} />
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
         </div>
-      </div>
-
-      <div className="overflow-hidden rounded-card bg-white shadow-card">
-        <div className="flex items-center justify-between border-b border-hairline px-5 py-4">
-          <h3 className="text-lg font-bold text-ink">All upcoming dates</h3>
-          <span className="text-[13px]">{sessions.length} upcoming {sessions.length === 1 ? 'date' : 'dates'}</span>
-        </div>
-        <ul>
-          {sessions.map((s) => {
-            const on = s.id === sel.id;
-            return (
-              <li key={s.id} className={`flex flex-wrap items-center gap-4 border-b border-[#E6E6E6] px-5 py-4 last:border-0 ${on ? 'bg-cyan-soft shadow-[inset_4px_0_0_#2EC39B]' : 'bg-white'}`}>
-                <button type="button" onClick={() => pick(s)} aria-pressed={on} className="min-h-11 flex-1 text-left">
-                  <span className="block text-[15px] font-bold text-ink">{s.long}</span>
-                  <span className="block text-[13px]">{s.time} UK time · {s.where}</span>
-                  <Places s={s} />
-                </button>
-                <Action s={s} />
-              </li>
-            );
-          })}
-        </ul>
       </div>
     </div>
   );

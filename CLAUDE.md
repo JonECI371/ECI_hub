@@ -42,7 +42,7 @@ Booking website, customer portal, trainer app, admin back office and CRM for ECI
 
 ## Branches (read `docs/branching.md`)
 
-There is one `main` and it is the truth. At the start of every chat run the branch check in `docs/branching.md` and tell Jon in plain English which branches are not yet in `main`. Never build from an old copy and never deploy from anything but an up-to-date `main`. Work on a short, named branch and merge it into `main` when tested. Never delete a branch without asking Jon. Jon is learning how this works: be explicit about which branch you are on and why.
+There is one `main` and it is the truth. At the start of every chat run the branch check in `docs/branching.md` and tell Jon in plain English which branches are not yet in `main`. Never build from an old copy and never deploy from anything but an up-to-date `main`. Work on a short, named branch and merge it into `main` when tested. After every merge, deploy or new branch, update the Build Map (link and steps in `docs/branching.md`). Never delete a branch without asking Jon. Jon is learning how this works: be explicit about which branch you are on and why.
 
 ## Delegate fields
 

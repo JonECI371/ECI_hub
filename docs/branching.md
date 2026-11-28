@@ -30,6 +30,12 @@ A branch that is NOT in `main` means someone's work has not been brought in yet.
 ## What is live on the test site
 `docs/progress.md` records every deploy: the commit, the rollback tag and the backup. Claude updates it with each deploy. If it is unclear what is live, check the test site's build against `main` before assuming.
 
+
+## The Build Map (what is on which branch, and what is live)
+Jon's live picture: https://claude.ai/artifact/PjK5UGK9MYxiw1NhZrHLma
+
+It draws itself from saved data (collections `branches`, `main`, `deploys`, `env`, `waiting`, `meta`). **After every merge, every deploy and every new branch, Claude updates that data** with the ArtifactData tool, as the last step of the checklist: add or update the branch (`first` and `tip` times, `inMain`, `mergeRef`), add the deploy (time, what went live, result, rollback tag, backup), update `env/test` (version, since, rollback, backup), `env/main` (latest commit, branches not in main), the `waiting` list and `meta/build`. If the map and the facts disagree, the facts win: fix the map.
+
 ## Branch register (28 Nov 2026)
 All of these are already inside `main` (commit `dec3592`). They are kept, not deleted, until Jon says so.
 

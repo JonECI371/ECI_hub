@@ -34,6 +34,15 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 
 - Jon switched the dark Admin theme off (Admin only) and kept the coloured strip (Test site green, Live site orange) so it is still obvious when you are in Admin. The dark theme is not deleted: set ADMIN_DARK to true in `src/app/(app)/admin/layout.tsx` to bring it back. Checked locally on Admin home, Bookings, Tasks and Add booking; not yet deployed.
 
+## 2026-11-25 (deploy 5): Admin screen for services live on the test site
+
+- Deployed branch services-admin (overlay method, no seed; rollback tag app-before-deploy-5, backup before-deploy-5.sql.gz; no migration this time). Admin > Services is live. Prices and courses unchanged. Next: enter the other four website consultancy services as drafts for Jon to check (Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).
+
+## 2026-11-25 (later): Admin screen for consultancy services (built)
+
+- Branch services-admin (on top of consultancy-demo). Admin > Services: list (name, label, updated, status, View page, Duplicate, Edit), New service, Edit service, Duplicate service (draft copy). The form covers every part of the page: name, short description, label, What is it (paragraphs), Who needs it, Why it matters, up to 10 approach steps (title and detail, drawn as a process), What you get, standards, regulation, review period, triggers, who we work with, up to 10 questions and answers, related courses and services, web address, search title and description with a Google preview, status. [Check: ...] or [YOUR ANSWER ...] text blocks publishing; duplicate web addresses are refused; saves are audited (SERVICE_CREATED, SERVICE_UPDATED). Admin menu has Services.
+- Browser checks: run them against a built copy (`npm run build`, then `npm start` with DATABASE_URL, AUTH_SECRET and SITE_URL set, then `npm run e2e`): the development server is slow and made checks flaky. 168 checks pass twice in a row. The staff lockout check now waits for the server to count each wrong code.
+
 ## 2026-11-25 (deploy 4): consultancy template and demo service live on the test site
 
 - Deployed branch consultancy-demo (same overlay method, no seed; rollback tag app-before-deploy-4, backup before-deploy-4.sql.gz). Migration 20261125120000 applied. Demo service inserted from the existing website: https://test.eci-hub.co.uk/consultancy/dsear-risk-assessment-and-hazardous-area-classification (audit action SERVICE_CREATED). The approach section is drawn as a numbered step-by-step process ending in a result marker. Next: an Admin screen to edit services (with Duplicate), then the other four website consultancy pages (Battery Room Assessment, DSEAR Gap Analysis, DSEAR Verification, Intrinsically Safe Circuit Design).
@@ -187,3 +196,22 @@ Jon signed off the Test Log 1 fixes (with notes) and answered the open questions
 - Never paste secrets in chat; they go to Secrets Manager. No Zapier.
 
 **Next:** build the approved fixes from Test Log 1; write the Phase 2 test checklist for Kirsty (using the requirement IDs PUB, POR, ADM, TRN); then Phase 3 (pipelines and reports, Zoom and Xero API, SCORM, free tools, email block editor) once Phase 1 and 2 checks pass.
+
+## 25 Nov 2026: four more consultancy services entered as drafts (test site, data only, no deploy)
+
+Battery Room Assessment (BESS RA), DSEAR Gap Analysis, DSEAR Verification and Intrinsically Safe (I.S.) Circuit Design were entered from the existing website as DRAFT services (audited as SERVICE_CREATED). Checked: all four return 404 publicly, are not in the sitemap or llms files, and show in Admin > Services. Jon or Kirsty to check the wording and publish each one.
+- Website slips corrected, not copied: "62485-2" typo, "venerable" for vulnerable, and process safety course text pasted into the BESS page.
+- Testimonials were left out (the website ones are placeholders or off-topic).
+- The I.S. and Verification website pages show the DSEAR RA "Useful information" box by mistake, so standards and outputs were written from each page's own text. Please check.
+- Short pages (Verification, I.S., BESS "who it is for") were kept to what the website says rather than padded.
+
+## 25 Nov 2026: pilot readiness started (redirects built, not yet deployed)
+
+- Old website redirects: src/lib/old-site-redirects.json (48 old addresses from the old site's sitemaps) read by next.config.mjs; every old course and service address goes to its new page, and ones with no equivalent yet go to the nearest list, never an error page. Test test/old-site-redirects.test.ts checks full coverage and that every target exists. Checked in a local copy: old address (with or without trailing slash) lands on the new page. Two hops for addresses with a trailing slash (Next strips the slash first), 308 not 301 (same effect for search engines). When a missing course is added (Functional Safety Foundation, CAT & Genny, PSL, PSMF, PSMO, Ageing Asset Risk), update its line in the JSON and prisma/redirect-targets.json.
+- docs/kirsty-retest.md: short list of what only a person can check.
+- Next: SimplyBook booking move (3.8, first half). Needs Jon's SimplyBook exports before building: bookings, clients and services as CSV from the SimplyBook reports.
+
+## 26 Nov 2026: sequencing decision
+
+- Jon's decision (26 Nov 2026): finish the tool and have it independently penetration tested BEFORE any data is moved in from SimplyBook or Zoho. Order: finish the build, fix testing findings, pen test (CREST-accredited, on a staging copy with test data only, then a re-test of fixes), then the data migrations (3.8, both halves), then the 301 redirects and the switch-over. Until then, no real customer data goes into the new platform and no importer is run against real exports. Importers may be written and tried on made-up files only. Jon commissions the pen test (it is a paid service: ask first).
+- Effect: the old-website redirects stay on branch services-admin, undeployed. Jon does not need to export SimplyBook or Zoho data yet. Next builds are the remaining features (SCORM and provider connections 3.7, Zoom 3.5, admin-editable pages 3.9, email block editor 3.3, free tools 3.4, the CRM in its own chat), then security hardening and the pen test.

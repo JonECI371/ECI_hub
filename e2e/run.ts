@@ -96,7 +96,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     await page.fill('input[name=email]', f.customer.email); await page.click('button[type=submit]'); await page.waitForURL(/step=code/);
     const real = (await page.locator('strong.font-mono').innerText()).trim();
     const wrong = real === '000000' ? '111111' : '000000';
-    for (let i = 0; i < 5; i++) { await page.fill('input[name=code]', wrong); await page.click('button[type=submit]'); await page.waitForLoadState('networkidle'); if (i < 4) await page.goto(BASE + '/login?step=code'); }
+    for (let i = 0; i < 5; i++) { await page.fill('input[name=code]', wrong); await Promise.all([page.waitForResponse((r) => r.request().method() === 'POST'), page.click('button[type=submit]')]); await page.waitForLoadState('networkidle'); if (i < 4) await page.goto(BASE + '/login?step=code'); }
     await page.goto(BASE + '/login?step=code'); await page.fill('input[name=code]', real); await page.click('button[type=submit]');
     await page.waitForURL(/error=(locked|expired)/, { timeout: 10000 }); check(true, 'five wrong customer codes lock that code, even the right one is then refused'); await ctx.close();
   });
@@ -113,7 +113,11 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     const { page, ctx } = await newPage(br);
     await page.goto(BASE + '/login'); await page.fill('input[name=email]', f.trainer.email); await page.click('button[type=submit]'); await page.waitForURL(/step=staff/);
     check(/30 days/.test(await bodyText(page)), 'a trainer is offered "keep me logged in for 30 days"');
-    for (let i = 0; i < 5; i++) { await page.fill('input[name=code]', '000000'); await page.click('button[type=submit]'); await page.waitForLoadState('networkidle'); }
+    for (let i = 0; i < 5; i++) {
+      await page.fill('input[name=code]', '000000'); await page.click('button[type=submit]');
+      // wait until the server has counted this wrong code, so the next one is never sent too early
+      for (let n = 0; n < 80; n++) { const p = await db.person.findUniqueOrThrow({ where: { id: f.trainer.id }, select: { totpFailures: true, totpLockedUntil: true } }); if (p.totpFailures >= i + 1 || p.totpLockedUntil) break; await page.waitForTimeout(150); }
+    }
     await page.waitForURL(/error=stafflocked/, { timeout: 10000 }); check(true, 'five wrong authenticator codes lock the sign-in');
     await page.goto(BASE + '/login'); await page.fill('input[name=email]', f.trainer.email); await page.click('button[type=submit]'); await page.waitForURL(/step=staff/);
     await page.fill('input[name=code]', authCode()); await page.click('button[type=submit]'); await page.waitForURL(/error=stafflocked/, { timeout: 10000 });
@@ -242,7 +246,7 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     const { page, ctx, errors } = await newPage(br); await staffLogin(page, f.superAdmin.email);
     const paths = ['/admin', '/admin/tasks', '/admin/bookings', '/admin/bookings/new', '/admin/courses', '/admin/courses/new', `/admin/courses/${f.open.id}`, `/admin/courses/${f.open.id}/edit`,
       `/admin/courses/${f.open.id}/class-list?session=${openSession.id}`, '/admin/schedule', '/admin/people', `/admin/people/${f.booker.id}`, `/admin/people/${f.trainer.id}`, '/admin/accounts', `/admin/accounts/${f.account.id}`,
-      '/admin/venues', '/admin/settings', '/admin/test-log'];
+      '/admin/venues', '/admin/settings', '/admin/test-log', '/admin/services', '/admin/services/new', `/admin/services/${f.service.id}/edit`];
     if (bookingRef) paths.push(`/admin/bookings/${bookingRef}`);
     for (const p of paths) await pageOk(page, errors, p, 'admin ' + p);
     await ctx.close();
@@ -339,6 +343,38 @@ async function pageOk(page: Page, errors: string[], path: string, label = path, 
     check((await page.request.get(`${BASE}/consultancy/${f.service.slug}`)).status() === 404, 'a draft service is not public');
     await db.service.update({ where: { id: f.service.id }, data: { status: 'PUBLISHED' } });
     await ctx.close();
+  });
+  await step('services admin', null, async () => {
+    const { page, ctx } = await newPage(br); await staffLogin(page, f.admin.email);
+    await page.goto(`${BASE}/admin/services`);
+    check((await bodyText(page)).includes(f.service.title) && (await page.locator('a[href="/admin/services/new"]').count()) === 1, 'Admin lists the consultancy services with a New service button');
+    const title = `E2E New Service ${f.tag}`; const slug = `e2e-new-service-${f.tag}`;
+    const fillForm = async (extra: Record<string, string> = {}) => {
+      const v: Record<string, string> = { title, shortDescription: 'A brand new service.', category: 'Testing', whatIsIt: 'This is the first paragraph.\n\nThis is the second paragraph.', whoItems: 'Operators\nEngineers', whyPoints: 'It matters.', step_title_0: 'First step', step_text_0: 'Do the first thing.', step_title_1: 'Second step', step_text_1: 'Do the second thing.', approachClosing: 'A report you can use.', outcome: 'A report\nA plan', standards: 'HSE L138', reviewFrequency: 'Every 3 years', triggers: 'A change', faq_q_0: 'How long?', faq_a_0: 'About a week.', ...extra };
+      for (const [k, val] of Object.entries(v)) await page.locator(`[name=${k}]`).fill(val);
+    };
+    await page.goto(`${BASE}/admin/services/new`); await fillForm();
+    check((await page.locator('input[name=slug]').inputValue()) === slug.replace(/-[a-z0-9]{6}$/, '') + '' || (await page.locator('input[name=slug]').inputValue()).startsWith('e2e-new-service'), 'the web address is suggested from the name');
+    await page.fill('input[name=slug]', slug); await page.locator('input[name=status][value=DRAFT]').check();
+    await page.click('button:has-text("Save service")'); await page.waitForURL(/msg=saved/, { timeout: 20000 });
+    const pub = await newPage(br);
+    check((await pub.page.request.get(`${BASE}/consultancy/${slug}`)).status() === 404, 'a saved draft is not on the website');
+    await page.goto(`${BASE}/admin/services`); const row = page.locator('[data-testid=service-row]', { hasText: title }); check(/Draft/.test(await row.innerText()), 'it shows in the list as a draft');
+    await row.locator('a:has-text("Edit")').click(); await page.waitForURL(/\/edit/);
+    await page.fill('textarea[name=whyPoints]', '[Check: confirm this]'); await page.locator('input[name=status][value=PUBLISHED]').check(); await page.click('button:has-text("Save service")');
+    await page.waitForSelector('text=Finish the page wording'); check(true, 'unfinished [Check: ...] text stops a service being published');
+    await page.fill('textarea[name=whyPoints]', 'It matters a lot.'); await page.locator('input[name=status][value=PUBLISHED]').check(); await page.click('button:has-text("Save service")'); await page.waitForURL(/msg=saved/, { timeout: 20000 });
+    await pub.page.goto(`${BASE}/consultancy/${slug}`); const t = await bodyText(pub.page);
+    check(['Testing', 'This is the second paragraph.', 'Operators', 'It matters a lot.', 'First step', 'Second step', 'A report you can use.', 'How long?'].every((x) => t.includes(x)), 'once published, the wording appears on the public page');
+    check((await pub.page.locator('[data-testid=approach-steps] li').count()) === 3, 'the steps are drawn as a process, with the result at the end');
+    await page.goto(`${BASE}/admin/services`); await page.locator('[data-testid=service-row]', { hasText: title }).locator('a:has-text("Duplicate")').click(); await page.waitForURL(/new\?from=/);
+    check((await page.locator('[data-testid=duplicate-note]').count()) === 1 && (await page.locator('input[name=title]').inputValue()).endsWith('(copy)') && (await page.locator('textarea[name=whatIsIt]').inputValue()).includes('first paragraph'), 'Duplicate opens a prefilled draft copy');
+    check(await page.locator('input[name=status][value=DRAFT]').isChecked(), 'the copy starts as a draft');
+    await page.fill('input[name=slug]', slug); await page.click('button:has-text("Save service")'); await page.waitForSelector('text=Another service already uses this web address');
+    check(true, 'a web address that is already used is refused');
+    const made = await db.service.findUnique({ where: { slug } });
+    check(!!made && (await db.auditLog.count({ where: { recordId: made.id, action: { in: ['SERVICE_CREATED', 'SERVICE_UPDATED'] } } })) >= 2, 'creating and editing are written to the audit log');
+    await ctx.close(); await pub.ctx.close();
   });
   await step('trainer pages', null, async () => {
     const { page, ctx, errors } = await newPage(br, 390, 800); await staffLogin(page, f.trainer.email);

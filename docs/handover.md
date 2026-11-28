@@ -1,5 +1,7 @@
 # Handover (written 17 Nov 2026)
 
+> **Newer hand-offs:** start with `docs/handoff-main.md` (26 Nov 2026) for the main build, or `docs/handoff-crm.md` for the CRM chat. This older file keeps the background, and its Testing rule and Sequencing rule sections are current.
+
 Read this first in a new chat, then `docs/spec.md`, `docs/build-plan.md`, `docs/progress.md`, `docs/go-live-checklist.md`, `docs/security.md`. Jon (Super Admin, jon@ecfio.co.uk) is a newbie: plain English, one clear recommendation, no jargon. Kirsty (kirsty@ecfio.co.uk, Admin and Trainer) tests.
 
 ## How we work (Jon's standing rules)
@@ -7,6 +9,14 @@ Read this first in a new chat, then `docs/spec.md`, `docs/build-plan.md`, `docs/
 - Never ask for secrets in chat. Keep to the AWS spend cap. No Zapier. Ask before production or paid services.
 - Report honestly: say when something was not checked on screen or on the live site.
 - Tasks live in the task list (TaskList). Jon's own to-dos are prefixed "Jon:".
+
+## Testing rule (Jon, 25 Nov 2026)
+
+Claude and automated browsers must NOT be used to test the test site (https://test.eci-hub.co.uk) or the live site. Tracking is switched on, so automated visits are counted as real ones, spoil the testing and report a false issue. Testing there is done by people, by hand, in an ordinary browser. Claude's browser checks (`npm run e2e`) run only against a private local copy.
+
+## Sequencing rule (Jon, 26 Nov 2026)
+
+Jon's decision (26 Nov 2026): finish the tool and have it independently penetration tested BEFORE any data is moved in from SimplyBook or Zoho. Order: finish the build, fix testing findings, pen test (CREST-accredited, on a staging copy with test data only, then a re-test of fixes), then the data migrations (3.8, both halves), then the 301 redirects and the switch-over. Until then, no real customer data goes into the new platform and no importer is run against real exports. Importers may be written and tried on made-up files only. Jon commissions the pen test (it is a paid service: ask first).
 
 ## Where things are
 - Repo: /home/user/eci-hub-platform-src/eci-hub-platform (branch as checked out; push to origin). Scratchpad for helper scripts: /tmp/claude-0/-home-user/5147478d-0c46-5f67-b65d-56a16e8c4224/scratchpad (may be cleared; deploy.sh, up.sh, ssm-*.json live there and can be recreated from the notes below).

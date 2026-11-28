@@ -40,6 +40,10 @@ Booking website, customer portal, trainer app, admin back office and CRM for ECI
 - Never commit secrets. Local values in `.env`; AWS values in Secrets Manager (`eci-hub/<stage>/app`).
 - Write tests for booking, payment, credit limit, invite creation and statement export as you build them.
 
+## Branches (read `docs/branching.md`)
+
+There is one `main` and it is the truth. At the start of every chat run the branch check in `docs/branching.md` and tell Jon in plain English which branches are not yet in `main`. Never build from an old copy and never deploy from anything but an up-to-date `main`. Work on a short, named branch and merge it into `main` when tested. Never delete a branch without asking Jon. Jon is learning how this works: be explicit about which branch you are on and why.
+
 ## Delegate fields
 
 Which delegate details each course collects is recorded in `docs/delegate-fields.md` and the "Delegate Field Matrix" artifact (link in that file). Whenever you create or change a course, add or update its column in both, starting from a similar course, and tell Jon.

@@ -10,7 +10,11 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
-## 2026-11-28: course page date chooser simplified (branch date-picker-layout, not deployed)
+## 2026-11-28: deploy 7, date chooser live on the test site
+
+- Deployed `main` 56324de with the documented method: database backup `before-deploy-7.sql.gz` first, rollback tag `app-before-deploy-7` (the app that was live), overlay build, restart with NO seed. Plain page requests (/, /courses, a course page, /consultancy, /login, /api/health) returned 200; Thames Water price is still 75. Not checked on screen (Jon and Kirsty test by hand: Round 5 test log).
+
+## 2026-11-28: course page date chooser simplified (branch date-picker-layout)
 
 - Jon's request: the same date was shown several times. Now the calendar sits beside one list of the same dates; both only highlight the chosen date. The side panel is the one place that says it in words (date, time, where, places left) and holds the single Book button; on a phone the button is a bar fixed to the bottom. The old "Selected date" card, the separate "All upcoming dates" list, the per-row Book buttons and the "N upcoming dates" line are gone. A full date offers the waitlist in the same button. Files: `src/components/date-picker.tsx`, `src/components/book-selected-button.tsx`, `src/app/(site)/courses/[slug]/page.tsx`.
 - Checks: typecheck, 114 tests, build, 168 of 168 browser checks (run before the last one-line removal). Looked at on a private local copy at 1280 px and 390 px.

@@ -10,6 +10,13 @@ One note per build stage, newest first. Written at the end of each stage so a ne
 - Before anything risky: a migration that touches existing data, or a production deploy.
 - When a test log comes back, with what was signed off and what was not.
 
+## 2026-11-28 (recovery): test site restored onto the merged main
+
+- What went wrong: Claude built on an old `main` and deployed it with the seed step on 27 Nov. That replaced the live build (services-admin, deploy 5) and reset wording, prices and durations on 8 seeded courses (Thames Water 75 became 185, CompEx ExA 175 and eLearning 250 and Ex12 2,050 became 0, ExF 500 became 450, National Water Hygiene 140 became 145, Ex12 5 days became 2 days, plus descriptions, content and FAQs).
+- Recovery with Jon's agreement: database backup `before-recovery-20261128-0050.sql.gz` taken first; the app that was running then is tagged `app-before-recovery`; the 25 Nov build is tagged `app-consultancy-25nov`; deploy 6 used the overlay method on the merged `main` (commit dec3592, which now contains every branch including services-admin) with rollback tag `app-before-deploy-6`, restarted WITHOUT seed. The 8 courses were restored from `before-deploy-5.sql.gz` (25 Nov 21:52), loaded into a scratch database and copied across by slug; one AuditLog row each (`COURSE_RESTORED_FROM_BACKUP`). No later course edits existed in the audit log. Subjects, venue, session, certificate and person counts matched the backup. The scratch database and the dblink extension were removed.
+- The old-address redirects stay off: `next.config.mjs` only builds them with `OLD_SITE_REDIRECTS=1`.
+- Not checked on screen. Open: browser check "staff lockout" fails locally for an unknown reason.
+
 ## 2026-11-28: all branches merged into one main (not deployed)
 
 - Why: `main` had fallen behind. The test site was running branch consultancy-demo (deploy 5, 25 Nov), which contains booking-flow-2-10, 2-10b, step3, course-formats-duplicate, course-page-template, prices-poa and browser-checks. Claude's delegate field work was built on the older main and then deployed from it with the seed step, which replaced the live build and reset seeded course data on the test site. Recovery of the test site is a separate decision for Jon (see below).
